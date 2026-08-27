@@ -40,7 +40,7 @@ def load_env():
 load_env()
 
 # App URL — read from .env PORT, fallback to Twenty default
-PORT    = os.environ.get("PORT", "3000")
+PORT    = os.environ.get("PORT", "2020")
 APP_URL = os.environ.get("SERVER_URL", f"http://localhost:{PORT}")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
