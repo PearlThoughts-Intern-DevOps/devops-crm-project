@@ -1,81 +1,98 @@
 # Twenty CRM Local Setup and Automation
 
-## 1. Project
+## 1. Project Overview
 
-Repository: `PearlThoughts-Intern-DevOps/devops-crm-project`
+**Repository:** `PearlThoughts-Intern-DevOps/devops-crm-project`
 
-The project is a Twenty CRM application that was cloned and configured for local development.
+This project contains a Twenty CRM application that was cloned and configured for local development as part of the PearlThoughts DevOps internship task.
 
 ## 2. Project Structure
 
-The main project directories and files were explored to understand the application:
+The main project directories and configuration files were explored to understand the application:
 
 * `.github` — GitHub-related configuration
+* `.yarn` — Yarn-related files
 * `src` — application source code
 * `public` — public/static files
-* `.yarn` — Yarn-related files
-* `package.json` — project configuration and scripts
+* `package.json` — project configuration and available scripts
 * `yarn.lock` — dependency lock file
 * `SETUP.md` — setup instructions
 * `README.md` — project information
 * `tsconfig.json` — TypeScript configuration
 
-The project uses Yarn 4.13.0 through Corepack.
+The project uses **Yarn 4.13.0** through Corepack.
 
 ## 3. Local Setup
 
-The repository was cloned to the local system and dependencies were installed.
+The repository was cloned to the local system and the project dependencies were installed.
 
-The Twenty CRM Docker environment was started using the project's Twenty CLI commands.
+The Twenty CRM Docker environment was started locally using the project's Twenty CLI commands.
 
-The application was successfully started and verified at:
+The application was successfully verified at:
 
 `http://localhost:2020`
 
-The Docker environment reported:
+The Twenty Docker environment reported:
 
 `Status: running (healthy)`
 
+The application was also opened successfully in the browser.
+
 ## 4. Python Automation
 
-A Python script named `setup.py` was created to automate the local setup/startup verification process.
+A Python script named `setup.py` was created to automate the local setup and startup verification process.
 
-The script performs the following:
+The script performs the following operations:
 
 1. Checks whether Docker is available.
-2. Checks the current Twenty CRM status.
-3. Starts Twenty CRM if it is not already running.
+2. Checks the current Twenty CRM Docker status.
+3. Starts Twenty CRM when it is not already running.
 4. Waits for the application to become available.
-5. Performs an HTTP health check.
-6. Displays the application URL after successful startup.
-7. Reports errors if the application cannot become available.
+5. Performs an HTTP availability check.
+6. Displays the Twenty CRM application URL after successful verification.
+7. Reports errors when required services are unavailable.
 
-Python was used for the automation as required by the task. No `.sh` shell script was used.
+Python was used for the automation as required by the task.
 
-## 5. Automation Test
+**No shell (`.sh`) scripts were used.**
 
-The following command was executed:
+## 5. Automation Testing
+
+The automation script was executed using:
 
 ```text
 python setup.py
 ```
 
-The script successfully:
+The script completed successfully and produced the following results:
 
-* Verified Docker availability.
-* Detected that Twenty CRM was running and healthy.
-* Verified the application at `http://localhost:2020`.
-* Completed the setup process successfully.
+* Docker availability was verified.
+* Twenty CRM was detected as running and healthy.
+* The application was verified at `http://localhost:2020`.
+* The automation process completed successfully.
 
-## 6. Issue Faced
+The successful execution confirms that the Python automation can verify the local Twenty CRM environment and application availability.
 
-During the initial Twenty CRM startup, the following message appeared:
+## 6. Application Verification
 
-`Registering cron jobs... Failed`
+The Twenty CRM application was verified through the local browser using:
 
-The startup process also reported that the Twenty server did not become healthy within the initial time limit.
+`http://localhost:2020`
 
-The Twenty status was checked afterward using:
+The application loaded successfully, confirming that the local environment was working.
+
+## 7. Issues Faced and Solutions
+
+### 7.1 Initial Twenty CRM Health-Check Issue
+
+During the initial startup, the following message appeared:
+
+```text
+Registering cron jobs... Failed
+Twenty server did not become healthy in time.
+```
+
+The Twenty CRM status was checked afterward using:
 
 ```text
 corepack yarn twenty docker:status
@@ -83,44 +100,149 @@ corepack yarn twenty docker:status
 
 The result showed:
 
-`Status: running (healthy)`
+```text
+Status: running (healthy)
+URL: http://localhost:2020
+```
 
-Therefore, the issue was related to the initial startup/health-check timing, and the application subsequently became healthy and available.
+The application subsequently became healthy and accessible.
 
-## 7. Git Workflow
+**Solution:** The application status was rechecked after the initial startup period. The Twenty CRM Docker environment recovered and reached a healthy state, so no reinstallation was required.
 
-A personal branch was created:
+### 7.2 Integration Test Issue
 
-`ambu-kumar`
+While validating the project locally, the integration-test command was executed:
+
+```text
+corepack yarn test
+```
+
+The command reported:
+
+```text
+No test files found, exiting with code 1
+```
+
+The configured integration-test pattern was:
+
+```text
+src/**/*.integration-test.ts
+```
+
+The development synchronization process also reported configuration validation errors:
+
+```text
+INVALID_PAGE_LAYOUT_WIDGET_DATA
+```
+
+The error indicated that the position layout mode `GRID` did not match the tab layout mode `VERTICAL_LIST`.
+
+Another error reported:
+
+```text
+INVALID_FRONT_COMPONENT_INPUT
+```
+
+This indicated that a resource path contained backslashes, which were not accepted by the application configuration.
+
+The integration-test setup therefore failed during the development synchronization stage.
+
+### 7.3 Unit Test Verification
+
+The unit tests were executed separately using:
+
+```text
+corepack yarn test:unit
+```
+
+The result was successful:
+
+```text
+Test Files  1 passed
+Tests       1 passed
+```
+
+This confirmed that the available unit test passed successfully.
+
+The integration-test issues were related to the project's existing application/test configuration and were not caused by the Python automation script.
+
+## 8. Git Workflow
+
+A personal Git branch was created:
+
+```text
+ambu-kumar
+```
 
 The Python automation script was committed with:
 
-`Add Python automation for local setup`
+```text
+Add Python automation for local setup
+```
 
 Commit:
 
-`8c20718`
+```text
+8c20718
+```
 
-The branch was pushed to the remote repository and a Pull Request was created.
+The documentation was then added and committed with:
 
-## 8. Pull Request
+```text
+Add documentation for CRM setup automation
+```
 
-Pull Request:
+Commit:
 
-`Add Python automation for local Twenty CRM setup`
+```text
+e31acd4
+```
 
-The Pull Request contains the Python automation and this documentation.
+Both commits were pushed to the remote `ambu-kumar` branch.
 
-## 9. Loom Demonstration
+## 9. Pull Request
 
-Loom video demonstrating the local setup and Python automation:
+A Pull Request was created from:
 
-`[PASTE YOUR LOOM LINK HERE]`
+```text
+ambu-kumar
+```
 
-## 10. Final Result
+into:
 
-The Twenty CRM application was successfully configured and verified locally.
+```text
+main
+```
 
-The Python automation script successfully verified the Docker environment, checked the Twenty CRM health status, and confirmed application availability.
+**Pull Request:** Add Python automation for local Twenty CRM setup
 
-The required automation was implemented using Python without using shell scripts.
+The Pull Request contains:
+
+* `setup.py`
+* `TASK3_AUTOMATION.md`
+
+## 10. CI Validation
+
+The repository CI integration test currently reports a failure during the integration-test setup.
+
+The failure is related to the integration-test configuration and development synchronization errors described above.
+
+The unit test completed successfully locally.
+
+The Python automation script also completed successfully and verified the local Twenty CRM environment.
+
+## 11. Loom Demonstration
+
+A Loom video demonstrating the local setup, Twenty CRM application, Python automation, and Git workflow will be provided below:
+
+**Loom Video:** `[PASTE YOUR LOOM LINK HERE]`
+
+## 12. Final Result
+
+The Twenty CRM application was successfully configured and run locally.
+
+The Python automation script was created and successfully executed to verify Docker availability, Twenty CRM status, and application availability.
+
+The required automation was implemented using Python, and no shell (`.sh`) script was used.
+
+The setup process, automation workflow, validation results, issues faced, solutions, Git workflow, and Pull Request information have been documented in this file.
