@@ -100,15 +100,101 @@ After the configuration was corrected, Docker was able to communicate with the C
 
 ---
 
-## 4. Twenty Server Startup
+## 4. Twenty Page Layout Metadata Error
 
-After resolving the Docker credential issue, the Twenty server started successfully using:
+### Issue
+
+While running the integration test command:
+
+```bash
+yarn test
+```
+
+the Twenty development synchronization failed with:
+
+```text
+INVALID_PAGE_LAYOUT_WIDGET_DATA:
+Position layoutMode "GRID" does not match tab layoutMode "VERTICAL_LIST"
+```
+
+### Investigation
+
+The issue was traced to:
+
+```text
+src/page-layouts/main-page.page-layout.ts
+```
+
+The page layout tab was configured with:
+
+```ts
+layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
+```
+
+while the widget used a grid-based position:
+
+```ts
+gridPosition: {
+  row: 0,
+  column: 0,
+  rowSpan: 12,
+  columnSpan: 12,
+},
+```
+
+This created a mismatch between the tab layout mode and the widget position layout mode.
+
+### Resolution
+
+The tab layout mode was changed from:
+
+```ts
+PageLayoutTabLayoutMode.VERTICAL_LIST
+```
+
+to:
+
+```ts
+PageLayoutTabLayoutMode.GRID
+```
+
+This made the tab layout mode consistent with the widget's `gridPosition` configuration.
+
+The Twenty metadata synchronization could then proceed with the corrected layout configuration.
+
+---
+
+## 5. Integration Test Configuration
+
+### Issue
+
+The `yarn test` command also reported:
+
+```text
+No test files found, exiting with code 1
+
+include: src/**/*.integration-test.ts
+```
+
+This indicates that the current project does not contain integration test files matching the configured pattern.
+
+### Resolution
+
+The issue was identified as a project test configuration/content issue rather than a local environment or dependency installation problem.
+
+The existing project configuration was reviewed without making unrelated changes solely to force the test command to pass.
+
+---
+
+# Twenty Server Startup
+
+After resolving the Docker configuration issue, the Twenty server started successfully using:
 
 ```bash
 yarn twenty docker:start
 ```
 
-The server completed:
+The server successfully completed:
 
 * PostgreSQL startup
 * Database initialization
@@ -166,13 +252,26 @@ yarn test:unit
 yarn test
 ```
 
+### Verification Results
+
+| Check               | Result                                                     |
+| ------------------- | ---------------------------------------------------------- |
+| Application startup | Passed                                                     |
+| Twenty server       | Passed                                                     |
+| `yarn lint`         | Passed                                                     |
+| `yarn typecheck`    | Passed                                                     |
+| `yarn test:unit`    | Passed                                                     |
+| `yarn test`         | Requires project integration-test/configuration resolution |
+
+The lint, typecheck, and unit test commands completed successfully.
+
 ---
 
 # Final Result
 
-The Twenty CRM application was successfully run locally on macOS.
+The Twenty CRM application was successfully configured and run locally on macOS.
 
-The major environment and Docker configuration issues were identified and resolved, and the successful manual setup was converted into a Python-based automation script.
+The major environment, Docker configuration, and page-layout metadata issues encountered during setup were identified and resolved. The successful manual setup process was then converted into a Python-based automation script.
 
 The application is accessible at:
 
@@ -190,6 +289,8 @@ Dependency Validation
 Install Dependencies
        ↓
 Start Twenty Server
+       ↓
+Database Initialization
        ↓
 Wait for localhost:2020
        ↓
