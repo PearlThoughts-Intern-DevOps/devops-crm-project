@@ -246,3 +246,19 @@ The Python automation script was created and successfully executed to verify Doc
 The required automation was implemented using Python, and no shell (`.sh`) script was used.
 
 The setup process, automation workflow, validation results, issues faced, solutions, Git workflow, and Pull Request information have been documented in this file.
+
+## CI Test Result
+
+The GitHub Actions integration test failed during the test setup because of a Twenty CRM page-layout configuration mismatch.
+
+The error was:
+
+`INVALID_PAGE_LAYOUT_WIDGET_DATA: Position layoutMode "GRID" does not match tab layoutMode "VERTICAL_LIST"`
+
+The Vite configuration messages were warnings and were not the main cause of the failure.
+
+The unit test was verified separately and passed successfully.
+
+## Loom Demo
+
+Loom video: https://www.loom.com/share/7b7426a80a7146a3bed7a3081ed57a6b
