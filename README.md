@@ -1,34 +1,67 @@
-# My Twenty App
+# DevOps CRM Project — Local Setup Automation (Task 3)
 
-Describe your app in one or two sentences.
+This branch adds automation for setting up and running this Twenty CRM app
+locally, without needing to run each setup command by hand.
 
-## Features
+## Where things are
 
-List the top things your app does, for example:
+| File | What it is |
+|---|---|
+| [`setup_crm.py`](./setup_crm.py) | The Python automation script. Run this to install dependencies, start the local Twenty server, and launch the dev server — all in one command. |
+| [`devops_crm_project.pdf`](./devops_crm_project.pdf) | Full documentation: manual setup steps, how the automation script works, issues faced during setup and their solutions, and the git/PR workflow used. |
 
-- Feature one
-- Feature two
-- Feature three
+## Quick start
 
-## Getting started
+```bash
+python setup_crm.py
+```
 
-Setup instructions live in [SETUP.md](SETUP.md).
+Run this from the project root (the same folder as `package.json`). It
+will check your tools, verify the project directory, install dependencies,
+start the local Twenty server in Docker, check port 2020, and start the
+dev server.
 
-## Publishing
+Once running, open [http://localhost:2020](http://localhost:2020) and log
+in with the default development credentials: `tim@apple.dev` / `tim@apple.dev`.
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+## More detail
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
+For the full breakdown of what each step does, why Python was used instead
+of a shell script, and the specific issues encountered while building this
+automation, see [`devops_crm_project.pdf`](./devops_crm_project.pdf).
 
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
+## Project structure (this branch)
 
-## Changelog
+```
+devops-crm-project/
+├── .github/                    # CI/workflow configs
+├── public/                     # Static assets
+├── src/                        # App source code
+├── .gitignore
+├── .nvmrc                      # Pinned Node.js version (24.5.0)
+├── .oxlintrc.json               # Linter config
+├── .yarnrc.yml                 # Yarn 4 config
+├── AGENTS.md
+├── CHANGELOG.md
+├── CLAUDE.md
+├── README.md                   # This file
+├── SETUP.md                    # Original manual setup steps
+├── devops_crm_project.pdf      # Full task documentation (setup, automation, issues faced)
+├── package.json                # Project manifest — Yarn 4, Twenty SDK dependencies
+├── setup_crm.py                # Python automation script (this task's deliverable)
+├── tsconfig.json
+├── tsconfig.spec.json
+├── vitest.config.ts
+├── vitest.unit.config.ts
+└── yarn.lock
 
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+# Generated locally, excluded from version control via .gitignore:
+├── node_modules/                # Installed by `yarn install`
+├── .yarn/                       # Yarn 4 cache/state
+└── .twenty/                     # Local Twenty server state (created by `yarn twenty docker:start`)
+```
 
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+> Generated from a directory listing on this branch after running
+> `setup_crm.py`. The `node_modules/`, `.yarn/`, and `.twenty/` folders are
+> created automatically by the setup process and should stay out of git —
+> verify they're listed in `.gitignore` before committing.
