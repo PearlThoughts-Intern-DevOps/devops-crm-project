@@ -1,0 +1,85 @@
+name: CI Improvements
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TWENTY_VERSION: latest
+
+jobs:
+  ci:
+    name: CI Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.13.0 --activate
+
+      - name: Verify tool versions
+        run: |
+          node --version
+          yarn --version
+
+      - name: Restore Yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Audit dependencies
+        run: yarn npm audit --all --recursive
+        continue-on-error: true
+
+      - name: Run lint
+        run: yarn lint
+
+      - name: Run typecheck
+        run: yarn typecheck
+
+      - name: Run unit tests
+        run: yarn test:unit
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      - name: Run integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      - name: Build application
+        run: yarn twenty dev:build
