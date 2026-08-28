@@ -42,3 +42,5 @@ yarn-error.log*
 *.tsbuildinfo
 *.d.ts
 
+*.swp
+*.swo
