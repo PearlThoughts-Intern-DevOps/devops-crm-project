@@ -1,3 +1,4 @@
+```yaml
 name: CI Improvements
 
 on:
@@ -20,7 +21,7 @@ jobs:
   ci:
     name: CI Checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -31,17 +32,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
-          cache: yarn
-          cache-dependency-path: yarn.lock
+          node-version-file: .nvmrc
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          corepack enable
+          corepack prepare yarn@4.13.0 --activate
 
       - name: Verify tool versions
         run: |
           node --version
           yarn --version
+
+      - name: Restore Yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -73,3 +84,5 @@ jobs:
 
       - name: Build application
         run: yarn twenty dev:build
+```
+
