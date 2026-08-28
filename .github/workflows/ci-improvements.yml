@@ -42,7 +42,7 @@ jobs:
             yarn-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --mode=skip-build
 
       - name: Run linter (oxlint)
         run: yarn lint
@@ -78,7 +78,7 @@ jobs:
             yarn-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --mode=skip-build
 
       - name: Run type check (tsgo)
         run: yarn typecheck
@@ -114,7 +114,7 @@ jobs:
             yarn-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --mode=skip-build
 
       - name: Run unit tests (vitest)
         run: yarn test:unit
@@ -150,7 +150,7 @@ jobs:
             yarn-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --mode=skip-build
 
       - name: Run security audit
         run: yarn npm audit --severity high || true
