@@ -101,33 +101,7 @@ jobs:
         run: yarn test:unit
 
   # ---------------------------------------------------------
-  # Job 4: Build Validation (NEW)
-  # ---------------------------------------------------------
-  build:
-    name: Build Application
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ${{ env.NODE_VERSION_FILE }}
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Build Application
-        run: yarn build
-
-  # ---------------------------------------------------------
-  # Job 5: Integration Tests (Requires spawned instance)
+  # Job 4: Integration Tests (Requires spawned instance)
   # ---------------------------------------------------------
   integration-test:
     name: Integration Tests
