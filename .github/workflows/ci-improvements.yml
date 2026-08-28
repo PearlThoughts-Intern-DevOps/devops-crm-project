@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependency-review:
-    name: Dependency Security Review
+  security:
+    name: Dependency Security Audit
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -28,11 +28,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
+      - name: Enable Corepack
+        run: corepack enable
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Security audit
+        run: yarn npm audit --severity high
   quality:
     name: Quality Checks
     runs-on: ubuntu-latest
