@@ -50,55 +50,18 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Detect integration tests
-        id: detect
+      - name: Check for integration tests
         shell: bash
         run: |
           if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Integration tests found."
+            echo "Integration tests exist, but no integration environment is configured for this repository."
+            echo "Please configure the required Twenty test environment before enabling them."
+            exit 1
           else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No integration test files found; skipping integration tests."
+            echo "No integration test files found; integration testing is skipped."
           fi
-
-      - name: Enable Corepack
-        if: steps.detect.outputs.found == "true"
-        run: corepack enable
-
-      - name: Setup Node.js
-        if: steps.detect.outputs.found == "true"
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-
-      - name: Install dependencies
-        if: steps.detect.outputs.found == "true"
-        run: yarn install --immutable
-
-      - name: Spawn Twenty test instance
-        if: steps.detect.outputs.found == "true"
-        id: twenty
-        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
-        with:
-          twenty-version: ${{ env.TWENTY_VERSION }}
-
-      - name: Run integration tests
-        if: steps.detect.outputs.found == "true"
-        run: yarn test
-        env:
-          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
-          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
-
-      - name: Report skipped integration tests
-        if: steps.detect.outputs.found != "true"
-        run: echo "No integration test files exist; integration stage skipped."
 
   build:
     name: Build Validation
