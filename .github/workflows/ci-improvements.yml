@@ -60,6 +60,12 @@ jobs:
       - name: Run unit tests
         run: yarn test:unit
 
+      - name: Start Twenty server
+        run: yarn twenty docker:start
+
+      - name: Check Twenty server
+        run: curl --fail http://localhost:2020/healthz
+
       - name: Run integration tests
         run: yarn test
 
