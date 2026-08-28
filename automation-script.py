@@ -1,6 +1,6 @@
 """
-setup.py - Automates local setup for devops-crm-project (Twenty CRM app)
-Usage: python setup.py
+automation-script.py - Automates local setup for devops-crm-project (Twenty CRM app)
+Usage: python automation-script.py
 """
 import subprocess
 import sys

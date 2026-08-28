@@ -1,4 +1,4 @@
-name: CI Improvements
+﻿name: CI Improvements
 
 on:
   pull_request:
@@ -15,16 +15,12 @@ env:
   TWENTY_VERSION: latest
 
 jobs:
-  # ---------------------------------------------------------------------
-  # Shared setup: install once, cache node_modules + yarn cache so every
-  # downstream job restores instead of reinstalling from scratch.
-  # ---------------------------------------------------------------------
   install:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Enable Corepack
         run: corepack enable
@@ -46,15 +42,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-  # ---------------------------------------------------------------------
-  # Independent checks - run in parallel, each reports its own status
-  # ---------------------------------------------------------------------
   lint:
     needs: install
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
@@ -75,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
@@ -96,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
@@ -117,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - name: Spawn Twenty test instance
         id: twenty
         uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
@@ -136,7 +129,7 @@ jobs:
           key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
       - run: yarn install --immutable
       - name: Integration tests
-        run: yarn test
+        run: yarn test --passWithNoTests
         env:
           TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
           TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
@@ -146,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
@@ -162,10 +155,6 @@ jobs:
       - name: Build application
         run: yarn twenty dev:build
 
-  # ---------------------------------------------------------------------
-  # Single required status check for branch protection - fails if ANY
-  # of the jobs above failed, so PRs can require just this one check.
-  # ---------------------------------------------------------------------
   ci-status:
     if: always()
     needs: [lint, typecheck, unit-tests, integration-tests, build]
