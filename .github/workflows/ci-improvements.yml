@@ -1,4 +1,3 @@
-```yaml
 name: CI Improvements
 
 on:
@@ -10,12 +9,12 @@ on:
 permissions:
   contents: read
 
-env:
-  TWENTY_VERSION: latest
-
 concurrency:
   group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  TWENTY_VERSION: latest
 
 jobs:
   ci:
@@ -84,5 +83,3 @@ jobs:
 
       - name: Build application
         run: yarn twenty dev:build
-```
-
