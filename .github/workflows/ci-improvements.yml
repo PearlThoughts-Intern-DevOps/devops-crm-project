@@ -8,7 +8,6 @@ on:
     branches:
       - main
 
-# Security: Restrict permissions to the bare minimum (Least Privilege)
 permissions:
   contents: read
 
@@ -16,17 +15,16 @@ env:
   TWENTY_VERSION: latest
   NODE_VERSION_FILE: '.nvmrc'
 
-# Reliability: Cancel redundant runs if a new commit is pushed
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   # ---------------------------------------------------------
-  # Job 1: Linting
+  # Job 1: Lint & Typecheck (Fast checks)
   # ---------------------------------------------------------
-  lint:
-    name: Lint Code
+  lint-and-typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -48,36 +46,13 @@ jobs:
       - name: Run Linter
         run: yarn lint
 
-  # ---------------------------------------------------------
-  # Job 2: Type Checking
-  # ---------------------------------------------------------
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ${{ env.NODE_VERSION_FILE }}
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
       - name: Run Type Check
         run: yarn typecheck
 
   # ---------------------------------------------------------
-  # Job 3: Unit Tests
+  # Job 2: Unit Tests
   # ---------------------------------------------------------
-  unit-test:
+  unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -101,9 +76,9 @@ jobs:
         run: yarn test:unit
 
   # ---------------------------------------------------------
-  # Job 4: Integration Tests (Requires spawned instance)
+  # Job 3: Integration Tests (with spawned instance)
   # ---------------------------------------------------------
-  integration-test:
+  integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
