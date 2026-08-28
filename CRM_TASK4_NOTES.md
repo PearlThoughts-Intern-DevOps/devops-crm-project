@@ -215,8 +215,7 @@ automatically triggered by the Pull Request.
 Loom Video
 
 Loom video:
-
-<PASTE LOOM LINK HERE>
+https://www.loom.com/share/e464f1bc0042439dabff5e2ca209fbda
 
 
 **This is the version I recommend submitting.** It is honest about the CI failure while clearly showing that you implemented the required CI pipeline and verified the build locally.
