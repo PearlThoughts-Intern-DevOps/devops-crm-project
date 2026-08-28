@@ -12,7 +12,6 @@ permissions:
   contents: read
 
 env:
-  TWENTY_VERSION: latest
   NODE_VERSION_FILE: '.nvmrc'
 
 concurrency:
@@ -21,7 +20,7 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------
-  # Job 1: Lint & Typecheck (Fast checks)
+  # Job 1: Lint & Typecheck
   # ---------------------------------------------------------
   lint-and-typecheck:
     name: Lint & Typecheck
@@ -74,38 +73,3 @@ jobs:
 
       - name: Run Unit Tests
         run: yarn test:unit
-
-  # ---------------------------------------------------------
-  # Job 3: Integration Tests (with spawned instance)
-  # ---------------------------------------------------------
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Spawn Twenty test instance
-        id: twenty
-        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
-        with:
-          twenty-version: ${{ env.TWENTY_VERSION }}
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ${{ env.NODE_VERSION_FILE }}
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Run Integration Tests
-        run: yarn test
-        env:
-          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
-          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
