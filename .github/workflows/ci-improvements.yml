@@ -1,0 +1,77 @@
+name: CI Improvements
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  ci:
+    name: Validate application
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Verify Node.js and Yarn versions
+        run: |
+          node --version
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Integration tests
+        shell: bash
+        run: |
+          if find src -type f -name '*integration-test.ts' | grep -q .; then
+            echo "Integration test files found. Running integration tests..."
+            yarn test
+          else
+            echo "No integration test files found."
+            echo "Integration tests are not currently present in this repository."
+          fi
+
+      - name: Security audit
+        run: yarn npm audit --all --recursive
+
+      - name: Build validation
+        shell: bash
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts?.build ? 0 : 1)"; then
+            echo "Build script found. Running build..."
+            yarn build
+          else
+            echo "No build script is defined in package.json."
+            echo "Build validation skipped because this project has no build script."
+          fi
