@@ -1,34 +1,105 @@
-# My Twenty App
+# DevOps CRM Project
 
-Describe your app in one or two sentences.
+## Task 2 — Local Setup & Automation
 
-## Features
+### 1. Clone Repository
 
-List the top things your app does, for example:
+```bash
+git clone https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+cd devops-crm-project
+```
 
-- Feature one
-- Feature two
-- Feature three
+### 2. Project Structure
 
-## Getting started
+The project is a Twenty application built with React and TypeScript.
 
-Setup instructions live in [SETUP.md](SETUP.md).
+Key directories:
 
-## Publishing
+* `src/` — application source code
+* `src/__tests__/` — tests
+* `src/front-components/` — frontend components
+* `src/navigation-menu-items/` — navigation items
+* `src/page-layouts/` — page layouts
+* `public/` — public assets
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+### 3. Local Setup & Run
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
+Required tools:
 
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
+* Node.js 24.5.0
+* Yarn 4
+* Docker
 
-## Changelog
+Install dependencies:
 
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+```bash
+yarn install
+```
 
-## Learn more
+Start the Twenty Docker server:
 
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+```bash
+yarn twenty docker:start
+```
+
+Check the server:
+
+```bash
+yarn twenty docker:status
+```
+
+Start the development server:
+
+```bash
+yarn twenty dev
+```
+
+The application runs at:
+
+```text
+http://localhost:2020
+```
+
+### 4. Python Automation
+
+A Python script `local-setup.py` was created to automate the local setup and startup process.
+
+Run:
+
+```bash
+python3 local-setup.py
+```
+
+The script checks the required tools, installs dependencies, starts the Twenty Docker server, and starts the development server.
+
+No `.sh` shell script was used.
+
+### 5. Branch & Pull Request
+
+Task 2 changes were made on the branch:
+
+```text
+purva
+```
+
+The changes will be pushed to the `purva` branch and submitted through a Pull Request to `main`.
+
+### 6. Issues Faced & Solutions
+
+**Node.js version mismatch**
+
+* Initial version: Node.js 22.22.1
+* Required version: Node.js 24.5.0
+* Solution: Installed NVM and switched to Node.js 24.5.0.
+
+**Yarn peer dependency warning**
+
+`yarn install` displayed a peer dependency warning related to `monaco-editor`, but installation completed successfully and the application ran correctly.
+
+**Twenty CLI re-authentication**
+
+`yarn twenty dev` requested local re-authentication.
+
+Solution: Selected `Y` and continued. The application then started successfully.
+
+## Thank you!
