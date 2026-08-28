@@ -1,0 +1,124 @@
+name: CI Improvements
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TWENTY_VERSION: latest
+
+jobs:
+  ci:
+    name: Validate Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ---------------------------------------------------
+      # 1. Checkout source code
+      # ---------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      # ---------------------------------------------------
+      # 2. Setup Node.js from project configuration
+      # ---------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: yarn
+          cache-dependency-path: "yarn.lock"
+
+      # ---------------------------------------------------
+      # 3. Enable Corepack / Yarn
+      # ---------------------------------------------------
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Verify Node.js and Yarn versions
+        run: |
+          node --version
+          yarn --version
+
+      # ---------------------------------------------------
+      # 4. Install dependencies
+      # ---------------------------------------------------
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # ---------------------------------------------------
+      # 5. Lint
+      # ---------------------------------------------------
+      - name: Run lint
+        run: yarn lint
+
+      # ---------------------------------------------------
+      # 6. Type checking
+      # ---------------------------------------------------
+      - name: Run typecheck
+        run: yarn typecheck
+
+      # ---------------------------------------------------
+      # 7. Unit tests
+      # ---------------------------------------------------
+      - name: Run unit tests
+        run: yarn test:unit
+
+      # ---------------------------------------------------
+      # 8. Security audit
+      # ---------------------------------------------------
+      - name: Run dependency security audit
+        run: yarn npm audit --severity high --recursive
+
+      # ---------------------------------------------------
+      # 9. Spawn isolated Twenty test instance
+      # ---------------------------------------------------
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      # ---------------------------------------------------
+      # 10. Integration tests
+      # ---------------------------------------------------
+      - name: Run integration tests
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+        run: yarn test
+
+      # ---------------------------------------------------
+      # 11. Build validation
+      # ---------------------------------------------------
+      - name: Build application
+        run: yarn twenty dev:build
+
+      # ---------------------------------------------------
+      # 12. Final success message
+      # ---------------------------------------------------
+      - name: CI summary
+        run: |
+          echo "========================================"
+          echo "CI validation completed successfully"
+          echo "========================================"
+          echo "Dependency installation : PASSED"
+          echo "Lint                     : PASSED"
+          echo "Typecheck                : PASSED"
+          echo "Unit tests               : PASSED"
+          echo "Security audit           : PASSED"
+          echo "Integration tests        : PASSED"
+          echo "Build validation         : PASSED"
