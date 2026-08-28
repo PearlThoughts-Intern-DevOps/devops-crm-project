@@ -34,6 +34,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Enable Corepack before setup-node so the correct Yarn version
+      # from package.json is available for dependency caching.
+      - name: Enable Corepack
+        run: corepack enable
+
       # Use the Node.js version defined by the project's .nvmrc file.
       # Yarn cache is enabled to speed up dependency installation.
       - name: Setup Node.js
@@ -41,10 +46,6 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: yarn
-
-      # Enable Corepack so the project can use its configured Yarn version.
-      - name: Enable Corepack
-        run: corepack enable
 
       # Install exactly the dependencies defined by the lockfile.
       # --immutable prevents CI from modifying yarn.lock.
