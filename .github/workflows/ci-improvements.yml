@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TWENTY_VERSION: "v2.35.0"
+  TWENTY_VERSION: latest
 
 jobs:
   ci:
