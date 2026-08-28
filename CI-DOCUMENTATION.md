@@ -129,3 +129,7 @@ git push origin shubham-singh
 **Problem:** `yarn test` runs `schema.integration-test.ts` which connects to a real Twenty backend at `http://localhost:2020`. This fails in GitHub Actions because no server is running.  
 **Root cause:** `vitest.config.ts` includes `*.integration-test.ts` files which need `TWENTY_API_URL` pointing to a live instance.  
 **Solution:** Changed CI to run `yarn test:unit` instead — unit tests use `vitest.unit.config.ts` which only picks up `*.test.ts` files with no server dependency.
+
+### Issue 5 — SonarCloud S6505 vs yarn install
+**Problem:** SonarCloud flags `yarn install` without `--ignore-scripts` as a security vulnerability (S6505). Adding `--ignore-scripts` breaks the dev tooling binaries (oxlint, vitest, tsgo). `yarn rebuild` does not exist in this project.  
+**Decision:** Kept `yarn install --frozen-lockfile` without `--ignore-scripts`. SonarCloud is not a required check (no branch protection rules configured), so this does not block the CI pipeline. The 6 GitHub Actions checks all pass.
