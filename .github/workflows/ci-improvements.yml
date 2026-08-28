@@ -26,14 +26,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: yarn
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Verify Node.js and Yarn versions
         run: |
