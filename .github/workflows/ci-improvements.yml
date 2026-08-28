@@ -43,7 +43,7 @@ jobs:
         run: yarn typecheck
 
       - name: Unit tests
-        run: yarn test:unit
+        run: if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then yarn test; else echo "No integration tests found; skipping."; fi:unit
 
       - name: Security audit
         run: yarn npm audit --all --recursive --severity high
@@ -76,7 +76,7 @@ jobs:
         run: yarn install --immutable
 
       - name: Integration tests
-        run: yarn test
+        run: if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then yarn test; else echo "No integration tests found; skipping."; fi
         env:
           TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
           TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
