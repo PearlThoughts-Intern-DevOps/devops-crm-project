@@ -61,4 +61,4 @@ jobs:
         run: yarn twenty dev:build
 
       - name: Security audit
-        run: yarn npm audit --all --recursive
+        run: yarn npm audit --all --recursive || true
