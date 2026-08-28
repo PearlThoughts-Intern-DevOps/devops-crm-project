@@ -1,0 +1,90 @@
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+TWENTY_VERSION: latest
+
+concurrency:
+group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
+cancel-in-progress: true
+
+jobs:
+ci:
+name: Lint, Typecheck, Test and Build
+runs-on: ubuntu-latest
+timeout-minutes: 20
+
+```
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version-file: '.nvmrc'
+      cache: yarn
+      cache-dependency-path: yarn.lock
+
+  - name: Enable Corepack
+    run: corepack enable
+
+  - name: Verify tool versions
+    run: |
+      node --version
+      yarn --version
+
+  - name: Install dependencies
+    run: yarn install --immutable
+
+  - name: Lint
+    run: yarn lint
+
+  - name: Typecheck
+    run: yarn typecheck
+
+  - name: Unit tests
+    run: yarn test:unit
+
+  - name: Build application
+    run: yarn twenty dev:build
+
+  - name: Spawn Twenty test instance
+    id: twenty
+    uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+    with:
+      twenty-version: ${{ env.TWENTY_VERSION }}
+
+  - name: Integration tests
+    run: yarn test
+    env:
+      TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+      TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+  - name: CI success summary
+    if: success()
+    run: |
+      echo "========================================"
+      echo "CI pipeline completed successfully"
+      echo "========================================"
+      echo "Lint:       PASSED"
+      echo "Typecheck:  PASSED"
+      echo "Unit tests: PASSED"
+      echo "Build:      PASSED"
+      echo "Integration: PASSED"
+
+  - name: CI failure summary
+    if: failure()
+    run: |
+      echo "========================================"
+      echo "CI pipeline failed"
+      echo "========================================"
+      echo "Please review the failed step above."
+```
