@@ -14,7 +14,7 @@ Before automating, the application was successfully set up and run manually usin
 
 ##  Automation Steps
 
-To eliminate manual intervention and ensure a reproducible environment, a Python script (`setup_and_run.py`) was created. 
+To eliminate manual intervention and ensure a reproducible environment, a Python script (`setup.py`) was created. 
 
 ### How it works:
 The script uses Python's built-in `subprocess` module to execute terminal commands sequentially. It performs the following actions:
