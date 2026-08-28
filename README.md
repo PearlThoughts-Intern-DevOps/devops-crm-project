@@ -1,40 +1,3 @@
-# My Twenty App
-
-Describe your app in one or two sentences.
-
-## Features
-
-List the top things your app does, for example:
-
-- Feature one
-- Feature two
-- Feature three
-
-## Getting started
-
-Setup instructions live in [SETUP.md](SETUP.md).
-
-## Publishing
-
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
-
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57) 
-
-
-# devops - task-03 
 # Twenty CRM — Local Setup & Automation
 
 **PearlThoughts DevOps Internship — Task 03**
@@ -44,7 +7,7 @@ Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
 
 ## What is Twenty CRM?
 
-Twenty is an open-source CRM (Customer Relationship Management) platform. This project is a custom Twenty SDK-based app that connects to a self-hosted Twenty backend running via Docker. It lets you manage companies, people, opportunities, tasks, and more — all in one place.
+Twenty is an open-source CRM platform. This project is a custom Twenty SDK-based app that connects to a self-hosted Twenty backend running via Docker. It lets you manage companies, people, opportunities, tasks, and more.
 
 ---
 
@@ -74,24 +37,22 @@ Twenty is an open-source CRM (Customer Relationship Management) platform. This p
 
 ```
 devops-crm-project/
-├── src/                        # App source code
-├── public/                     # Static assets
+├── src/                   # App source code
+├── public/                # Static assets
 ├── script/
-│   └── setup.py               # Python automation script
-├── package.json               # Dependencies and scripts
-├── .nvmrc                     # Node version lock (read by nvm)
-├── .env                       # Environment config (DB, ports, URLs)
-├── tsconfig.json              # TypeScript config
-├── vitest.config.ts           # Test config
-├── .oxlintrc.json             # Linter config
-└── yarn.lock                  # Locked dependency tree
+│   └── setup.py          # Python automation script
+├── package.json          # Dependencies and scripts
+├── .nvmrc                # Node version lock (read by nvm)
+├── .env                  # Environment config (not committed to Git)
+├── tsconfig.json         # TypeScript config
+├── vitest.config.ts      # Test config
+├── .oxlintrc.json        # Linter config
+└── yarn.lock             # Locked dependency tree
 ```
 
 ---
 
 ## Prerequisites
-
-Make sure these are installed before starting:
 
 | Tool | Check Command |
 |---|---|
@@ -115,7 +76,7 @@ cd devops-crm-project
 
 ### Step 2 — Set Correct Node Version
 
-The `.nvmrc` file locks the Node version for this project:
+The `.nvmrc` file locks the exact Node version needed for this project:
 
 ```bash
 nvm install     # reads .nvmrc and installs the right version
@@ -126,14 +87,13 @@ node --version  # verify: should show v24.5.0
 ### Step 3 — Install Dependencies
 
 ```bash
-yarn            # installs all packages from yarn.lock
+yarn
 ```
 
 ### Step 4 — Configure Environment
 
 ```bash
-cp .env.example .env   # if example exists
-# OR edit .env directly
+cp .env.example .env   # if example exists, else create .env manually
 ```
 
 Your `.env` should contain the following keys (fill in your own values):
@@ -172,23 +132,20 @@ redis-cli ping   # should return PONG
 
 ### Step 7 — Start the App via Docker
 
-Twenty's backend (API + worker + frontend) runs as a Docker container:
+Twenty's backend runs as a Docker container managed by the Twenty CLI:
 
 ```bash
 yarn twenty docker:start
 ```
 
-The app will be available at: **http://localhost:2020**
-
-Default login:
-- **Email:** `tim@apple.dev`
-- **Password:** `tim@apple.dev`
+App available at: **http://localhost:2020**
+Login: `tim@apple.dev` / `tim@apple.dev`
 
 ---
 
 ## Automated Setup (Python Script)
 
-All the above steps are automated in a single Python script.
+All 7 steps above are automated in a single Python script — no manual steps needed.
 
 ### Run Everything at Once
 
@@ -196,7 +153,7 @@ All the above steps are automated in a single Python script.
 python3 script/setup.py all
 ```
 
-### Or Run Individual Steps
+### Individual Steps
 
 ```bash
 python3 script/setup.py check      # verify all tools are installed
@@ -212,19 +169,18 @@ python3 script/setup.py stop       # stop Docker container
 ```
 python3 setup.py all
         │
-        ├── check    → verifies git, node, yarn, docker, docker daemon
-        ├── env      → finds/copies .env (searches whole project)
+        ├── check    → verifies git, node, yarn, docker + daemon running
+        ├── env      → finds/copies .env (searches whole project tree)
         ├── install  → reads .nvmrc → nvm install → nvm use → yarn
         └── start    → yarn twenty docker:start → polls until app is up
 ```
 
 **Key design decisions:**
 
-- **No hardcoding** — all config (port, DB name, user, password) is read from `.env`
-- **Dynamic root detection** — script finds project root automatically, works from any folder
-- **Dynamic Node version** — reads `.nvmrc` so it always installs the correct Node version
-- **Dynamic start command** — reads `package.json` scripts to find the right start command
-- **Idempotent** — safe to run multiple times; skips steps already done
+- **No hardcoding** — all config (port, DB, URL) read from `.env`
+- **Dynamic root detection** — `find_root()` walks up folders to find `package.json`, works from any directory
+- **Dynamic Node version** — reads `.nvmrc` so always installs the correct version
+- **Idempotent** — safe to run multiple times, skips already completed steps
 
 ---
 
@@ -232,40 +188,34 @@ python3 setup.py all
 
 ### Frontend
 
-Open browser → **http://localhost:2020**
-
-You should see the Twenty CRM login page. Log in with `tim@apple.dev`.
-
-Navigate to **Companies** — you'll see 600 companies seeded automatically.
+Open **http://localhost:2020** → login with `tim@apple.dev` → navigate to Companies → see 600 seeded companies.
 
 ### Backend Health Check
 
 ```bash
 curl http://localhost:2020/healthz
-# {"status":"ok","info":{},"error":{},"details":{}}
+# Expected: {"status":"ok","info":{},"error":{},"details":{}}
 ```
 
 ### Database Verification
-
-Connect to PostgreSQL and query live CRM data:
 
 ```bash
 sudo -u postgres psql -d default
 ```
 
 ```sql
--- Check a company exists
+-- Verify company data
 SELECT name, "domainNamePrimaryLinkUrl", "addressAddressCountry"
 FROM "workspace_1wgvd1injqtife6y4rvfbu3h5"."company"
 WHERE name ILIKE '%shubham%';
 
--- Check a person record
+-- Verify person data
 SELECT "nameFirstName", "nameLastName", "emailsPrimaryEmail"
 FROM "workspace_1wgvd1injqtife6y4rvfbu3h5"."person"
 WHERE "nameFirstName" ILIKE '%shubham%';
 ```
 
-**Result confirmed in DB:**
+**Confirmed in DB:**
 
 | Field | Value |
 |---|---|
@@ -273,9 +223,8 @@ WHERE "nameFirstName" ILIKE '%shubham%';
 | Domain | ShubhamCloudSolution.com |
 | Country | INDIA |
 | Person | shubham singh |
-| Email | shubhamsingh74888@gmail.com |
 
-### Redis Verification
+### Redis
 
 ```bash
 redis-cli ping    # PONG = running
@@ -284,23 +233,20 @@ redis-cli ping    # PONG = running
 ### Docker Container
 
 ```bash
-yarn twenty docker:status   # shows container health
-yarn twenty docker:logs     # stream live logs
+yarn twenty docker:status   # container health
+yarn twenty docker:logs     # live logs
 ```
 
 ---
 
 ## Available Scripts
 
-From `package.json`:
-
 | Command | Description |
 |---|---|
-| `yarn twenty` | Twenty CLI (docker, remote, dev commands) |
 | `yarn twenty docker:start` | Start the CRM via Docker |
 | `yarn twenty docker:stop` | Stop the container |
 | `yarn twenty docker:status` | Check container health |
-| `yarn twenty docker:logs` | Stream logs |
+| `yarn twenty docker:logs` | Stream live logs |
 | `yarn twenty docker:reset` | Reset all data and restart fresh |
 | `yarn test` | Run all tests with Vitest |
 | `yarn test:unit` | Run unit tests only |
@@ -313,14 +259,26 @@ From `package.json`:
 
 | Issue | Cause | Solution |
 |---|---|---|
-| `Run from twenty repo root` error | Script looked for `package.json` in wrong folder | Added `find_root()` to walk up directory tree automatically |
-| `.env.example` not found | This repo has no `.env.example`, uses root `.env` directly | Script now checks for existing `.env` and skips gracefully |
-| `nx not found` | This repo doesn't use Nx at all | Removed nx entirely; script reads `package.json` scripts dynamically |
-| Password prompt for PostgreSQL | `subprocess.run` was passing password interactively | Switched to `sudo -u postgres psql` (superuser, no password needed) |
-| App URL wrong | Hardcoded port 3000 but app runs on 2020 | `PORT` and `SERVER_URL` now read from `.env` |
-| `yarn twenty` just printed help | `twenty` is a CLI tool, not a server | Correct command is `yarn twenty docker:start` |
+| `Run from twenty repo root` error | Script was run from `script/` folder, looked for `package.json` in current directory | Added `find_root()` to walk up directory tree automatically — works from any folder |
+| `nx not found` | Script assumed standard Twenty CRM repo which uses Nx; this repo does not | Removed nx entirely; script now reads `package.json` scripts dynamically |
+| Password prompt for PostgreSQL | `subprocess.run` was passing DB password interactively | Switched to `sudo -u postgres psql` — runs as superuser, no password needed |
+| App URL wrong | Port 3000 was hardcoded but this repo runs on port 2020 | `PORT` and `SERVER_URL` now read directly from `.env` — no hardcoding |
+| `yarn twenty` only printed help | `twenty` is a CLI tool — running it alone just shows available commands | Correct start command is `yarn twenty docker:start` |
+| CI test failure on PR | Pre-existing bug in repo: `layoutMode VERTICAL_LIST` conflicts with widget `gridPosition` which requires `GRID` | Not caused by Task 03 changes — documented as existing repo issue |
 
 ---
 
+## Branch & PR
 
+```bash
+git checkout -b shubham-singh
+git add script/setup.py README.md
+git commit -m "Task 03: Python automation script + README"
+git push origin shubham-singh
+```
 
+---
+
+## Demo
+
+Loom video: https://www.loom.com/share/704f77a822074b24badcfd3b0537cafc
