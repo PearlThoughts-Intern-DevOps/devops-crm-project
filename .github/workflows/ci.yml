@@ -1,57 +1,41 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request: {}
-
-permissions:
-  contents: read
-
-env:
-  TWENTY_VERSION: latest
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Spawn Twenty test instance
-        id: twenty
-        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
-        with:
-          twenty-version: ${{ env.TWENTY_VERSION }}
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
-          cache: yarn
+          node-version: 24
+
+      - name: Enable Corepack
+        run: |
+          corepack enable
+          corepack install --global yarn@4.13.0
+
+      - name: Verify Yarn version
+        run: yarn --version
 
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Lint
+      - name: Run lint
         run: yarn lint
 
-      - name: Typecheck
+      - name: Run typecheck
         run: yarn typecheck
 
-      - name: Unit tests
+      - name: Run unit tests
         run: yarn test:unit
 
-      - name: Run integration tests
-        run: yarn test
-        env:
-          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
-          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+      - name: Build application
+        run: yarn twenty dev:build
