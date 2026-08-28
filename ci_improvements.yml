@@ -1,0 +1,123 @@
+# Task 4: CI Improvements
+
+## Objective
+
+Reviewed the existing `.github/workflows/ci.yml` and created `.github/workflows/ci-improvements.yml` with additional CI validation and reliability improvements.
+
+## Improvements from `ci.yml` to `ci-improvements.yml`
+
+| Existing `ci.yml`                  | `ci-improvements.yml`                                                |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| PR trigger accepts all PR events   | Explicitly triggers on `opened`, `synchronize`, and `reopened`       |
+| Uses `.nvmrc` for Node.js          | Uses Node.js 24 explicitly                                           |
+| Yarn dependency caching            | Yarn caching retained                                                |
+| No workflow timeout                | Added `timeout-minutes: 20`                                          |
+| Basic concurrency using GitHub ref | Concurrency based on the Pull Request number                         |
+| One project typecheck              | Added Twenty application typecheck using `yarn twenty dev:typecheck` |
+| No build validation                | Added `yarn twenty dev:build`                                        |
+| Linting                            | Linting retained                                                     |
+| Unit tests                         | Unit tests retained                                                  |
+| Integration tests                  | Integration tests retained                                           |
+| No explicit security audit         | Added dependency security audit                                      |
+| Standard repository permissions    | Restricted to `contents: read`                                       |
+
+## New CI Pipeline
+
+The improved workflow performs the following checks:
+
+1. Checkout the repository
+2. Enable Corepack
+3. Set up Node.js
+4. Restore Yarn cache
+5. Install dependencies using `yarn install --immutable`
+6. Run linting
+7. Run project type checking
+8. Run Twenty application type checking
+9. Run unit tests
+10. Start the Twenty test instance
+11. Run integration tests
+12. Build the application
+13. Run dependency security audit
+
+## Pull Request Trigger
+
+The workflow automatically runs when a Pull Request is:
+
+* Opened
+* Updated with new commits
+* Reopened
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+```
+
+## Reliability Improvements
+
+Concurrency control was added so that when new commits are pushed to the same Pull Request, an outdated CI run can be cancelled:
+
+```yaml
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+```
+
+A 20-minute job timeout was also added to prevent the CI job from running indefinitely.
+
+## Issues Faced and Solutions
+
+### 1. Page Layout Mismatch
+
+During integration testing, the Twenty application sync reported:
+
+```text
+INVALID_PAGE_LAYOUT_WIDGET_DATA:
+Position layoutMode "GRID" does not match tab layoutMode "VERTICAL_LIST"
+```
+
+The issue was caused by the page layout tab using `VERTICAL_LIST` while the widget positioning expected `GRID`.
+
+The page layout configuration was updated so that the tab and widget use compatible layout modes.
+
+After the configuration change, the integration test was able to proceed successfully.
+
+### 2. Twenty Test Version
+
+The Twenty test instance initially used a specific version that did not have a corresponding available Docker image.
+
+The workflow was changed to use:
+
+```yaml
+TWENTY_VERSION: latest
+```
+
+This allowed the test instance to start using an available Twenty image.
+
+## Verification
+
+The following project checks were used to validate the CI pipeline:
+
+```bash
+yarn install --immutable
+yarn lint
+yarn typecheck
+yarn twenty dev:typecheck
+yarn test:unit
+yarn test
+yarn twenty dev:build
+yarn npm audit --all --recursive --severity high
+```
+
+The Pull Request was used to verify that the GitHub Actions workflow was triggered automatically.
+
+## Files
+
+Created:
+
+```text
+.github/workflows/ci-improvements.yml
+TASK-4-CI.md
+```
+
+The existing `ci.yml`, `cd.yml`, and `publish.yml` workflows were not modified because they serve their existing CI, deployment, and npm publishing purposes.
