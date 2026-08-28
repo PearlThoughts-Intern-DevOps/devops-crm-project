@@ -61,7 +61,7 @@ def out(cmd):
 
 def is_up(url):
     try: urllib.request.urlopen(url, timeout=3); return True
-    except: return False
+    except Exception: return False
 
 def wait_for(url, timeout=120):
     deadline = time.time() + timeout
