@@ -124,3 +124,8 @@ git push origin shubham-singh
 2. Scroll to the bottom — you'll see status checks appear within ~30 seconds
 3. Click **Details** on any check to see the live log
 4. All checks must be green for the PR to be mergeable (if branch protection is set)
+
+### Issue 4 — Integration tests require a live Twenty server
+**Problem:** `yarn test` runs `schema.integration-test.ts` which connects to a real Twenty backend at `http://localhost:2020`. This fails in GitHub Actions because no server is running.  
+**Root cause:** `vitest.config.ts` includes `*.integration-test.ts` files which need `TWENTY_API_URL` pointing to a live instance.  
+**Solution:** Changed CI to run `yarn test:unit` instead — unit tests use `vitest.unit.config.ts` which only picks up `*.test.ts` files with no server dependency.

@@ -117,8 +117,6 @@ jobs:
       - name: Run unit tests (vitest)
         run: yarn test:unit
 
-      - name: Run all tests (vitest)
-        run: yarn test
 
   security:
     name: Security Audit
