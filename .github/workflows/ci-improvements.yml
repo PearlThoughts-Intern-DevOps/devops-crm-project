@@ -1,9 +1,7 @@
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches:
-      - main
+      - chirag
 
 permissions:
   contents: read
