@@ -69,3 +69,33 @@ yarn test:unit
 yarn test
 yarn twenty dev:build
 yarn npm audit --all --recursive --severity high
+
+## Issues Faced and Solutions
+
+### Integration Test Failure
+
+During CI verification, the integration test initially failed during Twenty application sync with the following error:
+
+`INVALID_PAGE_LAYOUT_WIDGET_DATA: Position layoutMode "GRID" does not match tab layoutMode "VERTICAL_LIST"`
+
+The issue was caused by a mismatch between the page layout tab's layout mode and its grid-based widget positioning.
+
+The page layout configuration was updated from:
+
+`PageLayoutTabLayoutMode.VERTICAL_LIST`
+
+to:
+
+`PageLayoutTabLayoutMode.GRID`
+
+After the change, the integration test was verified locally and passed successfully with 2 tests passing.
+
+### Twenty Test Image Version
+
+The CI workflow initially used `v2.35.1` for the Twenty test instance, but the corresponding Docker image was not available.
+
+The workflow was changed to use:
+
+`TWENTY_VERSION: latest`
+
+After this change, the CI workflow completed successfully.
