@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Install, Lint, Test, Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run lint
+        run: yarn lint
+
+      - name: Run typecheck (project)
+        run: yarn typecheck
+
+      - name: Run typecheck (Twenty app definition)
+        run: yarn twenty dev:typecheck
+
+      - name: Run unit tests
+        run: yarn test:unit
+
+      - name: Run tests
+        run: yarn test
+
+      - name: Build application
+        run: yarn twenty dev:build
