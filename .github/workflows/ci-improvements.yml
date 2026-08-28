@@ -25,7 +25,7 @@ jobs:
 
     steps:
       # --------------------------------------------------
-      # 1. Checkout
+      # 1. Checkout source code
       # --------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
 
       # --------------------------------------------------
       # 3. Enable Corepack
@@ -47,7 +47,7 @@ jobs:
         run: corepack enable
 
       # --------------------------------------------------
-      # 4. Activate project Yarn version
+      # 4. Setup project Yarn version
       # --------------------------------------------------
       - name: Setup Yarn
         run: |
@@ -59,9 +59,11 @@ jobs:
       # --------------------------------------------------
       - name: Get Yarn cache directory
         id: yarn-cache
-        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Yarn
+      - name: Restore Yarn cache
         uses: actions/cache@v4
         with:
           path: ${{ steps.yarn-cache.outputs.dir }}
@@ -109,22 +111,47 @@ jobs:
           twenty-version: ${{ env.TWENTY_VERSION }}
 
       # --------------------------------------------------
-      # 12. Integration tests
+      # 12. Check whether integration tests exist
+      # --------------------------------------------------
+      - name: Check for integration tests
+        id: integration-tests
+        shell: bash
+        run: |
+          if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Integration test files found."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No integration test files found. Integration tests will be skipped."
+          fi
+
+      # --------------------------------------------------
+      # 13. Run integration tests
       # --------------------------------------------------
       - name: Run integration tests
+        if: steps.integration-tests.outputs.found == 'true'
         env:
           TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
           TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
         run: yarn test
 
       # --------------------------------------------------
-      # 13. Build validation
+      # 14. Report integration test status
+      # --------------------------------------------------
+      - name: Integration test status
+        if: steps.integration-tests.outputs.found != 'true'
+        run: |
+          echo "No integration tests are currently present in the repository."
+          echo "Integration test execution was skipped."
+
+      # --------------------------------------------------
+      # 15. Build validation
       # --------------------------------------------------
       - name: Build application
         run: yarn twenty dev:build
 
       # --------------------------------------------------
-      # 14. Final summary
+      # 16. Final CI summary
       # --------------------------------------------------
       - name: CI summary
         if: success()
@@ -137,5 +164,5 @@ jobs:
           echo "Typecheck    : PASSED"
           echo "Unit tests   : PASSED"
           echo "Security     : PASSED"
-          echo "Integration  : PASSED"
+          echo "Integration  : PASSED / SKIPPED"
           echo "Build        : PASSED"
