@@ -8,7 +8,7 @@ on:
 
   push:
     branches:
-      - chirag
+      - chirag-sabharwal-ci-improvements
 
 permissions:
   contents: read
