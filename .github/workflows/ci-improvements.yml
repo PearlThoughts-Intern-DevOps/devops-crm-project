@@ -51,30 +51,34 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check for integration tests
-        shell: bash
-        run: |
-          if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then
-            echo "Integration tests found."
-          else
-            echo "No integration test files found. Integration tests are skipped."
-          fi
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
 
-      - name: Run integration tests
-        shell: bash
-        run: |
-          if find src -type f -name "*.integration-test.ts" -print -quit | grep -q .; then
-            corepack enable
-            yarn install --immutable
-            yarn test
-          else
-            echo "No integration tests found; skipping."
-          fi
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
 
   build:
     name: Build Validation
