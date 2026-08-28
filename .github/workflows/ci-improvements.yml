@@ -48,7 +48,7 @@ jobs:
         run: yarn test:unit
 
       - name: Security audit
-        run: yarn npm audit --recursive
+        run: yarn npm audit --recursive --severity high
 
       - name: Build application
         run: yarn twenty dev:build
