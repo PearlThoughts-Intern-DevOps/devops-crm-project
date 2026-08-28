@@ -24,7 +24,10 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile # nosonar
+        run: yarn install --frozen-lockfile --ignore-scripts
+
+      - name: Rebuild native binaries
+        run: yarn rebuild
 
       - name: Lint
         run: yarn lint
