@@ -34,6 +34,13 @@ describe('CoreApiClient', () => {
         id: true,
       },
     });
+
+    expect(created.createNote).toBeDefined();
+
+    if (!created.createNote) {
+      throw new Error('Failed to create test note');
+    }
+
     expect(created.createNote.id).toBeDefined();
 
     await client.mutation({
@@ -41,6 +48,5 @@ describe('CoreApiClient', () => {
         __args: { id: created.createNote.id },
         id: true,
       },
-    });
-  });
+    });  });
 });

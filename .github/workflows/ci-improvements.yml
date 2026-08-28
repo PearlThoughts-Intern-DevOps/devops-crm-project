@@ -1,0 +1,116 @@
+name: CI Improvements
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  TWENTY_VERSION: latest
+
+concurrency:
+  group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    name: Dependency Security Audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Security audit
+        run: yarn npm audit --severity high
+  quality:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Verify tool versions
+        run: |
+          node --version
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Build application
+        run: yarn twenty dev:build
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
