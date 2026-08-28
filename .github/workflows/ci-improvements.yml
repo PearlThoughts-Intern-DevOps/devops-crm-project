@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TWENTY_VERSION: 2.35.1
+  TWENTY_VERSION: v2.35.1
 
 jobs:
   ci:
