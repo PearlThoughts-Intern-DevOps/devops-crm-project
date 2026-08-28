@@ -1,0 +1,70 @@
+name: CI Improvements
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Improved CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable Corepack and install Yarn
+        run: |
+          corepack enable
+          corepack install --global yarn@4.13.0
+
+      - name: Verify Node.js and Yarn versions
+        run: |
+          node --version
+          yarn --version
+
+      - name: Get Yarn cache directory
+        id: yarn-cache
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run lint
+        run: yarn lint
+
+      - name: Run typecheck
+        run: yarn typecheck
+
+      - name: Run unit tests
+        run: yarn test:unit
+
+      - name: Run integration tests
+        run: yarn test
+
+      - name: Build application
+        run: yarn twenty dev:build
+
+      - name: Security audit
+        run: yarn npm audit --all
