@@ -23,7 +23,11 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------
-  # Install once, cache aggressively, reuse across every downstream job.
+  # Install once, cache aggressively, so downstream jobs benefit from a
+  # warm Yarn cache. Every job still runs `yarn install` itself (fast on
+  # a cache hit) rather than trying to hand off a node_modules folder
+  # between jobs -- that approach is linker-mode-dependent (PnP vs
+  # node-modules) and fragile across separate runners.
   # ---------------------------------------------------------------------
   install:
     runs-on: ubuntu-latest
@@ -43,17 +47,7 @@ jobs:
           node-version-file: '.nvmrc'
           cache: yarn
 
-      # Cache node_modules directly, keyed on the lockfile hash, so
-      # downstream jobs can skip a full reinstall entirely on a cache hit.
-      - name: Cache node_modules
-        id: node-modules-cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-
       - name: Install dependencies
-        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: yarn install --immutable
 
   # ---------------------------------------------------------------------
@@ -73,12 +67,10 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: yarn
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      - name: Install dependencies
+        run: corepack enable && yarn install --immutable
       - name: Lint
-        run: corepack enable && yarn lint
+        run: yarn lint
 
   typecheck:
     needs: install
@@ -92,16 +84,14 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: yarn
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      - name: Install dependencies
+        run: corepack enable && yarn install --immutable
       # Also acts as our "build validation" step: this project has no
       # separate build artifact (it's synced live via the Twenty CLI), so
       # a clean TypeScript typecheck is the closest equivalent to "the
       # application builds successfully".
       - name: Typecheck (build validation)
-        run: corepack enable && yarn typecheck
+        run: yarn typecheck
 
   unit-test:
     needs: install
@@ -115,12 +105,10 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: yarn
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      - name: Install dependencies
+        run: corepack enable && yarn install --immutable
       - name: Unit tests
-        run: corepack enable && yarn test:unit
+        run: yarn test:unit
 
   # ---------------------------------------------------------------------
   # Integration tests need a live spawned Twenty instance, which has been
@@ -151,13 +139,11 @@ jobs:
           node-version-file: '.nvmrc'
           cache: yarn
 
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-
       - name: Enable Corepack
         run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
 
       - name: Run integration tests (with retry for known sync flakiness)
         uses: nick-fields/retry@v3
@@ -189,6 +175,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
