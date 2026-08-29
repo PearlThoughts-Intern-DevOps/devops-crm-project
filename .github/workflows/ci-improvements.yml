@@ -1,0 +1,218 @@
+name: CI Improvements
+
+# Runs on every PR open/update, same trigger surface as the existing ci.yml,
+# but as an independent, from-scratch pipeline so it can be reviewed and
+# compared side-by-side without touching the original workflow.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Least-privilege by default at the workflow level; individual jobs only
+# escalate where a specific action genuinely needs it.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same PR/branch to save CI minutes and avoid
+# confusing out-of-order status checks.
+concurrency:
+  group: ci-improvements-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TWENTY_VERSION: latest
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Install once, cache aggressively, reuse across every downstream job.
+  # ---------------------------------------------------------------------
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      # Cache node_modules directly, keyed on the lockfile hash, so
+      # downstream jobs can skip a full reinstall entirely on a cache hit.
+      - name: Cache node_modules
+        id: node-modules-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: yarn install --immutable
+
+  # ---------------------------------------------------------------------
+  # Fast, independent checks run in parallel instead of one serial job,
+  # so a lint failure is visible immediately instead of waiting behind
+  # typecheck/tests.
+  # ---------------------------------------------------------------------
+  lint:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      - name: Lint
+        run: corepack enable && yarn lint
+
+  typecheck:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      # Also acts as our "build validation" step: this project has no
+      # separate build artifact (it's synced live via the Twenty CLI), so
+      # a clean TypeScript typecheck is the closest equivalent to "the
+      # application builds successfully".
+      - name: Typecheck (build validation)
+        run: corepack enable && yarn typecheck
+
+  unit-test:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+      - name: Unit tests
+        run: corepack enable && yarn test:unit
+
+  # ---------------------------------------------------------------------
+  # Integration tests need a live spawned Twenty instance, which has been
+  # observed to intermittently fail app-sync with a data-consistency error
+  # unrelated to any single PR's code changes. We isolate this into its
+  # own job (so it never blocks lint/typecheck/unit results) and retry the
+  # sync step a bounded number of times before treating it as a genuine
+  # failure — retries handle transient flakiness without masking a real,
+  # persistent break.
+  # ---------------------------------------------------------------------
+  integration-test:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Run integration tests (with retry for known sync flakiness)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 2
+          command: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      # If it still fails after retries, capture logs so a human doesn't
+      # have to reproduce the failure locally from scratch.
+      - name: Upload Twenty server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twenty-server-logs
+          path: |
+            **/*.log
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------
+  # Security: scan dependency changes introduced by this PR for known
+  # vulnerabilities and disallowed licenses before merge.
+  # ---------------------------------------------------------------------
+  dependency-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+
+  # ---------------------------------------------------------------------
+  # A single required status check summarising every job above, so branch
+  # protection can require just this one check instead of five.
+  # ---------------------------------------------------------------------
+  ci-summary:
+    if: always()
+    needs: [lint, typecheck, unit-test, integration-test, dependency-review]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          echo "lint: ${{ needs.lint.result }}"
+          echo "typecheck: ${{ needs.typecheck.result }}"
+          echo "unit-test: ${{ needs.unit-test.result }}"
+          echo "integration-test: ${{ needs.integration-test.result }}"
+          echo "dependency-review: ${{ needs.dependency-review.result }}"
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
