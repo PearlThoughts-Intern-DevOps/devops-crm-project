@@ -50,5 +50,5 @@ The GitHub Actions CI / test check completed successfully.
 Loom Demonstration
 The Loom video demonstrates the CI workflow and the successful GitHub Actions result on Pull Request #41.
 
-Loom link: [Add Loom link here]
+Loom link: [https://www.loom.com/share/be24d323631045c58b7f0af8033ad5fd]
 
