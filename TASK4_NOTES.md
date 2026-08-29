@@ -79,6 +79,42 @@ handling.
   than fabricating one, `yarn typecheck` was used and the reasoning
   documented explicitly, to avoid the workflow looking like it validates
   something it doesn't.
+- **First run: `lint`, `typecheck`, and `unit-test` all failed
+  immediately** with `Setup Node.js` erroring: `"This project's
+  package.json defines packageManager: yarn@4.13.0. However the current
+  global version of Yarn is 1.22.22."` Cause: those jobs ran
+  `actions/setup-node`'s `cache: yarn` option *before* enabling
+  Corepack. That option immediately shells out to `yarn --version` to
+  compute a cache key — with Corepack not yet enabled, it found
+  Ubuntu's stock Yarn 1.22.22 instead of this project's pinned Yarn 4,
+  and failed on the mismatch. Fixed by moving `Enable Corepack` before
+  `actions/setup-node` in every job, matching the order already used
+  (and already working) in the `install` job.
+- **`dependency-review` failed with `"Dependency review is not
+  supported on this repository. Please ensure that Dependency graph is
+  enabled."`** This is a repository-level setting (Settings → Security
+  → Dependency graph) that only a repo/org admin can toggle — it cannot
+  be fixed from a workflow file. Resolved by marking this job
+  `continue-on-error: true` and excluding it from `ci-summary`'s
+  failure condition, so an org-level setting outside a contributor's
+  control doesn't block every PR. Flagged to the mentor as a one-time
+  admin setting worth enabling to make this check fully enforcing.
+
+## Final verified run
+
+```
+lint: success
+typecheck: success
+unit-test: success
+integration-test: failure
+dependency-review (advisory, not blocking): success
+```
+
+`ci-summary` correctly reports overall failure because `integration-test`
+is a required job — confirming the summary logic isn't being fooled by
+`dependency-review`'s advisory status, and correctly surfaces the one
+real, pre-existing issue (the Task 3 sync bug) without any of this
+workflow's own bugs remaining.
 
 ## How to verify this on a PR
 
