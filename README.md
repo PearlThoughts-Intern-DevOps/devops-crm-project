@@ -5,7 +5,7 @@ every Pull Request.
 
 | File | What it is |
 |---|---|
-| [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | The CI workflow. |
+| [`.github/workflows/ci.yml`](./.github/workflows/ci-improvements.yml) | The CI workflow. |
 | [`ci.pdf`](./ci.pdf) | Full documentation of the workflow and the steps followed to build it. |
 
 ### What the workflow does
