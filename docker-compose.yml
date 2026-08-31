@@ -1,0 +1,34 @@
+services:
+  twenty-server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-server
+    ports:
+      - "2020:2020"
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2020"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  crm-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-crm-app
+    environment:
+      NODE_ENV: development
+      TWENTY_API_URL: http://twenty-server:2020
+    depends_on:
+      twenty-server:
+        condition: service_healthy
+    networks:
+      - twenty-network
+    restart: unless-stopped
+
+networks:
+  twenty-network:
+    driver: bridge
