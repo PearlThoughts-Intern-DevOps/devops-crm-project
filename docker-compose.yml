@@ -15,13 +15,7 @@ services:
       - "2020:2020"
     networks:
       - twenty-network
-    # NOTE: I couldn't confirm the exact internal data path this image
-    # uses for persistent storage (it's Twenty's own prebuilt image, not
-    # something I built). Without a volume here, CRM data resets if this
-    # container is removed - fine for local dev, not for anything else.
-    # Run `docker inspect twenty-crm` (after `docker:start`) to find the
-    # real path and mount a volume at it if you need data to persist
-    # across `docker compose down`.
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2020"]
       interval: 10s
@@ -38,8 +32,7 @@ services:
       TWENTY_URL: http://twenty-crm:2020
       TWENTY_API_KEY: ${TWENTY_API_KEY}
     volumes:
-      # mount source code so file changes on the host are picked up
-      # without rebuilding the image every time
+      
       - ./src:/app/src
     networks:
       - twenty-network
