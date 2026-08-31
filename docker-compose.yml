@@ -1,0 +1,27 @@
+services:
+  twenty:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-crm-task5
+    ports:
+      - "2020:2020"
+    volumes:
+      - twenty-app-data:/data/postgres
+      - twenty-app-storage:/app/packages/twenty-server/.local-storage
+    restart: unless-stopped
+
+  app-deployer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-app-deployer
+    depends_on:
+      - twenty
+    environment:
+      TWENTY_SERVER_URL: http://twenty:2020
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+    restart: "no"
+
+volumes:
+  twenty-app-data:
+  twenty-app-storage:
+
