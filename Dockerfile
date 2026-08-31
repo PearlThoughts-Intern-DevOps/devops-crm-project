@@ -30,6 +30,9 @@ COPY --chown=twenty:twenty public ./public
 COPY --chown=twenty:twenty tsconfig.json tsconfig.spec.json vitest.config.ts vitest.unit.config.ts ./
 COPY --chown=twenty:twenty entrypoint.sh ./entrypoint.sh
 
+RUN mkdir -p /app/.twenty \
+    && chown twenty:twenty /app/.twenty
+
 USER twenty
 
 ENTRYPOINT ["sh", "/app/entrypoint.sh"]
