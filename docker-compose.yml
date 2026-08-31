@@ -1,0 +1,44 @@
+# NOTE: the "server" service below is a best-effort draft based on Twenty's
+# published docs (twentycrm/twenty-app-dev image, port 2020, two named
+# volumes for Postgres data and file storage). Verify the exact image tag,
+# volume mount paths, and any required environment variables against your
+# own `docker inspect` output on the container started by
+# `yarn twenty docker:start`, and adjust below before relying on this.
+
+services:
+  server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-app-dev-server
+    ports:
+      - "2020:2020"
+    volumes:
+      - twenty-app-dev-data:/app/data       # verify real path via docker inspect
+      - twenty-app-dev-storage:/app/storage # verify real path via docker inspect
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2020/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    depends_on:
+      server:
+        condition: service_healthy
+    environment:
+      # Points the Twenty CLI at the server service by its Compose network
+      # name instead of localhost, since they're in separate containers.
+      - TWENTY_SERVER_URL=http://server:2020
+    volumes:
+      # Mount source for live editing without rebuilding the image;
+      # remove this if you want a fully immutable build for the demo.
+      - ./src:/app/src
+    restart: unless-stopped
+
+volumes:
+  twenty-app-dev-data:
+  twenty-app-dev-storage:
