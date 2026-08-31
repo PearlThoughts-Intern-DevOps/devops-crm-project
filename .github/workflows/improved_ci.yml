@@ -1,0 +1,75 @@
+name: CI Improvements
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-improvements-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  
+  TWENTY_VERSION: 2.35.0
+
+jobs:
+  ci:
+    name: Validate application
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js and Yarn cache
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Verify Node.js and Yarn
+        run: |
+          node --version
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Dependency security audit
+        run: yarn npm audit --all --severity high
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      - name: Integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      - name: Build validation
+        run: yarn twenty dev:build
