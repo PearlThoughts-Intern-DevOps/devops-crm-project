@@ -18,8 +18,7 @@ export default definePageLayout({
       title: 'Overview',
       position: 0,
       icon: 'IconApps',
-      layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
-      widgets: [
+layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,      widgets: [
         {
           universalIdentifier: MAIN_PAGE_WIDGET_UNIVERSAL_IDENTIFIER,
           title: ' ',
