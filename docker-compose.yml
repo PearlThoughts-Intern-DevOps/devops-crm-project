@@ -1,0 +1,98 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: twenty-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-default}
+      POSTGRES_USER: ${POSTGRES_USER:-twenty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-twenty}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - twenty-network
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-twenty} -d ${POSTGRES_DB:-default}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - twenty-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  twenty:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    command: ["node", "/app/packages/twenty-server/dist/main.js"]
+
+    container_name: twenty-app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    environment:
+      SERVER_URL: ${SERVER_URL:-http://localhost:2020}
+      NODE_PORT: ${NODE_PORT:-2020}
+
+      PG_DATABASE_URL: postgres://${POSTGRES_USER:-twenty}:${POSTGRES_PASSWORD:-twenty}@postgres:5432/${POSTGRES_DB:-default}
+
+      REDIS_URL: redis://redis:6379
+
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+
+      APP_SECRET: ${APP_SECRET:-change-this-secret-in-production}
+
+      IS_BILLING_ENABLED: ${IS_BILLING_ENABLED:-false}
+
+      APPLICATION_LOG_DRIVER: ${APPLICATION_LOG_DRIVER:-CONSOLE}
+
+    ports:
+      - "2020:2020"
+
+    volumes:
+      - twenty_storage:/app/packages/twenty-server/.local-storage
+
+    networks:
+      - twenty-network
+
+
+networks:
+  twenty-network:
+    driver: bridge
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  twenty_storage:
