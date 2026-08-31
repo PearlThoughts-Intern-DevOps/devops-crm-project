@@ -1,34 +1,38 @@
-# My Twenty App
+## Docker Setup (Task 5)
 
-Describe your app in one or two sentences.
+This project can be built and run with Docker Compose — no local
+Node/Yarn installation required.
 
-## Features
+| File | What it is |
+|---|---|
+| [`Dockerfile`](./Dockerfile) | Multi-stage build for the app container: installs dependencies, runs as a non-root user, no exposed ports (the app syncs into the Twenty server rather than serving its own UI). |
+| [`docker-compose.yml`](./docker-compose.yml) | Defines two services: `server` (the Twenty platform itself, `twentycrm/twenty-app-dev` image, port 2020) and `app` (this project's own code, built from the Dockerfile above, syncing into `server`). |
+| [`.dockerignore`](./.dockerignore) | Excludes `node_modules`, `.git`, build artifacts, and `.env` files from the Docker build context. |
+| [`DOCKER_TASK_DOCS.md`](./dockerpdf.pdf) | Full documentation: architecture explanation, design decisions, testing steps, and issues faced. |
 
-List the top things your app does, for example:
+### Quick start
 
-- Feature one
-- Feature two
-- Feature three
+```bash
+docker compose build
+docker compose up
+```
 
-## Getting started
+Once both containers are running, open [http://localhost:2020](http://localhost:2020) — you should see the Twenty login page.
 
-Setup instructions live in [SETUP.md](SETUP.md).
+### Stopping
 
-## Publishing
+```bash
+docker compose down
+```
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+To also wipe stored workspace data:
+```bash
+docker compose down -v
+```
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
+### More detail
 
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+See [`DOCKER_TASK_DOCS.md`](./DOCKER_TASK_DOCS.md) for the full
+explanation of each file, how everything was tested, and issues
+encountered (including a pre-existing app bug found and fixed while
+testing the Docker sync).
