@@ -1,0 +1,17 @@
+node_modules
+.yarn/cache
+.yarn/install-state.gz
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+*.log
+.env
+.env.*
+!.env.example
+coverage
+dist
+build
+.vscode
+.idea
+.DS_Store

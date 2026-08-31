@@ -1,0 +1,91 @@
+# Improved CI pipeline for the devops-crm-project.
+# Runs automatically for pull requests and validates code quality,
+# dependencies, security, tests, and application build.
+
+name: CI Improvements
+
+# Trigger CI when a pull request is opened, updated, or reopened.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Grant the workflow only the permissions it actually needs.
+# The CI only needs to read repository contents.
+permissions:
+  contents: read
+
+# Cancel an older CI run when a newer commit is pushed to the same PR.
+# This avoids wasting runner resources on outdated commits.
+concurrency:
+  group: ci-improvements-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Version of the Twenty test environment used by integration tests.
+env:
+  TWENTY_VERSION: latest
+
+jobs:
+  ci:
+    name: CI Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the repository code onto the GitHub Actions runner.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Enable Corepack before setup-node so the correct Yarn version
+      # from package.json is available for dependency caching.
+      - name: Enable Corepack
+        run: corepack enable
+
+      # Use the Node.js version defined by the project's .nvmrc file.
+      # Yarn cache is enabled to speed up dependency installation.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      # Install exactly the dependencies defined by the lockfile.
+      # --immutable prevents CI from modifying yarn.lock.
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Check project dependencies for known security vulnerabilities.
+      # The workflow fails if the audit command reports a failure.
+      - name: Security audit
+        run: yarn npm audit --all
+
+      # Run Oxlint using the project's configured lint rules.
+      - name: Lint
+        run: yarn lint
+
+      # Run TypeScript type checking without generating output files.
+      - name: Typecheck
+        run: yarn typecheck
+
+      # Run the project's unit test suite.
+      - name: Unit tests
+        run: yarn test:unit
+
+      # Start an isolated Twenty test environment required by
+      # the integration test suite.
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      # Run integration tests against the temporary Twenty instance.
+      # The server URL and API key are provided by the previous step.
+      - name: Integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      # Build the application to verify that the project can
+      # successfully produce its expected application output.
+      - name: Build application
+        run: yarn twenty dev:build
