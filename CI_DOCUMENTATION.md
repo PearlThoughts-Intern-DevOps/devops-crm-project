@@ -85,4 +85,21 @@ yarn test:unit
 yarn test
 
 yarn twenty dev:build
+## Integration Test Troubleshooting
+
+During CI verification, the integration-test stage encountered a Twenty application synchronization validation error:
+
+`INVALID_PAGE_LAYOUT_WIDGET_DATA`
+
+The error indicated that the position layout mode `GRID` did not match the tab layout mode `VERTICAL_LIST`.
+
+The failure occurred during the Twenty development synchronization process in `src/__tests__/global-setup.ts`.
+
+A separate local test attempt also showed that the local Twenty server remote could require re-authentication:
+
+`Authentication failed on remote "local"`
+
+These issues are related to the Twenty development/test environment and existing application configuration rather than the CI workflow changes.
+
+The CI workflow intentionally allows these failures to propagate so that CI does not report a false successful build when tests cannot execute successfully.
 
