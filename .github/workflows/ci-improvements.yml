@@ -1,0 +1,70 @@
+name: CI Improvements
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+
+env:
+  TWENTY_VERSION: v2.37.0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Lint, Test, Build & Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Spawn Twenty test instance
+        id: twenty
+     
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@4423973633b6c5b62750214751ad394188dd0680
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Security audit
+        run: yarn npm audit --all --severity high
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      - name: Build application
+        run: yarn twenty dev:build
+
+      - name: Show failure reason
+        if: failure()
+        run: echo "CI failed - check the step above for the actual error"
