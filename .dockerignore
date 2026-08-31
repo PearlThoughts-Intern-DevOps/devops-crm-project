@@ -1,0 +1,16 @@
+node_modules
+.twenty/output
+.git
+.github
+.env
+.env.*
+*.log
+.DS_Store
+coverage
+dist
+build
+.vscode
+.idea
+README.md
+CLAUDE.md
+AGENTS.md

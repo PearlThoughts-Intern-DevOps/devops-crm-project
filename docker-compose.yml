@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-crm-task5-app:latest
+    container_name: devops-crm-task5-app
+    environment:
+      NODE_ENV: development
+      SERVER_URL: http://twenty-app-dev:2020
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+    volumes:
+      - app-data:/home/appuser/.twenty
+    networks:
+      - crm-network
+    restart: unless-stopped
+volumes:
+  app-data:
+networks:
+  crm-network:
+    external: true
+    name: devops-crm-project_default
