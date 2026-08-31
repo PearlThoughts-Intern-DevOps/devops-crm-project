@@ -102,4 +102,40 @@ A separate local test attempt also showed that the local Twenty server remote co
 These issues are related to the Twenty development/test environment and existing application configuration rather than the CI workflow changes.
 
 The CI workflow intentionally allows these failures to propagate so that CI does not report a false successful build when tests cannot execute successfully.
+## Issues Encountered During CI Verification
+
+### Page Layout Validation Error
+
+The initial CI integration test failed during Twenty application synchronization with:
+
+`INVALID_PAGE_LAYOUT_WIDGET_DATA`
+
+The page layout tab was configured with `VERTICAL_LIST` while the widget used a grid position.
+
+The tab layout mode was changed to:
+
+`PageLayoutTabLayoutMode.GRID`
+
+This made the tab layout compatible with the widget's `gridPosition` configuration.
+
+### Windows Resource Path Issue
+
+When running integration tests locally on Windows, the Twenty CLI generated resource paths containing Windows backslashes, resulting in:
+
+`INVALID_FRONT_COMPONENT_INPUT: Resource path must not contain backslashes`
+
+The application synchronized successfully when tested in WSL, where paths use forward slashes.
+
+The GitHub Actions workflow runs on `ubuntu-latest`, so the CI environment uses Linux-style paths.
+
+### Local Validation
+
+The following checks were successfully completed locally:
+
+- `yarn lint`
+- `yarn typecheck`
+- `yarn test:unit`
+- `yarn twenty dev:build`
+
+The full integration test command can require a running and authenticated Twenty development environment. On Windows, the Twenty CLI may additionally encounter path-separator issues because generated resource paths contain backslashes.
 
