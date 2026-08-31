@@ -1,0 +1,87 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  twenty:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PG_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      SERVER_URL: ${SERVER_URL}
+      SIGN_IN_PREFILLED: ${SIGN_IN_PREFILLED}
+      DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    ports:
+      - "${TWENTY_PORT}:3000"
+    volumes:
+      - twenty_data:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    depends_on:
+      twenty:
+        condition: service_healthy
+    environment:
+      TWENTY_API_URL: http://twenty:3000
+    networks:
+      - twenty-network
+    profiles:
+      - app
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  twenty_data:
