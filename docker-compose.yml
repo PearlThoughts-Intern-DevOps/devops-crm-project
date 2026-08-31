@@ -1,0 +1,188 @@
+name: twenty-crm
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  twenty-network:
+    driver: bridge
+    # Isolate all containers on a private internal network.
+    # Only the 'server' container publishes a port to the host.
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  db-data:
+    driver: local
+    # Persists PostgreSQL data across container restarts / upgrades
+  server-local-data:
+    driver: local
+    # Persists files uploaded to Twenty's local storage
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL 16 ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine            # Alpine variant = smaller image
+    container_name: twenty-db
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB:       ${PG_DATABASE_NAME:-default}
+      POSTGRES_USER:     ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:?err_PG_DATABASE_PASSWORD_required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DATABASE_USER:-postgres} -d ${PG_DATABASE_NAME:-default}"]
+      interval: 10s
+      timeout:  5s
+      retries:  10
+      start_period: 30s
+    # Resource limits — adjust to your host capacity
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ── Redis (job queue + cache) ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    # noeviction keeps keys in memory; workers will not silently drop jobs
+    command: ["redis-server", "--maxmemory-policy", "noeviction", "--maxmemory", "256mb"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout:  5s
+      retries:  10
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  # ── Twenty CRM Server (API + Frontend) ─────────────────────────────────────
+  server:
+    # Use the official pre-built image (change to your custom build below if needed)
+    image: twentycrm/twenty:${TAG:-latest}
+    # ── To build from source instead, replace 'image:' with: ──
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: runner
+    container_name: twenty-server
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    ports:
+      - "${HOST_PORT:-3000}:3000"       # Expose to host; configurable via .env
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    environment:
+      # ── Server ──────────────────────────────────────────────────────────────
+      NODE_PORT:   3000
+      NODE_ENV:    production
+      SERVER_URL:  ${SERVER_URL:-http://localhost:3000}
+
+      # ── Database ────────────────────────────────────────────────────────────
+      PG_DATABASE_URL: >-
+        postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?err}@db:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}
+
+      # ── Redis ────────────────────────────────────────────────────────────────
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+      # ── Security / Secrets ──────────────────────────────────────────────────
+      ENCRYPTION_KEY:          ${ENCRYPTION_KEY:?err_ENCRYPTION_KEY_required}
+      FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY:-}
+      APP_SECRET:              ${APP_SECRET:-}       # Legacy — keep for older DB
+
+      # ── Migrations / Cron ───────────────────────────────────────────────────
+      DISABLE_DB_MIGRATIONS:          ${DISABLE_DB_MIGRATIONS:-false}
+      DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION:-false}
+
+      # ── Storage ─────────────────────────────────────────────────────────────
+      STORAGE_TYPE:         ${STORAGE_TYPE:-local}
+      STORAGE_S3_REGION:    ${STORAGE_S3_REGION:-}
+      STORAGE_S3_NAME:      ${STORAGE_S3_NAME:-}
+      STORAGE_S3_ENDPOINT:  ${STORAGE_S3_ENDPOINT:-}
+
+      # ── Optional: Google OAuth / Calendar / Gmail ────────────────────────────
+      # MESSAGING_PROVIDER_GMAIL_ENABLED:   ${MESSAGING_PROVIDER_GMAIL_ENABLED:-false}
+      # CALENDAR_PROVIDER_GOOGLE_ENABLED:   ${CALENDAR_PROVIDER_GOOGLE_ENABLED:-false}
+      # AUTH_GOOGLE_CLIENT_ID:              ${AUTH_GOOGLE_CLIENT_ID:-}
+      # AUTH_GOOGLE_CLIENT_SECRET:          ${AUTH_GOOGLE_CLIENT_SECRET:-}
+      # AUTH_GOOGLE_CALLBACK_URL:           ${AUTH_GOOGLE_CALLBACK_URL:-}
+      # AUTH_GOOGLE_APIS_CALLBACK_URL:      ${AUTH_GOOGLE_APIS_CALLBACK_URL:-}
+
+      # ── Optional: SMTP email ─────────────────────────────────────────────────
+      # EMAIL_DRIVER:     ${EMAIL_DRIVER:-smtp}
+      # EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      # EMAIL_SMTP_HOST:  ${EMAIL_SMTP_HOST:-}
+      # EMAIL_SMTP_PORT:  ${EMAIL_SMTP_PORT:-587}
+      # EMAIL_SMTP_USER:  ${EMAIL_SMTP_USER:-}
+      # EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-}
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:3000/healthz || exit 1"]
+      interval: 15s
+      timeout:  10s
+      retries:  20
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  # ── Twenty CRM Worker (background jobs via BullMQ) ─────────────────────────
+  worker:
+    image: twentycrm/twenty:${TAG:-latest}
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   target: runner
+    container_name: twenty-worker
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    command: ["yarn", "worker:prod"]
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    environment:
+      NODE_ENV:    production
+      SERVER_URL:  ${SERVER_URL:-http://localhost:3000}
+
+      PG_DATABASE_URL: >-
+        postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:?err}@db:${PG_DATABASE_PORT:-5432}/${PG_DATABASE_NAME:-default}
+
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+      ENCRYPTION_KEY:          ${ENCRYPTION_KEY:?err_ENCRYPTION_KEY_required}
+      FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY:-}
+      APP_SECRET:              ${APP_SECRET:-}
+
+      STORAGE_TYPE:        ${STORAGE_TYPE:-local}
+      STORAGE_S3_REGION:   ${STORAGE_S3_REGION:-}
+      STORAGE_S3_NAME:     ${STORAGE_S3_NAME:-}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+
+      # Worker never runs migrations or registers crons — server owns those
+      DISABLE_DB_MIGRATIONS:          "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
