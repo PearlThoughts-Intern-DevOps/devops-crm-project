@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: default
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d default"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  twenty:
+    image: twentycrm/twenty:v2.35.0
+    container_name: twenty-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "2020:3000"
+    environment:
+      PG_DATABASE_URL: postgres://postgres:postgres@postgres:5432/default
+      REDIS_URL: redis://redis:6379
+      SERVER_URL: http://localhost:2020
+      FRONT_BASE_URL: http://localhost:2020
+      SIGN_IN_PREFILLED: "true"
+      IS_MULTIWORKSPACE_ENABLED: "false"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    volumes:
+      - twenty-data:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-custom-app
+    restart: unless-stopped
+    depends_on:
+      - twenty
+    environment:
+        TWENTY_API_URL: http://twenty:3000
+        TWENTY_SERVER_URL: http://twenty:3000
+    networks:
+      - twenty-network
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  twenty-data:
