@@ -1,0 +1,99 @@
+name: devops-crm-project
+
+services:
+  twenty-crm:
+    image: twentycrm/twenty:v2.35.0
+    container_name: twenty_crm_app
+
+    depends_on:
+      twenty-db:
+        condition: service_healthy
+      twenty-cache:
+        condition: service_healthy
+
+    environment:
+      NODE_PORT: "3000"
+      SERVER_URL: "http://localhost:3000"
+
+      PG_DATABASE_URL: "postgres://postgres:postgres@twenty-db:5432/default"
+      REDIS_URL: "redis://twenty-cache:6379"
+
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+
+      STORAGE_TYPE: "local"
+
+      APP_SECRET: "KDYeCPUQ5pmL/BWMC9jhYtVNXNHCMhiXa8EvrC3SG5Y="
+      ENCRYPTION_KEY: "/NPeUsqXeXOxYPZB1iQZSTACRvUkfAJbggbtGCUR9CY="
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - twenty-data:/app/packages/twenty-server/.local-storage
+
+    networks:
+      - crm-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:3000/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+    restart: unless-stopped
+
+  twenty-db:
+    image: postgres:16-alpine
+    container_name: twenty_crm_db
+
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost -d default"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - crm-network
+
+    restart: unless-stopped
+
+  twenty-cache:
+    image: redis:7-alpine
+    container_name: twenty_crm_cache
+
+    command:
+      - --maxmemory-policy
+      - noeviction
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - crm-network
+
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  twenty-data:
+  redis-data:
+
+networks:
+  crm-network:
+    driver: bridge

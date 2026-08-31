@@ -1,4 +1,4 @@
-name: CI
+name: CI-IMPROVEMENT
 
 on:
   pull_request:
@@ -8,18 +8,26 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
+  group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TWENTY_VERSION: latest
+
 jobs:
-  build-and-test:
-    name: Install, Lint, Test, Build
+  ci:
+    name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 20
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: ${{ env.TWENTY_VERSION }}
 
       - name: Enable Corepack
         run: corepack enable
@@ -27,26 +35,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: '.nvmrc'
           cache: yarn
 
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Run lint
+      - name: Lint
         run: yarn lint
 
-      - name: Run typecheck (project)
+      - name: Typecheck
         run: yarn typecheck
 
-      - name: Run typecheck (Twenty app definition)
-        run: yarn twenty dev:typecheck
-
-      - name: Run unit tests
+      - name: Unit tests
         run: yarn test:unit
 
-      - name: Run tests
+      - name: Integration tests
         run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
 
       - name: Build application
         run: yarn twenty dev:build
+
+      - name: Security audit
+        run: yarn npm audit --all --recursive --severity high
