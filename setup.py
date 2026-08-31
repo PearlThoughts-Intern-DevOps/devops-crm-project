@@ -3,9 +3,12 @@ import sys
 
 
 def run_command(command):
-    print(f"\nRunning: {' '.join(command)}")
+    print(f"\nRunning: {command}")
 
-    result = subprocess.run(command, shell=True)
+    result = subprocess.run(
+        command,
+        shell=True
+    )
 
     if result.returncode != 0:
         print("Command failed.")
@@ -13,16 +16,19 @@ def run_command(command):
 
 
 def main():
-    print("Starting CRM project setup...")
+    print("Starting Twenty CRM local setup...")
 
-    # Install project dependencies
-    run_command("corepack yarn install")
+    # Check Docker
+    run_command("docker --version")
 
-    # Start Docker/Twenty services
+    # Start Twenty CRM
     run_command("corepack yarn twenty docker:start")
 
-    print("\nCRM setup completed successfully!")
-    print("Open http://localhost:2020 in your browser.")
+    # Check Twenty CRM status
+    run_command("corepack yarn twenty docker:status")
+
+    print("\nTwenty CRM setup completed successfully!")
+    print("Open: http://localhost:2020")
 
 
 if __name__ == "__main__":

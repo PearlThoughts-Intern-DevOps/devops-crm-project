@@ -1,0 +1,15 @@
+node_modules
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+.git
+.github
+.twenty/output
+dist
+coverage
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
