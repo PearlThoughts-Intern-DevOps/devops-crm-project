@@ -4,7 +4,7 @@
 This task covers an exploration of two major cloud platforms — **Amazon Web Services (AWS)** and **Google Cloud Platform (GCP)** — including their core services, architecture concepts, and how they compare to one another.
 
 ## Contents
-- `AWS_GCP_Documentation.md` — Detailed documentation covering:
+- `awsgcp.pdf` — Detailed documentation covering:
   - Introduction to AWS and GCP
   - Top 8 AWS services explained (EC2, S3, Lambda, RDS, VPC, IAM, DynamoDB, CloudFormation/CodePipeline)
   - Top 8 GCP services explained (Compute Engine, Cloud Storage, GKE, BigQuery, Cloud Functions, Cloud SQL, IAM, Pub/Sub & Cloud Build)
