@@ -32,3 +32,47 @@ Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
 - [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
 - [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
 - [Discord](https://discord.gg/cx5n4Jzs57)
+
+## Docker Setup
+
+### Overview
+
+The application is containerized and can be run locally with Docker Compose.
+
+The Docker setup consists of four services:
+
+- **server** - Twenty CRM application server
+- **worker** - Twenty background job worker
+- **db** - PostgreSQL 16 database
+- **redis** - Redis 7 for caching and job queues
+
+The services communicate through the Docker Compose network.
+
+### Architecture
+
+```text
+                    Browser
+                       |
+                       | localhost:2020
+                       v
+              +-------------------+
+              |   Twenty Server   |
+              |   Port 3000       |
+              +---------+---------+
+                        |
+              +---------+---------+
+              |                   |
+              v                   v
+       +-------------+     +-------------+
+       | PostgreSQL  |     |    Redis    |
+       | postgres:16 |     |   redis:7   |
+       +-------------+     +-------------+
+              ^                   ^
+              |                   |
+              +---------+---------+
+                        |
+                        v
+                +---------------+
+                | Twenty Worker |
+                |  worker:prod  |
+                +---------------+

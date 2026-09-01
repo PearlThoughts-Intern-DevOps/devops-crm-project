@@ -1,0 +1,79 @@
+name: pearlthoughts-twenty
+
+services:
+  server:
+    image: pearlthoughts-twenty-app:task5
+    ports:
+      - "2020:3000"
+    environment:
+      NODE_PORT: 3000
+      SERVER_URL: http://localhost:2020
+      PG_DATABASE_URL: postgres://twenty:twenty@db:5432/default
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-task5-local-secret
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: pearlthoughts-twenty-app:task5
+    command: ["yarn", "worker:prod"]
+    environment:
+      PG_DATABASE_URL: postgres://twenty:twenty@db:5432/default
+      SERVER_URL: http://localhost:2020
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-task5-local-secret
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      server:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: twenty
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twenty -d default"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  server-local-data:
