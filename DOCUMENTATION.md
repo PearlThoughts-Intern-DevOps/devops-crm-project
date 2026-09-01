@@ -422,11 +422,11 @@ If any step fails, GitHub Actions marks the CI workflow as failed.
 
 ### Pull Request Verification
 
-A separate branch named `shradha-ci` was created for the CI implementation.
+A separate branch named `shradha-task5` was created for the CI implementation.
 
 The changes were pushed to GitHub and a Pull Request was created from:
 
-`shradha-ci` → `main`
+`shradha-task5` → `main`
 
 The GitHub Actions CI workflow was automatically triggered by the Pull Request.
 
