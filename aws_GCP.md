@@ -29,6 +29,7 @@ AWS is the world's most comprehensive and broadly adopted cloud platform, offeri
   - **Amazon CloudFront:** Fast content delivery network (CDN) service that securely delivers data, videos, applications, and APIs.
 - **Security & Identity:**
   - **AWS IAM (Identity and Access Management):** Securely manage access to AWS services and resources.
+  - **AWS Certificate Manager (ACM):** Provision, manage, and deploy public and private Secure Sockets Layer/Transport Layer Security (SSL/TLS) certificates.
 - **Management & Governance:**
   - **Amazon CloudWatch:** Monitoring and management service that provides data and actionable insights to monitor your applications and infrastructure.
 
