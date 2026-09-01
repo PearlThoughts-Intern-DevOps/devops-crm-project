@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  app:
+    image: twentycrm/twenty:latest
+    container_name: twenty-app
+    ports:
+      - "2020:3000"
+    environment:
+      - PG_DATABASE_URL=postgresql://twenty:twenty@postgres:5432/twenty
+      - REDIS_URL=redis://redis:6379
+      - SERVER_URL=http://localhost:2020
+      - FRONTEND_URL=http://localhost:2020
+      - ACCESS_TOKEN_SECRET=dev_access_token_secret_12345
+      - LOGIN_TOKEN_SECRET=dev_login_token_secret_12345
+      - REFRESH_TOKEN_SECRET=dev_refresh_token_secret_12345
+      - FILE_TOKEN_SECRET=dev_file_token_secret_12345
+      - ENCRYPTION_KEY=dev_encryption_key_12345678
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - twenty-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: twenty-postgres
+    environment:
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: twenty
+      POSTGRES_DB: twenty
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - twenty-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    networks:
+      - twenty-network
+
+volumes:
+  postgres_data:
+
+networks:
+  twenty-network:
+    driver: bridge
