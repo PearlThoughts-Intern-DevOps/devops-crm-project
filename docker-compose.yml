@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-crm:task5
+    container_name: devops-crm-app
+    environment:
+      TWENTY_API_URL: http://twenty:2020
+    depends_on:
+      twenty:
+        condition: service_healthy
+    networks:
+      - crm-network
+
+  twenty:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: devops-crm-twenty
+    environment:
+      NODE_ENV: development
+    ports:
+      - "8090:2020"
+    volumes:
+      - twenty-data:/data
+    restart: unless-stopped
+    networks:
+      - crm-network
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >
+          fetch('http://127.0.0.1:2020/')
+          .then(r => process.exit(r.ok ? 0 : 1))
+          .catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  twenty-data:
+
+networks:
+  crm-network:
+    driver: bridge
