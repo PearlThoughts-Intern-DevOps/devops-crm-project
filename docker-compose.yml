@@ -1,0 +1,30 @@
+services:
+  twenty-app:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-app
+    ports:
+      - "2020:2020"
+    environment:
+      NODE_PORT: 2020
+      SERVER_URL: http://localhost:2020
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-app-dev-secret-not-for-production
+      NODE_ENV: development
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+      IS_BILLING_ENABLED: "false"
+      SIGN_IN_PREFILLED: "true"
+      APPLICATION_LOG_DRIVER: CONSOLE
+    volumes:
+      - twenty-data:/data
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty-network
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  twenty-data:
+  twenty-storage:
