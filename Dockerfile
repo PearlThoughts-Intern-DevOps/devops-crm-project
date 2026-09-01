@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:24.5-bookworm-slim AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN yarn twenty dev:build
 
 
 # Stage 2: Runtime
-FROM node:24.5-bookworm-slim
+FROM node:24-alpine
 
 WORKDIR /app
 
