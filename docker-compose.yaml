@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    depends_on:
+      - twenty
+    networks:
+      - crm-network
+
+  twenty:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: devops-crm-twenty
+    environment:
+      NODE_ENV: development
+    ports:
+      - "2020:2020"
+    volumes:
+      - twenty-data:/data
+    restart: unless-stopped
+    networks:
+      - crm-network
+
+volumes:
+  twenty-data:
+
+networks:
+  crm-network:
+    driver: bridge

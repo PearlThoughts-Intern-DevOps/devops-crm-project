@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+
+# Git
+.git
+.github
+
+# Twenty generated files
+.twenty
+
+# Build and test output
+coverage
+dist
+build
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# TypeScript build artifacts
+*.tsbuildinfo
+
+# OS files
+.DS_Store
