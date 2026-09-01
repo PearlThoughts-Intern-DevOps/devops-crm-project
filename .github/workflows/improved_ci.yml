@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: ci-improvements-${{ github.ref }}
@@ -16,7 +15,7 @@ concurrency:
 
 env:
   
-  TWENTY_VERSION: 2.35.0
+  TWENTY_VERSION: latest
 
 jobs:
   ci:
@@ -26,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -34,7 +33,7 @@ jobs:
         run: corepack enable
 
       - name: Setup Node.js and Yarn cache
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: yarn
