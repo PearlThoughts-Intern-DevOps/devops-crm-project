@@ -1,34 +1,25 @@
-# My Twenty App
+# Task 6 — AWS & GCP Exploration
 
-Describe your app in one or two sentences.
+## Overview
+This task covers an exploration of two major cloud platforms — **Amazon Web Services (AWS)** and **Google Cloud Platform (GCP)** — including their core services, architecture concepts, and how they compare to one another.
 
-## Features
+## Contents
+- `awsgcp.pdf` — Detailed documentation covering:
+  - Introduction to AWS and GCP
+  - Top 8 AWS services explained (EC2, S3, Lambda, RDS, VPC, IAM, DynamoDB, CloudFormation/CodePipeline)
+  - Top 8 GCP services explained (Compute Engine, Cloud Storage, GKE, BigQuery, Cloud Functions, Cloud SQL, IAM, Pub/Sub & Cloud Build)
+  - A comparison summary table between AWS and GCP
+- Loom video walkthrough explaining the concepts covered in the documentation (linked in the PR)
 
-List the top things your app does, for example:
+## What Was Learned
+- How compute, storage, networking, database, and identity/access services work on both platforms
+- Key differences in strengths between AWS (breadth, enterprise maturity) and GCP (data analytics, ML/AI, Kubernetes)
+- Foundational cloud concepts: IAM, VPC/networking isolation, serverless computing, managed databases, and CI/CD tooling
 
-- Feature one
-- Feature two
-- Feature three
+## How to Review
+1. Read `AWS_GCP_Documentation.md` for the full write-up.
+2. Watch the linked Loom video for a verbal walkthrough of the same concepts.
 
-## Getting started
-
-Setup instructions live in [SETUP.md](SETUP.md).
-
-## Publishing
-
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
-
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+## Branch Info
+- Branch: `fiza-task6`
+- Base: `main`
