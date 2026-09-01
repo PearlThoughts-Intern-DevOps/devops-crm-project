@@ -1,0 +1,25 @@
+# Git and editor metadata
+.git
+.github
+.vscode
+.idea
+
+# Dependencies and generated output
+node_modules
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+
+dist
+.twenty/output
+coverage
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS files and logs
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,53 @@
+
+
+
+
+
+
+
+
+
+
+
+services:
+  twenty:
+    image: twentycrm/twenty-app-dev:${TWENTY_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      SERVER_URL: ${SERVER_URL:-http://localhost:2020}
+      APP_SECRET: ${APP_SECRET:-twenty-app-dev-secret-not-for-production}
+    ports:
+      - "${TWENTY_PORT:-2020}:2020"
+    volumes:
+      - twenty-storage:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:2020/healthz || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 40
+      start_period: 120s
+    networks:
+      - twenty
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    depends_on:
+      twenty:
+        condition: service_healthy
+    environment:
+      TWENTY_URL: ${TWENTY_URL:-http://twenty:2020}
+      TWENTY_API_KEY: ${TWENTY_API_KEY:-}
+      TWENTY_USERNAME: ${TWENTY_USERNAME:-tim@apple.dev}
+      TWENTY_PASSWORD: ${TWENTY_PASSWORD:-tim@apple.dev}
+    networks:
+      - twenty
+
+volumes:
+  twenty-storage:
+
+networks:
+  twenty:
+    driver: bridge
