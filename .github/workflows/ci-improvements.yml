@@ -1,8 +1,15 @@
 name: CI Improvements
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - saketh-task-4
+    
+  #pull_request:
+   # types: 
+    #  - opened
+     # - synchronize
+      #- reopened
 
 permissions:
   contents: read
