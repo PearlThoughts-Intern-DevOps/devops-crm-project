@@ -34,7 +34,11 @@ describe('CoreApiClient', () => {
         id: true,
       },
     });
-    expect(created.createNote.id).toBeDefined();
+    expect(created.createNote).toBeDefined();
+
+    if (!created.createNote) {
+      throw new Error('The note was not created');
+    }
 
     await client.mutation({
       destroyNote: {
