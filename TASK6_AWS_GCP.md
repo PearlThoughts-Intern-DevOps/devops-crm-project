@@ -724,3 +724,6 @@ Monitoring
 ```
 
 Learning both platforms helps in understanding cloud-agnostic DevOps concepts while also recognizing the provider-specific tools used to implement them.
+
+LOOM VIDEO LINK:-
+[https://www.loom.com/share/6d9fdc7679e94763876bbe69e5b843f9]
