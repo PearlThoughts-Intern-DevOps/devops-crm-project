@@ -1,3 +1,14 @@
+
+
+
+
+
+
+
+
+
+
+
 services:
   twenty:
     image: twentycrm/twenty-app-dev:${TWENTY_VERSION:-latest}
@@ -11,10 +22,10 @@ services:
       - twenty-storage:/app/storage
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:2020/healthz || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 20
-      start_period: 30s
+      interval: 30s
+      timeout: 15s
+      retries: 40
+      start_period: 120s
     networks:
       - twenty
 
@@ -27,8 +38,10 @@ services:
       twenty:
         condition: service_healthy
     environment:
-      TWENTY_URL: http://twenty:2020
+      TWENTY_URL: ${TWENTY_URL:-http://twenty:2020}
       TWENTY_API_KEY: ${TWENTY_API_KEY:-}
+      TWENTY_USERNAME: ${TWENTY_USERNAME:-tim@apple.dev}
+      TWENTY_PASSWORD: ${TWENTY_PASSWORD:-tim@apple.dev}
     networks:
       - twenty
 

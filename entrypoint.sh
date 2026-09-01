@@ -1,14 +1,17 @@
 #!/bin/sh
-set -e
+set -eu
 
-if [ -z "${TWENTY_URL}" ] || [ -z "${TWENTY_API_KEY}" ]; then
-  echo "TWENTY_URL and TWENTY_API_KEY must be set. Copy .env.example to .env and configure them."
-  exit 1
+TWENTY_URL="${TWENTY_URL:-http://twenty:2020}"
+
+if [ -z "${TWENTY_API_KEY:-}" ]; then
+  echo "TWENTY_API_KEY is empty. The app container will remain running in standby mode until a valid Twenty workspace API key is configured."
+  echo "To enable app sync, set TWENTY_API_KEY in the environment or in .env to a valid token from your Twenty workspace."
+  exec tail -f /dev/null
 fi
 
 echo "Waiting for Twenty CRM at ${TWENTY_URL}..."
 
-until curl -fsS "${TWENTY_URL}" > /dev/null; do
+until curl -fsS "${TWENTY_URL}/healthz" > /dev/null; do
   sleep 2
 done
 
