@@ -3,13 +3,13 @@ name: CI Improvements
 on:
   push:
     branches:
-      - saketh-task-4
+      - saketh-task-6
     
-  #pull_request:
-   # types: 
-    #  - opened
-     # - synchronize
-      #- reopened
+  pull_request:
+    types: 
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: read
