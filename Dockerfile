@@ -8,7 +8,6 @@ RUN corepack enable
 
 # Copy dependency files first
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn ./.yarn
 
 # Install dependencies
 RUN yarn install --immutable
@@ -35,7 +34,6 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/yarn.lock ./yarn.lock
 COPY --from=builder /app/.yarnrc.yml ./.yarnrc.yml
-COPY --from=builder /app/.yarn ./.yarn
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app ./
 
