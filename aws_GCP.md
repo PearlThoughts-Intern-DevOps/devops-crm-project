@@ -49,12 +49,23 @@ Google Cloud Platform (GCP) is a suite of cloud computing services that runs on 
 - **Compute:**
   - **Compute Engine:** Highly customizable virtual machines running in Google's data centers.
   - **Google Kubernetes Engine (GKE):** Managed, production-ready environment for running containerized applications. Google created Kubernetes, making GKE a premier offering.
+  - **Cloud Run:** Fully managed serverless platform for deploying and scaling containerized applications.
+  - **Artifact Registry:** Fully managed service to store, manage, and secure container images and language packages.
 - **Storage:**
   - **Cloud Storage:** Unstructured object storage, similar to AWS S3.
   - **Persistent Disk:** Block storage for Compute Engine.
+  - **Filestore:** High-performance, fully managed file storage for Google Cloud applications.
 - **Databases:**
   - **Cloud SQL:** Fully managed relational database service for MySQL, PostgreSQL, and SQL Server.
   - **Cloud Spanner:** Mission-critical, relational database service with global scale and strong consistency.
+- **Networking & Content Delivery:**
+  - **Cloud DNS:** Highly available and scalable domain name system (DNS) web service.
+  - **Cloud CDN:** Fast and reliable content delivery network (CDN) that accelerates web and video content delivery.
+- **Security & Identity:**
+  - **Cloud IAM (Identity and Access Management):** Fine-grained access control and visibility for managing Google Cloud resources.
+  - **Certificate Manager:** Acquire, manage, and deploy public and private TLS certificates.
+- **Management & Governance:**
+  - **Cloud Monitoring (Operations Suite):** Collects metrics, events, and metadata to gain insights into applications and infrastructure performance.
 - **Data Analytics & AI:**
   - **BigQuery:** Serverless, highly scalable, and cost-effective multi-cloud data warehouse designed for business agility.
   - **Vertex AI:** A unified machine learning platform to build, deploy, and scale AI models faster.
