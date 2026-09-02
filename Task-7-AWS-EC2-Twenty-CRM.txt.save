@@ -1,0 +1,354 @@
+TASK 7 – AWS EC2 DEPLOYMENT OF TWENTY CRM
+
+1. OBJECTIVE
+
+The objective of this task was to launch and configure an AWS EC2 instance, install Docker and Docker Compose, deploy the Twenty CRM application using Docker Compose, configure the required network access, and verify that the application is accessible from a web browser.
+
+2. AWS EC2 INSTANCE
+
+The application was deployed on an AWS EC2 instance running Amazon Linux 2023.
+
+Operating System: Amazon Linux 2023
+Deployment Platform: AWS EC2
+Application: Twenty CRM
+Application Port: 3000
+Protocol: HTTP
+Containerization: Docker
+Orchestration: Docker Compose
+
+3. SSH CONNECTION
+
+The EC2 instance was accessed remotely using SSH from Git Bash.
+
+Command used:
+
+ssh -i "jatin-crm-key.pem" ec2-user@<EC2-PUBLIC-DNS>
+
+After connecting, the operating system was verified using:
+
+cat /etc/os-release
+
+The output confirmed:
+
+NAME="Amazon Linux"
+VERSION="2023"
+ID="amzn"
+
+4. ROOT ACCESS
+
+Root access was obtained using:
+
+sudo su -
+
+The current user was verified using:
+
+whoami
+
+Output:
+
+root
+
+5. STORAGE VERIFICATION
+
+Disk space was checked using:
+
+df -h /
+
+The EC2 instance has an 8 GB root disk.
+
+During the deployment, disk usage was monitored because Docker images and the application repository require storage.
+
+6. DOCKER INSTALLATION AND VERIFICATION
+
+Docker was installed on the Amazon Linux EC2 instance.
+
+Docker version was checked using:
+
+docker --version
+
+Output:
+
+Docker version 25.0.14
+
+Running containers were checked using:
+
+docker ps
+
+7. DOCKER COMPOSE INSTALLATION
+Docker Compose was required to run the Twenty CRM application and its dependent services.
+
+Docker Compose was installed at:
+
+/usr/local/bin/docker-compose
+
+
+docker-compose --version
+
+Output:
+
+Docker Compose version v5.5.0
+
+8. TWENTY CRM REPOSITORY
+
+The Twenty CRM repository was cloned into the EC2 instance.
+
+Working directory:
+
+/opt/twenty
+
+Repository was cloned using:
+
+git clone https://github.com/twentyhq/twenty.git
+
+The repository was then entered using:
+
+cd twenty
+
+The Docker configuration was located at:
+
+packages/twenty-docker
+
+9. DOCKER COMPOSE CONFIGURATION
+
+The Docker Compose configuration was found at:
+
+/opt/twenty/twenty/packages/twenty-docker/docker-compose.yml
+
+The Docker Compose file contains the following services:
+
+1. Twenty CRM Server
+2. Twenty CRM Worker
+3. PostgreSQL Database
+4. Redis
+
+The Twenty CRM server uses port:
+
+3000
+
+10. ENVIRONMENT CONFIGURATION
+
+The example environment file was copied using:
+
+cp .env.example .env
+
+The .env file was configured with the required database, Redis, server URL, encryption keys, and local storage settings.
+
+Important configuration included:
+
+TAG=latest
+
+PG_DATABASE_USER=postgres
+PG_DATABASE_PASSWORD=<configured-password>
+PG_DATABASE_HOST=db
+PG_DATABASE_PORT=5432
+PG_DATABASE_NAME=default
+REDIS_URL=redis://redis:6379
+
+SERVER_URL=http://<EC2-PUBLIC-IP>:3000
+
+ENCRYPTION_KEY=<generated-key>
+FALLBACK_ENCRYPTION_KEY=<generated-key>
+
+STORAGE_TYPE=local
+
+11. ENCRYPTION KEY GENERATION
+
+Random encryption keys were generated using OpenSSL.
+
+Command used:
+
+openssl rand -base64 32
+
+Two random values were generated for:
+
+ENCRYPTION_KEY
+FALLBACK_ENCRYPTION_KEY
+
+12. DOCKER IMAGES
+
+The required Docker images were downloaded using:
+
+docker-compose pull
+
+The following images were downloaded:
+
+twentycrm/twenty:latest
+postgres:16
+redis:latest
+
+13. STARTING THE APPLICATION
+
+The Twenty CRM application was started using:
+
+docker-compose up -d
+
+Docker Compose created the required:
+
+- Docker network
+- PostgreSQL volume
+- Twenty server volume
+- PostgreSQL container
+- Redis container
+- Twenty server container
+
+14. VERIFYING CONTAINERS
+
+The container status was checked using:
+
+docker-compose ps
+
+The final status showed:
+
+twenty-db-1       Up (healthy)
+twenty-redis-1    Up (healthy)
+twenty-server-1   Up (healthy)
+
+The Twenty server exposed:
+
+0.0.0.0:3000->3000/tcp
+
+This confirmed that port 3000 was mapped from the EC2 host to the Twenty CRM server container.
+
+15. APPLICATION HEALTH CHECK
+
+The application health endpoint was tested using:
+
+curl http://localhost:3000/healthz
+
+The response was:
+
+{"status":"ok","info":{},"error":{},"details":{}}
+
+This confirmed that the Twenty CRM application was running successfully.
+
+16. AWS SECURITY GROUP CONFIGURATION
+
+The EC2 Security Group was configured to allow inbound TCP traffic on port 3000.
+
+Port:
+
+3000
+
+Protocol:
+
+TCP
+
+The port was required so that the Twenty CRM application could be accessed from outside the EC2 instance.
+
+17. BROWSER ACCESS
+
+After configuring port 3000 in the EC2 Security Group, the application was accessed through a web browser using:
+
+http://<EC2-PUBLIC-IP>:3000
+
+The Twenty CRM application opened successfully in the browser.
+
+This confirmed successful external access to the application.
+
+18. DOCKER STORAGE CHECK
+
+Docker storage was monitored using:
+
+docker system df
+
+Disk usage was also checked using:
+
+df -h /
+
+The Docker images used for the deployment included:
+
+twentycrm/twenty
+postgres
+redis
+
+The storage usage was monitored because the EC2 instance has limited disk capacity.
+
+19. ISSUES FACED AND SOLUTIONS
+
+Issue 1: Docker Compose package was not available.
+
+Command:
+
+dnf install docker-compose-plugin -y
+
+Result:
+
+No match for argument: docker-compose-plugin
+
+Solution:
+
+Docker Compose was manually downloaded and installed using the official Docker Compose release.
+
+Issue 2: Twenty CRM server initially became unhealthy.
+
+Command used to start the application:
+
+docker-compose up -d
+
+Initially, the server reported:
+
+dependency failed to start: container twenty-server-1 is unhealthy
+
+Solution:
+
+The server logs were checked using:
+
+docker-compose logs --tail=100 server
+
+The logs showed that the NestJS application successfully started.
+
+The container was then verified using:
+
+docker-compose ps
+
+The final status showed:
+
+twenty-server-1   Up (healthy)
+
+Issue 3: Application was not initially accessible externally.
+
+Solution:
+
+Port 3000 was added to the EC2 Security Group inbound rules.
+
+After this configuration, the application was successfully opened using the EC2 public IP and port 3000.
+
+20. FINAL VERIFICATION
+
+The following components were successfully completed:
+
+EC2 Instance                 - Completed
+Amazon Linux 2023            - Completed
+SSH Connection               - Completed
+Docker                       - Completed
+Docker Compose               - Completed
+Twenty CRM Repository        - Completed
+Twenty CRM Docker Image      - Completed
+PostgreSQL                   - Healthy
+Redis                        - Healthy
+Twenty CRM Server            - Healthy
+Port 3000                    - Configured
+Health Check                 - Successful
+Security Group               - Configured
+Browser Access               - Successful
+
+21. CONCLUSION
+
+Twenty CRM was successfully deployed on an AWS EC2 instance running Amazon Linux 2023.
+
+Docker Compose was used to run the Twenty CRM application along with PostgreSQL and Redis.
+
+The application health endpoint returned a successful response:
+
+{"status":"ok","info":{},"error":{},"details":{}}
+
+All required containers were verified as healthy.
+
+Port 3000 was configured in the EC2 Security Group, and the Twenty CRM application was successfully accessed through the EC2 public IP address.
+
+This task provided practical experience with AWS EC2, Amazon Linux, SSH, Docker, Docker Compose, PostgreSQL, Redis, Security Groups, application deployment, health checks, and troubleshooting.Version was verified using:
+The Docker Compose package was not available through the Amazon Linux DNF repository, so Docker Compose was downloaded manually.
+
+
+:wq
+x
