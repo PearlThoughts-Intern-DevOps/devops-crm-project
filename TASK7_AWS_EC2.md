@@ -19,7 +19,7 @@ The application was successfully built, started, verified through Docker health 
 | Setting | Value |
 |---|---|
 | Instance Name | `harish-twenty-crm` |
-| AMI | Ubuntu Server 24.04 LTS |
+| AMI | Ubuntu Server 26.04 LTS |
 | Instance Type | `t3.small` |
 | vCPUs | 2 |
 | RAM | 2 GiB |
@@ -100,10 +100,11 @@ This built the Docker images and started the required application services.
 ###
 
 5. AWS EC2 Concepts Understood
+
 AMI – Amazon Machine Image
 An AMI is a pre-configured template used to launch an EC2 instance.
 
-The Ubuntu Server 24.04 LTS AMI provided the operating system and the basic environment required to boot the server.
+The Ubuntu Server 26.04 LTS AMI provided the operating system and the basic environment required to boot the server.
 
 Instance Type – t3.small
 The EC2 instance type determines the available hardware resources, including CPU, RAM, and network performance.
@@ -239,7 +240,7 @@ The Twenty CRM setup screen loaded successfully.
                        v
               +------------------+
               |     AWS EC2      |
-              | Ubuntu 24.04 LTS |
+              | Ubuntu 26.04 LTS |
               +------------------+
                        |
                        v
@@ -345,6 +346,6 @@ This task provided practical experience in deploying a containerized application
 ###
 
 14. Loom Video
-Loom Video: [Paste Loom video link here]
+Loom Video: [https://www.loom.com/share/c95c01ec481d4a4ca7518d48405c25fd]
 
 
