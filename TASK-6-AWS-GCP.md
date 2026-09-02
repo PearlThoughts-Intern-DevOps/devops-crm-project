@@ -188,7 +188,7 @@ A Lambda function can automatically execute when a file is uploaded to an S3 buc
 
 It supports database engines such as:
 
-* MySQL
+* MySQL 
 * PostgreSQL
 * MariaDB
 * Oracle
