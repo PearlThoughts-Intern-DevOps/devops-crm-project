@@ -1,34 +1,36 @@
-# My Twenty App
+# Task 7 — AWS EC2 Deployment (Twenty CRM)
 
-Describe your app in one or two sentences.
+## Overview
+This task covers launching an AWS EC2 instance and deploying the **Twenty CRM** application on it using Docker, based on the Docker configuration created in Task 5.
 
-## Features
+## Environment Summary
+| Component | Configuration |
+|---|---|
+| Operating System (AMI) | Ubuntu Server 22.04 LTS |
+| Instance Type | t3.small |
+| Connection Method | SSH via Git Bash |
+| Container Runtime | Docker |
+| Application Deployed | Twenty CRM (open-source CRM) |
+| Deployment Method | Cloned repo containing Dockerfile / Docker Compose config |
 
-List the top things your app does, for example:
+## Steps Performed
+1. **Launch EC2 Instance** — Launched a `t3.small` Ubuntu 22.04 LTS instance via the AWS Console, created a key pair, and configured a security group allowing inbound traffic on port 22 (SSH) and the Twenty CRM application port.
+2. **Connect to Instance** — Connected via SSH using Git Bash with the downloaded `.pem` key.
+3. **Install Docker** — Installed `docker.io` and `docker-compose-plugin`, enabled the Docker service, and added the user to the `docker` group.
+4. **Clone Repository** — Cloned the `devops-crm-project` repository (Task 5 branch containing the Dockerfile) onto the instance.
+5. **Deploy Application** — Ran `docker compose up -d` to build and start the containers, and verified they were running with `docker ps`.
+6. **Access Application** — Accessed the Twenty CRM application using the EC2 instance's public IP and configured port.
 
-- Feature one
-- Feature two
-- Feature three
+## Key AWS EC2 Concepts Used
+- **AMI (Amazon Machine Image)** — Ubuntu 22.04 template used to launch the instance
+- **Instance Type** — Determines compute, memory, and network capacity
+- **Key Pair** — Public/private key used for secure SSH authentication
+- **Security Group** — Virtual firewall controlling inbound/outbound traffic
+- **Public IP** — Used to access the instance and running application externally
 
-## Getting started
+## Outcome
+The EC2 instance was successfully launched, connected to via SSH, and configured with Docker. The Twenty CRM repository was cloned and deployed using its Docker configuration, and the application ran successfully on the instance.
 
-Setup instructions live in [SETUP.md](SETUP.md).
-
-## Publishing
-
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
-
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+## Branch Info
+- Branch: `fiza-task7`
+- Base: `main`
