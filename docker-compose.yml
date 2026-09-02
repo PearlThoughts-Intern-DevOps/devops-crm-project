@@ -43,7 +43,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 180s  r
+      start_period: 180s  
 
 
   twenty-app:
