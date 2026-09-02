@@ -1,0 +1,76 @@
+services:
+
+  twenty:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm
+    ports:
+      - "2020:3000"
+    environment:
+      SERVER_URL: http://100.55.46.176:2020
+      PG_DATABASE_URL: postgres://twenty:twenty@postgres:5432/default
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-task5-secret
+      NODE_ENV: production
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+      IS_BILLING_ENABLED: "false"
+    volumes:
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - twenty-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: twenty-postgres
+    environment:
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: twenty
+      POSTGRES_DB: default
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twenty -d default"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-app
+    depends_on:
+      twenty:
+        condition: service_started
+    environment:
+      TWENTY_API_URL: http://twenty:3000
+    networks:
+      - twenty-network
+
+volumes:
+  twenty-storage:
+  postgres-data:
+
+networks:
+  twenty-network:
+    driver: bridge
