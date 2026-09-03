@@ -2,212 +2,225 @@
 
 **Name:** Vasundara Nadar  
 **Branch:** vasundara-task7  
-**Date:** 02 September 2026
+**Date:** 03 September 2026
 
 ## Objective
 
-The objective of this task was to launch an AWS EC2 instance, connect to it securely using SSH, configure the server environment, and deploy the Twenty CRM application.
+The objective of this task was to launch and configure an AWS EC2 instance, connect to it using SSH, install the required tools, deploy Twenty CRM, verify the application, and document the complete process.
 
 ## 1. EC2 Instance Configuration
 
-The EC2 instance was created with the following configuration:
-
 - Cloud Provider: AWS
-- Region: US East (N. Virginia) – us-east-1
-- AMI: Ubuntu 24.04 LTS
-- Instance Type: t3.small
+- Region: US East (N. Virginia) – `us-east-1`
+- AMI: Ubuntu 26.04 LTS
+- Instance Type: `t3.small`
 - vCPUs: 2
+- Memory: Approximately 2 GiB
 - Storage: 20 GiB
-- Key Pair: vasundara-crm-task7
-- Security Group: vasundara-task7-sg
-- Instance Name: vasundara-task7
+- Key Pair: `vasundara-task7-key`
+- Security Group: `launch-wizard-8`
+- Instance Name: `vasundara-task7`
+- Public IPv4: `100.53.126.254`
+- Private IPv4: `172.31.28.148`
 
 ## 2. Basic EC2 Concepts
 
 ### AMI
 
-An Amazon Machine Image (AMI) is a template used to create an EC2 instance. It contains the operating system and required configuration.
+An Amazon Machine Image (AMI) is a template used to create an EC2 instance. It contains the operating system and other required configuration used during instance launch.
 
 ### Instance Type
 
-The instance type determines the compute resources available to the server, including CPU and memory.
+The instance type determines the compute resources available to the EC2 instance.
 
-The t3.small instance provides 2 vCPUs and approximately 2 GiB of memory.
+The `t3.small` instance provides 2 vCPUs and approximately 2 GiB of memory.
 
 ### Key Pair
 
-A key pair is used for secure SSH authentication. The private .pem key was stored securely on the local machine and was not shared.
+A key pair is used for secure SSH authentication. The private `.pem` key is stored securely on the local machine and was used to connect to the EC2 instance.
 
 ### Security Group
 
-A security group acts as a virtual firewall for the EC2 instance. It controls inbound and outbound network traffic.
+A security group acts as a virtual firewall for the EC2 instance. The required inbound rules were configured for SSH, HTTP, HTTPS, and Twenty CRM on TCP port `2020`.
 
-## 3. SSH Connection
+## 3. Connecting to EC2 Using SSH
 
-The EC2 instance was connected from the local WSL terminal using the .pem key.
+The instance was accessed from the local WSL terminal using the `.pem` key:
 
-The key was copied to the local SSH directory and its permissions were restricted:
+```bash
+ssh -i ~/.ssh/vasundara-task7-key.pem ubuntu@100.53.126.254
+4. System Update
+sudo apt update && sudo apt upgrade -y
+5. Docker Installation
 
-    cp /mnt/c/Users/Appu/Downloads/vasundara-crm-task7.pem ~/.ssh/
-    chmod 400 ~/.ssh/vasundara-crm-task7.pem
+Docker was installed and enabled as a system service.
 
-SSH connection:
+sudo apt install docker.io -y
+sudo systemctl enable --now docker
+sudo docker --version
 
-    ssh -i ~/.ssh/vasundara-crm-task7.pem ubuntu@98.93.133.6
+Docker version:
 
-The SSH connection was successful.
-
-## 4. Server Setup
-
-The Ubuntu package list was updated and system packages were upgraded:
-
-    sudo apt update
-    sudo apt upgrade -y
-
-Installed and verified tools:
-
-    docker --version
-    docker compose version
-    git --version
-
-Docker was tested using:
-
-    sudo docker run hello-world
-
-The Docker test completed successfully.
-
-## 5. Docker Permission Configuration
-
-Initially, Docker required elevated privileges for the Ubuntu user.
+Docker version 29.1.3
 
 The user was added to the Docker group:
 
-    sudo usermod -aG docker $USER
+sudo usermod -aG docker $USER
+newgrp docker
 
-The new group membership was activated:
+Docker was verified using:
 
-    newgrp docker
+docker ps
+6. Git Installation
+sudo apt install git -y
+git --version
 
-Docker could then be used without sudo.
+Git version:
 
-## 6. Clone the Project
+git version 2.53.0
+7. Node.js and Yarn Setup
 
-The internship repository was cloned:
+NVM was installed using:
 
-    git clone https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
-    cd devops-crm-project
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.bashrc
 
-## 7. Node.js and Yarn Setup
+NVM version:
 
-The project requires Node.js and Yarn.
+0.40.3
 
-The project specifies Node.js version 24.5.0 in the .nvmrc file.
+Node.js 24.5.0 was installed:
 
-NVM was installed and Node.js 24.5.0 was configured.
+nvm install 24.5.0
 
-Corepack was enabled and Yarn was verified:
+Versions:
 
-    corepack enable
-    yarn --version
+Node.js: v24.5.0
+npm: 11.5.1
 
-Project dependencies were installed using:
+Yarn 4.13.0 was activated:
 
-    yarn install
+corepack enable
+corepack prepare yarn@4.13.0 --activate
+8. Clone the Project
+git clone https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+cd devops-crm-project
+9. Install Dependencies
+yarn install
 
-The installation completed successfully with peer-dependency warnings.
+The installation completed successfully with warnings.
 
-## 8. Twenty CRM Deployment
+10. Memory Optimization
 
-Twenty CRM was started using the project command:
+The t3.small instance has approximately 2 GiB of RAM. A 2 GiB swap file was created to reduce the risk of memory exhaustion during deployment.
 
-    yarn twenty docker:start
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
 
-The Docker container was created and the PostgreSQL database initialization and migration process started.
+Verification:
 
-The container status was checked using:
+free -h
 
-    docker ps -a
+The server showed:
 
-The Twenty CRM container was:
+Swap: 2.0Gi
+11. Twenty CRM Deployment
 
-    twenty-app-dev
+Twenty CRM was started using:
 
-The application port was mapped as:
+yarn twenty docker:start
 
-    0.0.0.0:2020 -> 2020/tcp
+The initial health check reported:
 
-## 9. Deployment Issue – Out of Memory
+Twenty server did not become healthy in time.
 
-During the Twenty CRM startup, the application did not remain available.
+The Docker logs were checked:
 
-The Docker container was investigated using:
+yarn twenty docker:logs
 
-    docker inspect --format='Status={{.State.Status}} ExitCode={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} RestartCount={{.RestartCount}} Error={{.State.Error}}' twenty-app-dev
+The logs confirmed that the NestJS server was running and processing background jobs.
 
-The result showed:
+The container was verified:
 
-    Status=running
-    ExitCode=0
-    OOMKilled=true
-    RestartCount=0
+docker ps
 
-The server memory was checked using:
+Output confirmed:
 
-    free -h
+twenty-app-dev
+Up
+0.0.0.0:2020->2020/tcp
+12. Application Verification
 
-The result showed approximately:
+The application was tested locally on the EC2 server:
 
-    Memory: 1.9 GiB
-    Available: approximately 18 MiB
-    Swap: 0 B
+curl -I http://localhost:2020
 
-## 10. Root Cause
+Response:
 
-The t3.small EC2 instance has limited memory.
+HTTP/1.1 200 OK
 
-Twenty CRM requires significant memory during startup. The EC2 instance had almost no available RAM and had no configured swap memory.
+This confirmed that Twenty CRM was running successfully.
 
-As a result, the operating system killed the Twenty CRM process because of memory pressure.
+13. Security Group Configuration
 
-The OOMKilled=true status confirmed the memory-related issue.
+The Security Group initially contained rules for SSH, HTTP, and HTTPS.
 
-## 11. Solution
+A custom TCP rule was added:
 
-A 2 GB swap file can be configured on the EC2 instance to provide additional virtual memory:
+Type: Custom TCP
+Port: 2020
+Source: 0.0.0.0/0
+Description: Twenty CRM
 
-    sudo fallocate -l 2G /swapfile
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
+After adding port 2020, the application became accessible externally.
 
-Swap can then be verified with:
+Twenty CRM was successfully opened at:
 
-    free -h
+http://100.53.126.254:2020
 
-After configuring swap, the Twenty CRM container can be restarted and tested again.
+The Companies page loaded successfully.
 
-## 12. Security Practices
+14. Issues and Solutions
+Issue 1 – Twenty CRM Health Check Timeout
 
-- The private .pem key must never be committed to Git.
-- AWS credentials must never be stored in source code.
-- SSH access should preferably be restricted to trusted IP addresses.
-- Only required ports should be opened in the security group.
-- Unused AWS resources should be stopped or terminated.
+The deployment command initially reported:
 
-## 13. Resource Cleanup
+Twenty server did not become healthy in time.
 
-After completing the testing, the EC2 instance was terminated as part of resource cleanup.
+Solution: Docker logs were checked using:
 
-Termination permanently removes the EC2 instance.
+yarn twenty docker:logs
 
-## Conclusion
+The logs confirmed that the application continued running successfully.
 
-In this task, I launched and configured an AWS EC2 instance using Ubuntu 24.04, t3.small instance type, 20 GiB storage, a key pair, and a security group.
+Issue 2 – Limited Memory
 
-I connected to the EC2 instance from my local WSL environment using SSH and the .pem key.
+The EC2 t3.small instance had approximately 2 GiB RAM and no swap.
 
-I configured Docker, Node.js, Yarn, and the project environment and attempted to deploy Twenty CRM.
+Solution: A 2 GiB swap file was created and activated.
 
-During deployment, the application encountered a memory limitation. Docker inspection showed OOMKilled=true, while the Linux memory check showed approximately 1.9 GiB RAM with only around 18 MiB available and no swap.
+Issue 3 – Application Not Accessible Externally
 
-The issue was identified as insufficient memory. The EC2 instance was subsequently terminated as part of resource cleanup.
+Twenty CRM returned HTTP/1.1 200 OK locally but could not initially be accessed from the browser.
+
+Solution: TCP port 2020 was added to the Security Group inbound rules.
+
+15. EC2 Cleanup
+
+The EC2 instance should be stopped or terminated after the required demonstration and verification are complete to avoid unnecessary AWS charges.
+
+16. Final Result
+
+The AWS EC2 instance was successfully launched and accessed using SSH.
+
+Docker, Git, Node.js, NVM, and Yarn were configured successfully.
+
+Twenty CRM was successfully deployed using Docker.
+
+The application returned HTTP/1.1 200 OK and was successfully accessed externally through port 2020.
+
+17. Conclusion
+
+This task provided practical experience with AWS EC2 provisioning, SSH authentication, Security Groups, Docker deployment, Linux administration, memory management, troubleshooting, and application verification.
