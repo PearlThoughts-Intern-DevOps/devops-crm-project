@@ -1,0 +1,15 @@
+# Don't copy these into the Docker build context
+
+node_modules
+.git
+.github
+.twenty/output
+.vscode
+.idea
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+*.md
+!README.md

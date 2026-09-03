@@ -1,0 +1,41 @@
+# docker-compose.yml for devops-crm-project
+#
+# Two services:
+#   twenty-crm - the actual CRM, using Twenty's own prebuilt dev image
+#                (this is the same image `yarn twenty docker:start` runs)
+#   app-dev    - builds my app (src/) and syncs it into twenty-crm,
+#                using the twenty-sdk CLI (this is what my Dockerfile runs)
+
+services:
+  twenty-crm:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-crm
+    restart: unless-stopped
+    ports:
+      - "2020:2020"
+    networks:
+      - twenty-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2020"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app-dev:
+    build: .
+    container_name: twenty-app-dev-sync
+    depends_on:
+      - twenty-crm
+    environment:
+      TWENTY_URL: http://twenty-crm:2020
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+    volumes:
+      
+      - ./src:/app/src
+    networks:
+      - twenty-network
+
+networks:
+  twenty-network:
