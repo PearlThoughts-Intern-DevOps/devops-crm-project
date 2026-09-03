@@ -1,19 +1,11 @@
 services:
-  app:
-    image: devops-crm-image:task5
-    container_name: devops-crm-app
-    environment:
-      TWENTY_API_URL: http://twenty:2020
-    depends_on:
-      - twenty
-    networks:
-      - crm-network
-
   twenty:
     image: twentycrm/twenty-app-dev:latest
     container_name: devops-crm-twenty
     environment:
       NODE_ENV: development
+      SERVER_URL: http://0.0.0.0:2020
+      NODE_PORT: 2020
     ports:
       - "8080:2020"
     volumes:
