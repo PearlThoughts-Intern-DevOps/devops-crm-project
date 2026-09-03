@@ -1,19 +1,17 @@
-import {
-  PageLayoutTabLayoutMode,
-  PageLayoutType,
-} from 'twenty-shared/types';
+import { definePageLayout, PageLayoutTabLayoutMode } from 'twenty-sdk/define';
 
 import {
+  APP_DISPLAY_NAME,
   MAIN_PAGE_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
   MAIN_PAGE_LAYOUT_TAB_UNIVERSAL_IDENTIFIER,
   MAIN_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
   MAIN_PAGE_WIDGET_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
 
-export const mainPageLayout = {
+export default definePageLayout({
   universalIdentifier: MAIN_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
-  name: 'Main Page',
-  type: PageLayoutType.STANDALONE_PAGE,
+  name: APP_DISPLAY_NAME,
+  type: 'STANDALONE_PAGE',
   tabs: [
     {
       universalIdentifier: MAIN_PAGE_LAYOUT_TAB_UNIVERSAL_IDENTIFIER,
@@ -35,5 +33,4 @@ export const mainPageLayout = {
       ],
     },
   ],
-};
-
+});
