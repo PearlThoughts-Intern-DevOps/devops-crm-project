@@ -343,4 +343,14 @@ Docker port mapping was working
 
 Twenty CRM was running successfully
 
+## EC2 Instance
 
+![EC2 Instance](images/instance.png)
+
+## Docker Deployment
+
+![Docker](images/docker.png)
+
+## Twenty CRM Dashboard
+
+![Twenty CRM Dashboard](images/dashboard.png)
