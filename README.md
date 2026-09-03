@@ -1,34 +1,26 @@
-# My Twenty App
+# Task 8 — AWS Observability
 
-Describe your app in one or two sentences.
+## Overview
+This task covers an exploration of AWS Observability services, their purpose, and their usage in monitoring, logging, tracing, and auditing cloud infrastructure and applications.
 
-## Features
+## Contents
+- `aws_observability.pdf` — Detailed documentation covering:
+  - Introduction to Observability and its importance in modern cloud architectures
+  - Top 10 AWS Observability services explained (CloudWatch, CloudTrail, X-Ray, CloudWatch Logs, CloudWatch Alarms, CloudWatch Dashboards, Amazon Managed Prometheus, Amazon Managed Grafana, AWS Health Dashboard, OpenSearch Service)
+  - A summary table mapping AWS services to the three pillars of observability (Metrics, Logs, Traces)
+- Loom video walkthrough explaining the concepts covered in the documentation (linked in the PR)
 
-List the top things your app does, for example:
+## What Was Learned
+- The three pillars of observability — metrics, logs, and traces — and how AWS services map to each
+- How CloudWatch serves as the central hub for monitoring, alarming, and dashboards across AWS resources
+- How AWS X-Ray enables distributed tracing across microservices and serverless applications
+- How CloudTrail supports auditing and governance by tracking API activity
+- How managed open-source-compatible tools (Amazon Managed Prometheus & Grafana) extend observability for containerized/Kubernetes workloads
 
-- Feature one
-- Feature two
-- Feature three
+## How to Review
+1. Read `aws_observability.pdf` for the full write-up.
+2. Watch the linked Loom video for a verbal walkthrough of the same concepts.
 
-## Getting started
-
-Setup instructions live in [SETUP.md](SETUP.md).
-
-## Publishing
-
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
-
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+## Branch Info
+- Branch: `fiza-task8`
+- Base: `main`
