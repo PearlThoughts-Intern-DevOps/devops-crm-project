@@ -18,7 +18,6 @@ FROM base AS dependencies
 
 # Copy package manifests and Yarn configuration
 COPY package.json yarn.lock .yarnrc.yml .nvmrc ./
-COPY .yarn/ ./.yarn/
 
 # Install dependencies deterministically
 RUN yarn install --immutable
