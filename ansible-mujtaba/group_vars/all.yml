@@ -1,0 +1,17 @@
+app_name: twenty-crm
+app_user: twenty
+app_group: twenty
+app_dir: /opt/twenty-crm
+app_port: 2020
+server_url: http://3.80.90.69:2020
+
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_branch: Mujtaba-Task-8-PT
+
+twenty_image: twentycrm/twenty:latest
+postgres_image: postgres:16
+redis_image: redis:7-alpine
+
+postgres_db: default
+postgres_user: twenty
+postgres_password: twenty

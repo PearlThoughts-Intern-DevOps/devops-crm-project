@@ -1,0 +1,143 @@
+---
+- name: Automate Twenty CRM setup
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Start and enable Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application group
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    - name: Mark repository as safe for Git
+      ansible.builtin.command:
+        cmd: git config --global --add safe.directory "{{ app_dir }}/source"
+      changed_when: false
+
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}/source"
+        version: "{{ repo_branch }}"
+        force: true
+
+    - name: Set application directory ownership
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: true
+
+    - name: Copy existing Dockerfile
+      ansible.builtin.copy:
+        src: "{{ app_dir }}/source/Dockerfile"
+        dest: "{{ app_dir }}/Dockerfile"
+        remote_src: true
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Remove missing Yarn directory from Dockerfile
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/source/Dockerfile"
+        regexp: '^COPY \.yarn \./\.yarn$'
+        replace: ''
+      notify: Restart Twenty CRM
+
+    - name: Remove missing Yarn directory from final image
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/source/Dockerfile"
+        regexp: '^COPY --from=builder /app/\.yarn \./\.yarn$'
+        replace: ''
+      notify: Restart Twenty CRM
+
+    - name: Set Docker build context
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/docker-compose.yml"
+        regexp: 'context: ./source/source'
+        replace: 'context: ./source'
+      notify: Restart Twenty CRM
+
+    - name: Set Twenty CRM server URL
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/docker-compose.yml"
+        regexp: 'SERVER_URL: http://localhost:2020'
+        replace: 'SERVER_URL: {{ server_url }}'
+      notify: Restart Twenty CRM  
+
+    - name: Create environment configuration from Jinja2 template
+      ansible.builtin.template:
+        src: twenty.env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM with Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      register: compose_result
+      changed_when: >-
+        'Created' in compose_result.stdout or
+        'Started' in compose_result.stdout or
+        'Recreated' in compose_result.stdout
+
+    - name: Wait for Twenty CRM port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 120
+
+    - name: Verify Twenty CRM is running
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      register: twenty_status
+      changed_when: false
+
+    - name: Display Twenty CRM status
+      ansible.builtin.debug:
+        var: twenty_status.stdout
+
+  handlers:
+
+    - import_tasks: handlers/main.yml
