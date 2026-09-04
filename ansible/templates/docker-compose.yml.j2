@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+      POSTGRES_DB: "{{ postgres_db }}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  twenty:
+    image: twentycrm/twenty:{{ twenty_tag }}
+    container_name: twenty-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "{{ app_port }}:3000"
+    environment:
+      NODE_PORT: 3000
+      PG_DATABASE_URL: "postgresql://{{ postgres_user }}:{{ postgres_password }}@postgres:5432/{{ postgres_db }}"
+      REDIS_URL: "{{ redis_url }}"
+      SERVER_URL: "{{ app_url }}"
+      SIGN_IN_PREFILLED: "true"
+      STORAGE_TYPE: "local"
+    volumes:
+      - twenty_data:/app/packages/twenty-server/.local-storage
+
+volumes:
+  postgres_data:
+  redis_data:
+  twenty_data:
