@@ -1,0 +1,15 @@
+---
+app_user: twenty
+app_group: twenty
+
+app_dir: /opt/twenty
+twenty_repo: https://github.com/twentyhq/twenty.git
+
+twenty_port: 3001
+twenty_tag: latest
+
+postgres_db: twenty
+postgres_user: twenty
+
+redis_image: redis:7-alpine
+postgres_image: postgres:16
