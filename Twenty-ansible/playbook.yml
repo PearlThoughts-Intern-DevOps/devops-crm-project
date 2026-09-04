@@ -1,0 +1,150 @@
+---
+- name: Automate Twenty CRM setup with Docker + Ansible
+  hosts: twenty
+  become: true
+
+  handlers:
+    - name: restart twenty crm
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_dir }}"
+        state: restarted
+      become: true
+      become_user: "{{ app_user }}"
+      listen: "restart twenty crm"
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [dependencies]
+
+    - name: Install base dependencies
+      ansible.builtin.apt:
+        name: [git, curl, ca-certificates, gnupg, python3-pip]
+        state: present
+      tags: [dependencies]
+
+    - name: Install Docker Engine and the Compose plugin
+      ansible.builtin.apt:
+        name: [docker.io, docker-compose-v2]
+        state: present
+      tags: [dependencies, docker]
+
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+      tags: [dependencies, docker]
+
+    - name: Create dedicated group for the app
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+      tags: [user]
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+      tags: [user]
+
+    - name: Create application home directory
+      ansible.builtin.file:
+        path: "{{ app_home }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+      tags: [dirs]
+
+
+    - name: Clone devops-crm-project
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        force: false
+      become: true
+      become_user: "{{ app_user }}"
+      register: repo_clone
+      tags: [clone]
+
+    - name: Place the Dockerfile for the app image
+      ansible.builtin.copy:
+        src: files/Dockerfile
+        dest: "{{ repo_dest }}/Dockerfile"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      become: true
+      become_user: "{{ app_user }}"
+      tags: [configure]
+
+    - name: Place the .dockerignore
+      ansible.builtin.copy:
+        src: files/.dockerignore
+        dest: "{{ repo_dest }}/.dockerignore"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      become: true
+      become_user: "{{ app_user }}"
+      tags: [configure]
+
+    - name: Template docker-compose.yml from variables
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ compose_dir }}/docker-compose.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      become: true
+      become_user: "{{ app_user }}"
+      notify: restart twenty crm
+      tags: [configure]
+
+    - name: Build and start the stack with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_dir }}"
+        state: present
+        build: never
+        pull: missing
+      become: true
+      become_user: "{{ app_user }}"
+      register: compose_result
+      tags: [deploy]
+
+    - name: Show what Compose changed
+      ansible.builtin.debug:
+        var: compose_result.changed
+      tags: [deploy]
+
+    - name: Wait for Twenty CRM to listen on {{ app_port }}
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 300
+      tags: [verify]
+
+    - name: Verify Twenty CRM responds over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}"
+        status_code: [200, 301, 302]
+        return_content: false
+      register: health_check
+      retries: 15
+      delay: 10
+      until: health_check.status in [200, 301, 302]
+      tags: [verify]
+
+    - name: Report final status
+      ansible.builtin.debug:
+        msg: "Twenty CRM is up — HTTP status {{ health_check.status }} at {{ server_url }}"
+      tags: [verify]

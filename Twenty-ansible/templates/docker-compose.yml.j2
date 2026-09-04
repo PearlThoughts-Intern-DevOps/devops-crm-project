@@ -1,0 +1,98 @@
+# {{ ansible_managed }}
+# Generated from group_vars/all.yml — do not edit by hand.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: twenty-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "{{ pg_database_password }}"
+      POSTGRES_DB: default
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: always
+    volumes:
+      - redis-data:/data
+
+  server:
+    image: "twentycrm/twenty:{{ twenty_tag }}"
+    container_name: twenty-server
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_PORT: "{{ app_port }}"
+      PG_DATABASE_URL: "postgres://postgres:{{ pg_database_password }}@db:5432/default"
+      REDIS_URL: "redis://redis:6379"
+      SERVER_URL: "{{ server_url }}"
+      APP_SECRET: "{{ access_token_secret }}"
+      ACCESS_TOKEN_SECRET: "{{ access_token_secret }}"
+      LOGIN_TOKEN_SECRET: "{{ login_token_secret }}"
+      REFRESH_TOKEN_SECRET: "{{ refresh_token_secret }}"
+      FILE_TOKEN_SECRET: "{{ file_token_secret }}"
+      STORAGE_TYPE: "{{ storage_type }}"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    volumes:
+      - server-data:/app/packages/twenty-server/.local-storage
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:{{ app_port }}/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+  worker:
+    image: "twentycrm/twenty:{{ twenty_tag }}"
+    container_name: twenty-worker
+    restart: always
+    command: ["yarn", "worker:prod"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_DATABASE_URL: "postgres://postgres:{{ pg_database_password }}@db:5432/default"
+      REDIS_URL: "redis://redis:6379"
+      APP_SECRET: "{{ access_token_secret }}"
+      ACCESS_TOKEN_SECRET: "{{ access_token_secret }}"
+      LOGIN_TOKEN_SECRET: "{{ login_token_secret }}"
+      REFRESH_TOKEN_SECRET: "{{ refresh_token_secret }}"
+      FILE_TOKEN_SECRET: "{{ file_token_secret }}"
+      STORAGE_TYPE: "{{ storage_type }}"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+    volumes:
+      - server-data:/app/packages/twenty-server/.local-storage
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    restart: "no"
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "2020:2020"
+    # NOTE: `yarn twenty dev` needs an authenticated session against `server`.
+    # First run: docker compose exec app yarn twenty login
+
+volumes:
+  db-data:
+  redis-data:
+  server-data:
