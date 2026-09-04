@@ -1,0 +1,16 @@
+---
+app_user: twentyapp
+app_group: twentyapp
+app_base_dir: /opt/twenty-crm
+app_repo_dir: "{{ app_base_dir }}/devops-crm-project"
+
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_branch: harish-task5
+
+pg_database_user: postgres
+pg_database_password: "change-me-please"
+pg_database_name: default
+twenty_version: latest
+twenty_port: 3000
+server_url: "http://localhost:{{ twenty_port }}"
+app_secret: "REPLACE_WITH_GENERATED_SECRET"

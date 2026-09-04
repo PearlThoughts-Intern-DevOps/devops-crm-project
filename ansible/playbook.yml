@@ -1,0 +1,156 @@
+---
+# playbook.yml
+# Automates the setup and deployment of Twenty CRM on a target host.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini playbook.yml
+
+- name: Automate Twenty CRM setup with Docker Compose
+  hosts: twenty_crm
+  become: true
+
+  vars_files:
+    - group_vars/all.yml
+
+  handlers:
+    - name: restart twenty crm
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_repo_dir }}"
+        state: restarted
+      become: true
+      become_user: "{{ app_user }}"
+
+  tasks:
+    # ------------------------------------------------------------------
+    # 1. Install required dependencies and Docker
+    # ------------------------------------------------------------------
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install base dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - gnupg
+        state: present
+
+    # Note: docker.io was intentionally removed here. On systems that
+    # already have Docker CE installed (as this target did), installing
+    # docker.io alongside it causes a package conflict. Only the compose
+    # plugin is installed explicitly; Docker itself is assumed present
+    # or installed separately depending on the target OS.
+    - name: Install Docker Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    # Installed via apt rather than pip, since newer Debian/Ubuntu
+    # systems block system-wide pip installs by default (PEP 668 /
+    # "externally-managed-environment").
+    - name: Install Docker Python SDK
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
+
+    # ------------------------------------------------------------------
+    # 2. Create a dedicated application user
+    # ------------------------------------------------------------------
+    - name: Create application group
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    # ------------------------------------------------------------------
+    # 3. Create required directories with correct permissions
+    # ------------------------------------------------------------------
+    - name: Create application base directory
+      ansible.builtin.file:
+        path: "{{ app_base_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    # ------------------------------------------------------------------
+    # 4. Clone the Twenty CRM repository
+    # ------------------------------------------------------------------
+    - name: Clone devops-crm-project repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_repo_dir }}"
+        version: "{{ repo_branch }}"
+        force: false
+      become: true
+      become_user: "{{ app_user }}"
+      register: repo_clone_result
+
+    - name: Ensure repository is owned by the application user
+      ansible.builtin.file:
+        path: "{{ app_repo_dir }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: true
+
+    # ------------------------------------------------------------------
+    # 5. Configure the application via a Jinja2 template
+    # ------------------------------------------------------------------
+    - name: Render .env file from template
+      ansible.builtin.template:
+        src: templates/env.j2
+        dest: "{{ app_repo_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+      notify: restart twenty crm
+      register: env_render_result
+
+    # ------------------------------------------------------------------
+    # 6. Start Twenty CRM using Docker Compose
+    # ------------------------------------------------------------------
+    - name: Start Twenty CRM stack with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_repo_dir }}"
+        state: present
+        build: always
+      become: true
+      become_user: "{{ app_user }}"
+      register: compose_result
+
+    # ------------------------------------------------------------------
+    # 7. Verify Twenty CRM is running successfully
+    # ------------------------------------------------------------------
+    - name: Wait for Twenty CRM to respond on its port
+      ansible.builtin.uri:
+        url: "http://localhost:{{ twenty_port }}"
+        status_code: [200, 302]
+      register: health_check
+      retries: 20
+      delay: 10
+      until: health_check.status in [200, 302]
+
+    - name: Report final status
+      ansible.builtin.debug:
+        msg: >-
+          Twenty CRM is up and responding at {{ server_url }}
+          (HTTP {{ health_check.status }})
