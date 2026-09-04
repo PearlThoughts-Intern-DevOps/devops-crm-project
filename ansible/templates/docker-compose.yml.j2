@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "{{ pg_database_user }}"
+      POSTGRES_PASSWORD: "{{ pg_database_password }}"
+      POSTGRES_DB: "{{ pg_database_name }}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ pg_database_user }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  twenty:
+    image: twentycrm/twenty:latest
+    restart: unless-stopped
+    ports:
+      - "{{ app_port }}:3000"
+    environment:
+      NODE_PORT: 3000
+      PORT: 3000
+      SERVER_URL: "{{ server_url }}"
+      FRONT_BASE_URL: "{{ server_url }}"
+      PG_DATABASE_URL: "postgresql://{{ pg_database_user }}:{{ pg_database_password }}@{{ pg_database_host }}:{{ pg_database_port }}/{{ pg_database_name }}"
+      REDIS_URL: "{{ redis_url }}"
+      ENABLE_DB_MIGRATIONS: "true"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+      FALLBACK_ENCRYPTION_KEY: "{{ fallback_encryption_key }}"
+      APP_SECRET: "{{ app_secret }}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
