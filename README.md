@@ -26,7 +26,7 @@ devops-crm-project/
 │   ├── docker-compose.yml.j2 — Jinja2 template that renders the Docker Compose stack
 │   └── playbook.yml          — main playbook: all tasks + the restart handler
 └── Screenshots/            — proof of playbook run, idempotency check, and verification
-└── Ansible_Documentation/      - Documetnation of complete procedures
+└── Ansible_Documentation/      - Documentation of complete procedures
 
 ```
 
