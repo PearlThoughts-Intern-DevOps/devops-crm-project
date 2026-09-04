@@ -1,0 +1,18 @@
+---
+app_user: twenty
+app_group: twenty
+
+app_dir: /opt/twenty-crm
+repo_dest: /opt/twenty-crm/twenty-src
+repo_url: https://github.com/twentyhq/twenty.git
+repo_version: main
+
+twenty_image_tag: latest
+twenty_port: 3000
+
+postgres_user: twenty
+postgres_password: "TwentyStrongPass123!"
+postgres_db: twenty
+
+app_secret: "kdkloud_twenty_lab_secret_change_me_123456"
+server_url: "http://{{ ansible_host }}:{{ twenty_port }}"

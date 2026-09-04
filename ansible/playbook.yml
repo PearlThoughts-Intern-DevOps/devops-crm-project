@@ -1,0 +1,183 @@
+---
+- name: Automate Twenty CRM setup with Docker
+  hosts: twenty_crm
+  become: true
+  vars_files:
+    - group_vars/all.yml
+
+  handlers:
+    - name: restart twenty crm
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: restarted
+      become: true
+      become_user: "{{ app_user }}"
+
+  tasks:
+    # 1. Dependencies
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install base dependencies
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+          - python3-pip
+        state: present
+
+    # 2. Docker install
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+
+    - name: Get dpkg architecture
+      command: dpkg --print-architecture
+      register: dpkg_arch
+      changed_when: false
+
+    - name: Add Docker apt repository
+      apt_repository:
+        repo: "deb [arch={{ dpkg_arch.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker Engine and Compose plugin
+      apt:
+        update_cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Install Docker Python SDK (needed for docker_compose_v2 module)
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Ensure Docker service is enabled and running
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    # 3. Application user
+    - name: Create application group
+      group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Ensure ansible remote_tmp exists with correct ownership
+      file:
+        path: "/home/{{ app_user }}/.ansible/tmp"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0700"
+        recurse: true
+
+    # 4. Directories & permissions
+    - name: Create compose project directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    - name: Create repo clone directory
+      file:
+        path: "{{ repo_dest }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    # 5. Clone Twenty CRM repository
+    - name: Clone Twenty CRM repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_version }}"
+        depth: 1
+      become: true
+      become_user: "{{ app_user }}"
+      register: repo_clone
+
+    # 6. Configure application via Jinja2 templates
+    - name: Template .env file
+      template:
+        src: templates/env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+      notify: restart twenty crm
+
+    - name: Template docker-compose.yml
+      template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      notify: restart twenty crm
+
+    # 7. Start Twenty CRM using Docker Compose
+    - name: Start Twenty CRM containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: present
+        pull: missing
+      become: true
+      become_user: "{{ app_user }}"
+      register: compose_result
+
+    - name: Wait for Twenty CRM server port to be open
+      wait_for:
+        host: "127.0.0.1"
+        port: "{{ twenty_port }}"
+        delay: 10
+        timeout: 180
+
+    # 8. Verify Twenty CRM is running
+    - name: Verify Twenty CRM HTTP response
+      uri:
+        url: "http://127.0.0.1:{{ twenty_port }}/healthz"
+        status_code: 200
+        return_content: false
+      register: health_check
+      retries: 10
+      delay: 10
+      until: health_check.status is defined and health_check.status == 200
+
+    - name: Show verification result
+      debug:
+        msg: "Twenty CRM responded with HTTP status {{ health_check.status }}"
