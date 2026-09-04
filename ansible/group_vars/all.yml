@@ -1,0 +1,16 @@
+---
+app_user: twenty
+app_group: twenty
+
+app_dir: /opt/twenty-crm
+
+repo_url: https://github.com/Mohsin-Khaled/devops-crm-project.git
+repo_version: mohsin-khaled-task-5
+
+twenty_image: "twentycrm/twenty-app-dev:latest"
+twenty_port: 2020
+twenty_container_name: twenty-crm-task9
+deployer_container_name: twenty-app-deployer
+
+twenty_api_key: "{{ lookup('env', 'TWENTY_API_KEY') }}"
+
