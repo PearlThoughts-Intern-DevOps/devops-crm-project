@@ -2,15 +2,30 @@
 app_user: twentyapp
 app_group: twentyapp
 app_base_dir: /opt/twenty-crm
-app_repo_dir: "{{ app_base_dir }}/devops-crm-project"
+twenty_repo_dir: "{{ app_base_dir }}/twenty"
 
-repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
-repo_branch: harish-task5
+repo_url: https://github.com/twentyhq/twenty.git
+repo_branch: main
 
 pg_database_user: postgres
-pg_database_password: "change-me-please"
+pg_database_password: "SuperSecureDatabasePassword123!"
 pg_database_name: default
+pg_database_host: db
+pg_database_port: 5432
+
 twenty_version: latest
 twenty_port: 3000
 server_url: "http://localhost:{{ twenty_port }}"
-app_secret: "REPLACE_WITH_GENERATED_SECRET"
+
+# Must be at least 32 characters for Twenty CRM to start successfully
+app_secret: "ThisIsASecretKeyThatIsAtLeast32CharactersLong!"
+encryption_key: "ThisIsAnEncryptionKeyThatIsAtLeast32Chars!"
+fallback_encryption_key: "FallbackEncryptionKeyThatIsAtLeast32Chars!"
+
+storage_type: local
+storage_s3_region: "us-east-1"
+storage_s3_name: "twenty-storage"
+storage_s3_endpoint: "http://localhost:9000"
+disable_db_migrations: "false"
+disable_cron_jobs_registration: "false"
+redis_url: "redis://redis:6379"
