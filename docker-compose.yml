@@ -1,0 +1,55 @@
+services:
+  # The Twenty CRM server this app's "app: dev" sync process connects to.
+  # This is a vendor-provided all-in-one dev image (bundles the server and
+  # its own database), the same one used for local (non-Compose) dev via
+  # `yarn twenty docker:start`. NOTE: the exact internal data path this
+  # image writes to isn't publicly documented -- before relying on the
+  # volume below for real data persistence, confirm the real mount point
+  # with:
+  #   docker inspect twentycrm/twenty-app-dev:latest --format '{{json .Config.Volumes}}'
+  # and adjust the right-hand side of the volume mapping below to match.
+  twenty:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-crm-server
+    ports:
+      - "2020:2020"
+    volumes:
+      - twenty-server-data:/app/data
+    networks:
+      - crm-net
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    depends_on:
+      - twenty
+    # The twenty CLI defaults to checking http://localhost:2020 for the
+    # server it syncs into -- it does not read a custom server-URL
+    # environment variable (confirmed by testing; TWENTY_SERVER_URL below
+    # was an earlier assumption that turned out to be wrong). Since
+    # "localhost" inside a container normally refers to that container
+    # itself, not a sibling container, we make `app` share the `twenty`
+    # container's network namespace instead. This makes `localhost:2020`
+    # inside `app` genuinely resolve to the twenty server, matching the
+    # same behavior as running both processes on the same host machine
+    # (as in local, non-Docker dev).
+    network_mode: "service:twenty"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Persists the twenty CLI's authenticated remote config
+      # (~/.twenty/config.json, since the container's HOME is /app) across
+      # restarts and rebuilds. On first run, authenticate once with:
+      #   docker compose exec app yarn twenty remote:add
+      - twenty-cli-config:/app/.twenty
+
+networks:
+  crm-net:
+    driver: bridge
+
+volumes:
+  twenty-server-data:
+  twenty-cli-config:
