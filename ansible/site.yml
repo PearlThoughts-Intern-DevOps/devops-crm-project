@@ -1,0 +1,104 @@
+---
+- name: Deploy Twenty CRM using Ansible
+  hosts: twenty
+  become: true
+
+  tasks:
+
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: true
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Create application data directory
+      ansible.builtin.file:
+        path: "{{ app_data_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ twenty_repo }}"
+        dest: "{{ app_dir }}/repository"
+        version: "{{ twenty_version }}"
+        update: true
+      become_user: "{{ app_user }}"
+
+    - name: Create Docker Compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ app_dir }}/repository/docker-compose.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}/repository"
+      register: compose_result
+      changed_when: "'Started' in compose_result.stdout or 'Created' in compose_result.stdout"
+
+    - name: Wait for Twenty CRM
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ twenty_port }}"
+        delay: 10
+        timeout: 120
+
+    - name: Verify Twenty CRM health
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_port }}/healthz"
+        status_code: 200
+      register: health_result
+      retries: 10
+      delay: 5
+      until: health_result.status == 200
+
+    - name: Display successful deployment
+      ansible.builtin.debug:
+        msg: "Twenty CRM is running successfully on port {{ twenty_port }}"
+
+  handlers:
+
+    - name: Restart Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose restart
+        chdir: "{{ app_dir }}/repository"
