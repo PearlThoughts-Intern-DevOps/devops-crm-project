@@ -3,6 +3,7 @@
 **Name:** Harish 
 **Date:** 4 September 2026 
 **Task:** Automate the deployment and configuration of Twenty CRM using Ansible and Docker Compose.
+**Loom link:**[https://www.loom.com/share/18f5bf73035b4e3897a41df2ac40c887]
 
 ## 1. Objective
 
@@ -173,11 +174,13 @@ Update system packages and install prerequisites:
 ```
 sudo apt update && sudo apt install -y ansible git
 
+
 ```
 
 Clone the project repository:
 ```
-sudo apt update && sudo apt install -y ansible git
+git clone --branch harish-task9 https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+cd devops-crm-project/ansible
 ```
 Execute the playbook:
 
