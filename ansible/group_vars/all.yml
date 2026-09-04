@@ -1,0 +1,22 @@
+app_user: twenty
+app_group: twenty
+
+app_dir: /opt/twenty
+
+repo_url: "https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git"
+repo_version: "main"
+
+twenty_version: "v2.35.0"
+
+twenty_port: 3000
+host_port: 3000
+
+compose_project_name: twenty
+
+postgres_db: default
+postgres_user: postgres
+postgres_password: "twenty-postgres-password"
+
+redis_url: "redis://redis:6379"
+
+app_secret: "twenty-task9-demo-secret-change-me"
