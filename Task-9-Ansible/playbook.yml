@@ -1,0 +1,159 @@
+---
+- name: Deploy Twenty CRM with Ansible
+  hosts: twenty_hosts
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - group_vars.yml
+
+  handlers:
+    - name: Restart Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: restarted
+
+  tasks:
+
+    # ---------------------------------------------------------
+    # 1. Install required system packages
+    # ---------------------------------------------------------
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    # ---------------------------------------------------------
+    # 2. Start Docker
+    # ---------------------------------------------------------
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    # ---------------------------------------------------------
+    # 3. Create dedicated application group
+    # ---------------------------------------------------------
+    - name: Create Twenty application group
+      ansible.builtin.group:
+        name: "{{ twenty_group }}"
+        state: present
+
+    # ---------------------------------------------------------
+    # 4. Create dedicated application user
+    # ---------------------------------------------------------
+    - name: Create Twenty application user
+      ansible.builtin.user:
+        name: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        groups:
+          - docker
+        append: true
+        create_home: true
+        home: "{{ twenty_home }}"
+        shell: /bin/bash
+        state: present
+
+    # ---------------------------------------------------------
+    # 5. Create application directory
+    # ---------------------------------------------------------
+    - name: Create Twenty application directory
+      ansible.builtin.file:
+        path: "{{ twenty_app_dir }}"
+        state: directory
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        mode: "0755"
+
+    # ---------------------------------------------------------
+    # 6. Allow Git to manage the application repository
+    # ---------------------------------------------------------
+    - name: Check Git safe directory configuration
+      ansible.builtin.command:
+        cmd: git config --system --get-all safe.directory
+      register: git_safe_directories
+      changed_when: false
+      failed_when: false
+
+    - name: Add Twenty repository to Git safe directories
+      ansible.builtin.command:
+        cmd: git config --system --add safe.directory "{{ twenty_app_dir }}/source"
+      when: twenty_app_dir + "/source" not in git_safe_directories.stdout_lines
+
+    # ---------------------------------------------------------
+    # 7. Clone Twenty CRM repository
+    # ---------------------------------------------------------
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ twenty_repo }}"
+        dest: "{{ twenty_app_dir }}/source"
+        version: "{{ twenty_repo_version }}"
+        update: true
+        force: false
+
+    - name: Set Twenty repository directory ownership
+      ansible.builtin.file:
+        path: "{{ twenty_app_dir }}/source"
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        state: directory
+
+    # ---------------------------------------------------------
+    # 8. Create Docker Compose configuration
+    # ---------------------------------------------------------
+    - name: Deploy Docker Compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ twenty_app_dir }}/docker-compose.yml"
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    # ---------------------------------------------------------
+    # 9. Create environment configuration
+    # ---------------------------------------------------------
+    - name: Deploy Twenty environment configuration
+      ansible.builtin.template:
+        src: .env.j2
+        dest: "{{ twenty_app_dir }}/.env"
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    # ---------------------------------------------------------
+    # 10. Start Twenty CRM
+    # ---------------------------------------------------------
+    - name: Start Twenty CRM with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: present
+        pull: missing
+
+    # ---------------------------------------------------------
+    # 11. Wait for Twenty CRM to become healthy
+    # ---------------------------------------------------------
+    - name: Wait for Twenty CRM to become healthy
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_port }}/healthz"
+        method: GET
+        status_code: 200
+      register: twenty_health
+      retries: 30
+      delay: 5
+      until: twenty_health.status == 200
+
+    # ---------------------------------------------------------
+    # 12. Display successful deployment
+    # ---------------------------------------------------------
+    - name: Twenty CRM deployment successful
+      ansible.builtin.debug:
+        msg: "Twenty CRM is running successfully on port {{ twenty_port }}"
