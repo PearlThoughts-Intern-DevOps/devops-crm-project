@@ -1,0 +1,18 @@
+---
+app_name: twenty
+app_user: twenty
+app_dir: /opt/twenty
+
+app_port: 2020
+
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_branch: main
+
+docker_image: twentycrm/twenty-app-dev:latest
+
+postgres_volume: twenty-app-dev-data
+storage_volume: twenty-app-dev-storage
+
+server_url: "http://localhost:2020"
+app_version: "v2.37.5"
+app_secret: "twenty-app-dev-secret-not-for-production"
