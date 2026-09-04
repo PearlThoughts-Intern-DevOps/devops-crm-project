@@ -1,0 +1,82 @@
+name: twenty
+
+services:
+
+  server:
+    image: twentycrm/twenty:latest
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      - "{{ app_port }}:3000"
+    environment:
+      NODE_PORT: 3000
+      PG_DATABASE_URL: "postgres://{{ postgres_user }}:{{ postgres_password }}@db:5432/{{ postgres_db }}"
+      SERVER_URL: "http://localhost:{{ app_port }}"
+      REDIS_URL: "redis://redis:{{ redis_port }}"
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+      STORAGE_TYPE: "local"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+      FALLBACK_ENCRYPTION_KEY: "{{ encryption_key }}"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: always
+
+  worker:
+    image: twentycrm/twenty:latest
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    command: ["yarn", "worker:prod"]
+    environment:
+      PG_DATABASE_URL: "postgres://{{ postgres_user }}:{{ postgres_password }}@db:5432/{{ postgres_db }}"
+      SERVER_URL: "http://localhost:{{ app_port }}"
+      REDIS_URL: "redis://redis:{{ redis_port }}"
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      STORAGE_TYPE: "local"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+      FALLBACK_ENCRYPTION_KEY: "{{ encryption_key }}"
+    depends_on:
+      db:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: "{{ postgres_db }}"
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }} -h localhost -d {{ postgres_db }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  redis:
+    image: redis
+    command: ["--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+volumes:
+  db-data:
+  server-local-data:
+

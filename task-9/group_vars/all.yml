@@ -1,0 +1,15 @@
+app_user: twenty
+app_dir: /opt/twenty
+
+repo_url: https://github.com/twentyhq/twenty.git
+repo_version: main
+
+app_port: 2020
+
+postgres_db: twenty
+postgres_user: twenty
+postgres_password: twenty_password
+postgres_port: 5432
+
+redis_port: 6379
+encryption_key: "task9-demo-encryption-key-change-this-32chars"
