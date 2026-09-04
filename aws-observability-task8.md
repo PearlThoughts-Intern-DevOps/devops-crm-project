@@ -37,12 +37,10 @@ These metrics can be used to understand whether an instance is idle, under heavy
 I used the existing EC2 instance:
 
 ```text
-task-8-web-v2
+task-8
 ```
 
 as the monitoring target.
-
-I also verified the AWS resources using the AWS CLI.
 
 ---
 
@@ -53,10 +51,10 @@ I also verified the AWS resources using the AWS CLI.
 I created a CloudWatch dashboard named:
 
 ```text
-task-8-dashboard
+crm
 ```
 
-I added the EC2 `CPUUtilization` metric for the `task-8-web-v2` instance.
+I added the EC2 `CPUUtilization` metric for the `task-8` instance.
 
 The dashboard was configured to display a 15-minute time range.
 
@@ -65,7 +63,7 @@ The dashboard was configured to display a 15-minute time range.
 To verify that CloudWatch was detecting changes in the instance's CPU usage, I connected to the EC2 instance and generated CPU load with:
 
 ```bash
-yes > /dev/null
+yarn twenty docker:start
 ```
 
 I allowed the process to run for several minutes and observed the CPU utilization increase on the CloudWatch dashboard.
@@ -73,7 +71,7 @@ I allowed the process to run for several minutes and observed the CPU utilizatio
 After confirming the CPU spike, I stopped the process with:
 
 ```text
-Ctrl + C
+yarn twenty docker:stop
 ```
 
 ### Monitoring Flow
@@ -99,7 +97,6 @@ Basic EC2 monitoring can provide metrics such as:
 
 - CPU utilization
 - Network usage
-- Disk activity
 
 ### Internal Monitoring
 
@@ -137,7 +134,7 @@ A typical setup is:
 The monitoring role used for the EC2 instance was:
 
 ```text
-task-8-monitoring-role
+monitoring-role
 ```
 
 The role was configured with permissions that allow the CloudWatch Agent to send log data to CloudWatch Logs.
@@ -162,9 +159,6 @@ Example CloudWatch Logs policy:
 }
 ```
 
-```text
-task-8-ssm-access
-```
 
 ### Key Learning
 
@@ -237,8 +231,8 @@ The configuration:
 - Collects memory utilization using `mem_used_percent`
 - Collects swap utilization using `swap_used_percent`
 - Adds useful EC2 dimensions such as instance ID and instance type
-- Collects `/var/log/task-8.log`
-- Sends the application log to the `task-8-monitoring` log group
+- Collects `/var/log/monitoring.log`
+- Sends the application log to the `monitoring` log group
 - Creates a log stream using the EC2 instance ID
 
 ### Starting the Agent
@@ -263,7 +257,7 @@ cd ~/mohitsingh-pre-internship-repo>
  yarn install
 yarn twenty docker:start
 yarn twenty dev
-
+ docker logs -f twenty-app-dev 2>&1 | sudo tee -a /var/log/monitoring.log
 ```
 
 The CloudWatch Agent reads this file and forwards the log entries to CloudWatch Logs.
@@ -273,7 +267,7 @@ The CloudWatch Agent reads this file and forwards the log entries to CloudWatch 
 The log group used for this exercise was:
 
 ```text
-task-8-monitoring
+monitoring
 ```
 
 Inside the log group, the log stream was associated with the EC2 instance ID.
@@ -310,18 +304,18 @@ The configuration was:
 - **Statistic:** Average
 - **Period:** 1 minute
 - **Threshold type:** Static
-- **Condition:** CPU utilization greater than 20%
+- **Condition:** CPU utilization greater than 10%
 
 The alarm was named:
 
 ```text
-task-8-cpu-alarm
+cpu-alarm
 ```
 
 Description:
 
 ```text
-Alert when CPU exceeds 20%
+Alert when CPU exceeds 10%
 ```
 
 ---
@@ -333,7 +327,7 @@ The CloudWatch Alarm was connected to an Amazon Simple Notification Service (SNS
 The topic was named:
 
 ```text
-task-8-alerts
+cpu-alerts
 ```
 
 An email endpoint was configured so that the alarm could send an email notification when the alarm entered the `In alarm` state.
@@ -361,7 +355,7 @@ I then connected to the EC2 instance and generated CPU load:
 ```bash
 ssh task-8
 
-yes > /dev/null
+yarn twenty docker:start
 ```
 
 The process was allowed to run for several minutes so that CloudWatch could collect enough metric data and evaluate the alarm condition.
@@ -371,7 +365,7 @@ Once CPU utilization exceeded the configured 20% threshold, the CloudWatch alarm
 After verifying the test, the CPU load was stopped with:
 
 ```text
-Ctrl + C
+yarn twenty docker:stop
 ```
 
 ### Important Observation: Insufficient Data
