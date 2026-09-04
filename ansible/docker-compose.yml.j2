@@ -1,0 +1,49 @@
+# Managed by Ansible - do not edit manually
+services:
+  db:
+    image: postgres:16
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+      POSTGRES_DB: {{ postgres_db }}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: always
+
+  server:
+    image: twentycrm/twenty-server:{{ twenty_image_tag }}
+    restart: always
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    env_file:
+      - {{ app_dir }}/.env
+    ports:
+      - "{{ twenty_port }}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    image: twentycrm/twenty-server:{{ twenty_image_tag }}
+    restart: always
+    command: ["yarn", "worker:prod"]
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    env_file:
+      - {{ app_dir }}/.env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  server-local-data:
