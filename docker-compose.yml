@@ -1,0 +1,48 @@
+services:
+
+  twenty:
+    image: twentycrm/twenty-app-dev:v2.35
+    container_name: devops-crm-twenty
+    ports:
+      - "2020:2020"
+    environment:
+      NODE_PORT: 2020
+    volumes:
+      - twenty-data:/app/docker-data
+    restart: unless-stopped
+    networks:
+      - crm-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:2020/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-crm-app
+    depends_on:
+      twenty:
+        condition: service_healthy
+    environment:
+      TWENTY_API_URL: ${TWENTY_API_URL}
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+    networks:
+      - crm-network
+    restart: "no"
+
+volumes:
+  twenty-data:
+
+networks:
+  crm-network:
+    driver: bridge
