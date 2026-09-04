@@ -1,0 +1,21 @@
+---
+app_user: twenty
+app_group: twenty
+app_home: /opt/twenty-crm
+
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_version: main
+repo_dest: "{{ app_home }}/devops-crm-project"
+compose_dir: "{{ repo_dest }}"
+
+twenty_tag: latest
+app_port: 3000
+server_url: "http://108.130.246.178:{{ app_port }}"
+storage_type: local
+
+pg_database_password: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/pg_password length=24 chars=ascii_letters,digits') }}"
+access_token_secret: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/access_token_secret length=64 chars=ascii_letters,digits') }}"
+login_token_secret: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/login_token_secret length=64 chars=ascii_letters,digits') }}"
+refresh_token_secret: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/refresh_token_secret length=64 chars=ascii_letters,digits') }}"
+file_token_secret: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/file_token_secret length=64 chars=ascii_letters,digits') }}"
+encryption_key: "{{ lookup('ansible.builtin.password', '/tmp/twenty_secrets/encryption_key length=64 chars=ascii_letters,digits') }}"
