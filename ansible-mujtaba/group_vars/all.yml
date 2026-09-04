@@ -3,6 +3,7 @@ app_user: twenty
 app_group: twenty
 app_dir: /opt/twenty-crm
 app_port: 2020
+server_url: http://3.80.90.69:2020
 
 repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
 repo_branch: Mujtaba-Task-8-PT

@@ -94,6 +94,13 @@
         replace: 'context: ./source'
       notify: Restart Twenty CRM
 
+    - name: Set Twenty CRM server URL
+      ansible.builtin.replace:
+        path: "{{ app_dir }}/docker-compose.yml"
+        regexp: 'SERVER_URL: http://localhost:2020'
+        replace: 'SERVER_URL: {{ server_url }}'
+      notify: Restart Twenty CRM  
+
     - name: Create environment configuration from Jinja2 template
       ansible.builtin.template:
         src: twenty.env.j2
