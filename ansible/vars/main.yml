@@ -1,0 +1,25 @@
+---
+# Application user that will own and run Twenty CRM
+app_user: twentycrm
+app_group: twentycrm
+
+# Directory layout
+app_base_dir: /opt/twentycrm
+app_repo_dir: "{{ app_base_dir }}/devops-crm-project"
+app_config_dir: "{{ app_base_dir }}/config"
+app_data_dir: "{{ app_base_dir }}/data"
+
+# Repository details
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_branch: main
+
+# Twenty CRM runtime configuration (used in Jinja2 templates)
+twenty_server_url: "http://localhost:2020"
+twenty_node_port: 2020
+twenty_node_env: production
+postgres_user: twenty
+postgres_password: "{{ vault_postgres_password | default('twenty_change_me') }}"
+postgres_db: twenty
+
+# Docker Compose project name
+compose_project_name: twentycrm

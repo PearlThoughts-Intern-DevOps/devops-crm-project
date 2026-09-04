@@ -1,0 +1,28 @@
+services:
+  twenty-server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: {{ compose_project_name }}-server
+    restart: unless-stopped
+    env_file:
+      - {{ app_config_dir }}/.env
+    ports:
+      - "{{ twenty_node_port }}:{{ twenty_node_port }}"
+    volumes:
+      - twenty-data:/data/postgres
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+    networks:
+      - twentycrm-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:{{ twenty_node_port }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+networks:
+  twentycrm-network:
+    driver: bridge
+
+volumes:
+  twenty-data:
+  twenty-storage:
