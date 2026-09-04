@@ -1,5 +1,5 @@
 ---
-- name: Automate Twenty CRM deployment
+- name: Automate Twenty CRM
   hosts: twenty
   become: true
 
@@ -10,47 +10,16 @@
     - name: Restart Twenty CRM
       ansible.builtin.command:
         cmd: docker compose up -d
-        chdir: "{{ app_dir }}"
+        chdir: "{{ compose_dir }}"
+      changed_when: false
 
   tasks:
-    - name: Install required packages
+
+    - name: Install Git
       ansible.builtin.apt:
-        name:
-          - git
-          - curl
-          - ca-certificates
-          - gnupg
+        name: git
         state: present
-        update_cache: true
-
-    - name: Create Docker keyring directory
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
-
-    - name: Download Docker GPG key
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
-
-    - name: Add Docker repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        filename: docker
-        state: present
-        update_cache: true
-
-    - name: Install Docker Engine and Compose plugin
-      ansible.builtin.apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
+        update_cache: false
 
     - name: Ensure Docker service is running
       ansible.builtin.service:
@@ -80,55 +49,31 @@
         group: "{{ app_group }}"
         mode: "0755"
 
-    - name: Create source directory
-      ansible.builtin.file:
-        path: "{{ source_dir }}"
-        state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: "0755"
-
     - name: Clone Twenty CRM repository
+      become_user: "{{ app_user }}"
       ansible.builtin.git:
         repo: "{{ repo_url }}"
         version: "{{ repo_version }}"
-        dest: "{{ source_dir }}"
+        dest: "{{ app_dir }}"
         update: true
 
-    - name: Create environment file
+    - name: Create Twenty environment file
       ansible.builtin.template:
-        src: templates/env.j2
-        dest: "{{ app_dir }}/.env"
+        src: .env.j2
+        dest: "{{ compose_dir }}/.env"
         owner: "{{ app_user }}"
         group: "{{ app_group }}"
         mode: "0600"
       notify: Restart Twenty CRM
 
-    - name: Create Docker Compose file
-      ansible.builtin.template:
-        src: templates/docker-compose.yml.j2
-        dest: "{{ app_dir }}/docker-compose.yml"
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: "0644"
-      notify: Restart Twenty CRM
+    - name: Pull Twenty CRM Docker images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ compose_dir }}"
+      changed_when: false
 
     - name: Start Twenty CRM
       ansible.builtin.command:
         cmd: docker compose up -d
-        chdir: "{{ app_dir }}"
+        chdir: "{{ compose_dir }}"
       changed_when: false
-
-    - name: Verify Twenty CRM is responding
-      ansible.builtin.uri:
-        url: "{{ app_url }}"
-        status_code:
-          - 200
-          - 301
-          - 302
-        follow_redirects: safe
-      register: twenty_response
-      retries: 30
-      delay: 5
-      until: twenty_response.status in [200, 301, 302]
-      when: not ansible_check_mode
