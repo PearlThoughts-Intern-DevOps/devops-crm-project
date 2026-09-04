@@ -1,0 +1,137 @@
+---
+- name: Automate Twenty CRM setup with Docker Compose
+  hosts: twenty_crm
+  become: true
+
+  vars_files:
+    - group_vars/all.yml
+
+  handlers:
+    - name: restart twenty crm
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_repo_dir }}/packages/twenty-docker"
+        state: restarted
+      become: true
+      become_user: "{{ app_user }}"
+
+  tasks:
+    - name: Ensure community.docker collection is installed
+      ansible.builtin.command: ansible-galaxy collection install community.docker
+      args:
+        creates: ~/.ansible/collections/ansible_collections/community/docker
+
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install base dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - gnupg
+        state: present
+
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker CE, Compose plugin, and Python SDK
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - python3-docker
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application group
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create application base directory
+      ansible.builtin.file:
+        path: "{{ app_base_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    - name: Clone OFFICIAL Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ twenty_repo_dir }}"
+        version: "{{ repo_branch }}"
+        depth: 1
+        force: false
+      become: true
+      become_user: "{{ app_user }}"
+
+    - name: Ensure repository is owned by the application user
+      ansible.builtin.file:
+        path: "{{ twenty_repo_dir }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: true
+
+    - name: Render .env file from template
+      ansible.builtin.template:
+        src: templates/env.j2
+        dest: "{{ twenty_repo_dir }}/packages/twenty-docker/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+      notify: restart twenty crm
+
+    - name: Proactive disk cleanup before Docker Compose
+      ansible.builtin.shell: docker system prune -f
+      ignore_errors: true
+
+    - name: Start Twenty CRM stack with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_repo_dir }}/packages/twenty-docker"
+        state: present
+        pull: always
+      become: true
+      become_user: "{{ app_user }}"
+
+    - name: Wait for Twenty CRM to respond on its port
+      ansible.builtin.uri:
+        url: "http://localhost:{{ twenty_port }}"
+        status_code: [200, 301, 302, 307, 308]
+        validate_certs: false
+      register: health_check
+      retries: 30
+      delay: 10
+      until: health_check.status in [200, 301, 302, 307, 308]
+
+    - name: Report final status
+      ansible.builtin.debug:
+        msg: "Twenty CRM is up and responding at {{ server_url }} (HTTP {{ health_check.status }})"
