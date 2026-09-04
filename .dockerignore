@@ -1,0 +1,40 @@
+# Dependencies -- reinstalled fresh inside the image, never copied in
+node_modules
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+
+# Version control
+.git
+.gitignore
+.github
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Secrets / environment -- never bake these into an image layer
+.env
+.env.*
+!.env.example
+
+# Editor/IDE
+.vscode
+.idea
+
+# Test/coverage output
+coverage
+
+# Docker-related files themselves -- no reason to ship these inside the image
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs not needed at runtime (kept in git, just not in the image)
+README.md
+CHANGELOG.md
+AGENTS.md
+CLAUDE.md
+SETUP.md
