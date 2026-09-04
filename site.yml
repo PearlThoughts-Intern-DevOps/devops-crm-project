@@ -1,0 +1,14 @@
+---
+- name: Twenty CRM Production Deployment
+  hosts: twentycrm
+  become: true
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/vault.yml
+
+  roles:
+    - common
+    - docker
+    - app_user
+    - twentycrm
+    - backup

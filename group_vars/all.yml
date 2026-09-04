@@ -1,0 +1,30 @@
+# Application
+app_user: twentycrm
+app_group: twentycrm
+app_dir: /opt/twentycrm
+app_port: 3000
+node_env: production
+server_url: "http://localhost:3000"
+
+# Database (from vault)
+db_host: db
+db_port: 5432
+db_name: "{{ vault_db_name }}"
+db_user: "{{ vault_db_user }}"
+db_password: "{{ vault_db_password }}"
+
+# Redis
+redis_host: redis
+redis_port: 6379
+
+# Encryption (from vault)
+encryption_key: "{{ vault_encryption_key }}"
+app_secret: "{{ vault_app_secret }}"
+
+# Twenty CRM
+twenty_repo: https://github.com/twentyhq/twenty.git
+twenty_version: main
+
+# Backup
+backup_dir: /opt/backups/twentycrm
+backup_retention_days: 7

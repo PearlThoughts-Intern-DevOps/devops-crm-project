@@ -1,0 +1,16 @@
+---
+- name: Deploy backup script from template
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: "{{ app_dir }}/backup.sh"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0750"
+
+- name: Schedule daily backup via cron
+  ansible.builtin.cron:
+    name: "twentycrm daily backup"
+    user: "{{ app_user }}"
+    hour: "2"
+    minute: "0"
+    job: "{{ app_dir }}/backup.sh >> {{ app_dir }}/logs/backup.log 2>&1"
