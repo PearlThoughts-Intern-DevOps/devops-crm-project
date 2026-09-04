@@ -4,6 +4,7 @@
 **Date:** 4 September 2026 
 **Task:** Automate the deployment and configuration of Twenty CRM using Ansible and Docker Compose.
 **Loom link:**[https://www.loom.com/share/18f5bf73035b4e3897a41df2ac40c887]
+**PR link:**[https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/206]
 
 ## 1. Objective
 
