@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: {{ postgres_image }}
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: {{ postgres_db }}
+      POSTGRES_USER: {{ postgres_user }}
+      POSTGRES_PASSWORD: {{ postgres_password }}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ postgres_user }} -d {{ postgres_db }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: {{ redis_image }}
+    container_name: twenty-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  twenty:
+    image: twentycrm/twenty:{{ twenty_tag }}
+    container_name: twenty-crm
+    restart: unless-stopped
+    ports:
+      - "{{ twenty_port }}:3000"
+    environment:
+      PG_DATABASE_URL: postgresql://{{ postgres_user }}:{{ postgres_password }}@postgres:5432/{{ postgres_db }}
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: {{ twenty_encryption_key }}
+      SERVER_URL: http://localhost:{{ twenty_port }}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  postgres-data:
+  redis-data:
