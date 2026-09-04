@@ -1,0 +1,29 @@
+---
+- name: Create application group
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    state: present
+
+- name: Create application user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    groups: docker
+    shell: /bin/bash
+    home: /home/{{ app_user }}
+    create_home: true
+    state: present
+
+- name: Create application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+  loop:
+    - "{{ app_dir }}"
+    - "{{ app_dir }}/data"
+    - "{{ app_dir }}/logs"
+    - "{{ app_dir }}/config"
+    - "{{ backup_dir }}"

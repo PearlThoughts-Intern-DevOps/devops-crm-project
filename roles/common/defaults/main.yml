@@ -1,0 +1,10 @@
+---
+# Default variables for common role
+common_packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - python3-pip
+  - ca-certificates
+  - gnupg
