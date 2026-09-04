@@ -38,6 +38,7 @@ Set an alarm when EC2 CPU usage exceeds 80% and automatically notify the team vi
 - **Metrics & Namespaces** – categorized data points over time
 - **CloudWatch Alarms** – automated responses to threshold breaches
 - **CloudWatch Insights** – SQL-like query engine to search and analyze logs
+<img width="1917" height="863" alt="Screenshot 2026-09-04 001818" src="https://github.com/user-attachments/assets/5896154f-540d-48c4-81b6-45eb21ce055d" />
 
 ---
 
@@ -58,6 +59,8 @@ Detect if an IAM user deleted an S3 bucket or modified a security group — Clou
 - **Management Events** – control plane operations (create/delete/modify)
 - **Data Events** – data plane operations (S3 object access, Lambda invocations)
 - **Insight Events** – unusual API activity detection
+<img width="1911" height="965" alt="Screenshot 2026-09-04 081843" src="https://github.com/user-attachments/assets/aee14282-1f01-4b1e-9dc6-17c2573b14dc" />
+<img width="1911" height="963" alt="Screenshot 2026-09-04 081904" src="https://github.com/user-attachments/assets/4ff19cd6-a0cf-40f0-a467-d8e564a8a77a" />
 
 ---
 
