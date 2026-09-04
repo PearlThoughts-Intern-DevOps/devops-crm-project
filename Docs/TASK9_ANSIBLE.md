@@ -423,3 +423,23 @@ Twenty CRM was successfully automated and deployed on an Ubuntu Linux environmen
 The deployment includes automated dependency installation, Docker configuration, a dedicated application user, directory management, repository cloning, Jinja2-based Compose configuration, Twenty CRM with PostgreSQL and Redis, an Ansible restart handler, health verification, and idempotency validation.
 
 The deployment completed successfully with zero failures, and repeated Ansible execution demonstrated idempotent behavior.
+
+## Screenshots
+
+### 1. Ansible , Docker and Docker compose verions
+![Ansible Ping](task9-images/01-ansible-ping.png)
+
+
+### 2. Ansible Connectivity Test
+![Ansible Ping](task9-images/01-ansible-ping.png)
+
+### 3. Ansible Playbook Success
+![Playbook Success](task9-images/02-playbook-success.png)
+
+### 4. Docker Compose Services
+![Docker Compose](task9-images/03-docker-compose.png)
+
+### 5. Twenty CRM Health Check
+![Health Check](task9-images/04-health-check.png)
+
+
