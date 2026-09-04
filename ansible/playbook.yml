@@ -64,10 +64,8 @@
         repo: "{{ repo_url }}"
         version: "{{ repo_version }}"
         dest: "{{ app_dir }}"
-        update: true
-        force: false
+        update: false
       become_user: "{{ app_user }}"
-      register: repo_result
 
     - name: Configure Twenty CRM environment
       ansible.builtin.template:
@@ -76,6 +74,7 @@
         owner: "{{ app_user }}"
         group: "{{ app_group }}"
         mode: "0600"
+      no_log: true
       notify: Restart Twenty CRM application
 
     - name: Configure Docker Compose
@@ -87,18 +86,12 @@
         mode: "0644"
       notify: Restart Twenty CRM application
 
-    - name: Build Twenty CRM application image
-      ansible.builtin.command:
-        cmd: docker compose build app-deployer
-        chdir: "{{ app_dir }}"
-      become_user: "{{ app_user }}"
-      when: repo_result.changed
-
     - name: Start Twenty CRM server
       ansible.builtin.command:
         cmd: docker compose up -d twenty
         chdir: "{{ app_dir }}"
       become_user: "{{ app_user }}"
+      changed_when: false
 
     - name: Wait for Twenty CRM server to become available
       ansible.builtin.uri:
@@ -111,13 +104,31 @@
       delay: 5
       until: twenty_health.status == 200
 
+    - name: Check application deployment marker
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/.deployment_complete"
+      register: deployment_marker
+
     - name: Run application deployer
       ansible.builtin.command:
         cmd: docker compose up --build app-deployer
         chdir: "{{ app_dir }}"
       become_user: "{{ app_user }}"
+      when: not deployment_marker.stat.exists
       register: deployer_result
       changed_when: true
+
+    - name: Create application deployment marker
+      ansible.builtin.file:
+        path: "{{ app_dir }}/.deployment_complete"
+        state: touch
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      when:
+        - deployer_result is defined
+        - deployer_result.changed
+        - deployer_result.rc == 0
 
     - name: Verify Twenty CRM containers
       ansible.builtin.command:
@@ -145,7 +156,7 @@
   handlers:
     - name: Restart Twenty CRM application
       ansible.builtin.command:
-        cmd: docker compose up -d --build twenty
+        cmd: docker compose up -d --build --force-recreate twenty
         chdir: "{{ app_dir }}"
       become_user: "{{ app_user }}"
 
