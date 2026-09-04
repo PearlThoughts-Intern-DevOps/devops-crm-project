@@ -1,0 +1,113 @@
+---
+- name: Automate Twenty CRM setup
+  hosts: twenty
+  become: true
+
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - openssl
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create dedicated Twenty application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        shell: /bin/bash
+        create_home: true
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ twenty_repo }}"
+        dest: "{{ app_dir }}"
+        version: main
+        update: true
+
+    - name: Generate encryption key if missing
+      ansible.builtin.shell:
+        cmd: "openssl rand -base64 32 > {{ app_dir }}/.encryption_key"
+        creates: "{{ app_dir }}/.encryption_key"
+      no_log: true
+
+    - name: Set encryption key file permissions
+      ansible.builtin.file:
+        path: "{{ app_dir }}/.encryption_key"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+
+    - name: Read encryption key
+      ansible.builtin.slurp:
+        src: "{{ app_dir }}/.encryption_key"
+      register: encryption_key_file
+      no_log: true
+
+    - name: Set encryption key variable
+      ansible.builtin.set_fact:
+        encryption_key: "{{ encryption_key_file.content | b64decode | trim }}"
+      no_log: true
+
+    - name: Configure Twenty CRM environment
+      ansible.builtin.template:
+        src: twenty.env.j2
+        dest: "{{ app_dir }}/packages/twenty-docker/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM with Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}/packages/twenty-docker"
+      register: compose_result
+      changed_when: >
+        'Started' in compose_result.stdout or
+        'Created' in compose_result.stdout or
+        'Recreated' in compose_result.stdout
+
+    - name: Wait for Twenty CRM
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 3000
+        delay: 10
+        timeout: 180
+
+    - name: Verify Twenty CRM health
+      ansible.builtin.uri:
+        url: "{{ server_url }}/healthz"
+        method: GET
+        status_code: 200
+        timeout: 10
+
+  handlers:
+
+    - name: Restart Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}/packages/twenty-docker"

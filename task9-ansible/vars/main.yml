@@ -1,0 +1,17 @@
+app_user: twenty
+app_dir: /opt/twenty
+twenty_repo: https://github.com/twentyhq/twenty.git
+
+server_url: http://localhost:3000
+
+twenty_tag: latest
+
+pg_database_user: postgres
+pg_database_password: postgres
+pg_database_host: db
+pg_database_port: 5432
+pg_database_name: default
+
+redis_url: redis://redis:6379
+
+storage_type: local
