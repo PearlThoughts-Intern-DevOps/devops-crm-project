@@ -1,0 +1,143 @@
+﻿---
+- name: Deploy Twenty CRM with Ansible
+  hosts: twenty
+  become: true
+
+  vars:
+    twenty_pg_password_file: "{{ twenty_app_dir }}/.pg_password"
+    twenty_encryption_key_file: "{{ twenty_app_dir }}/.encryption_key"
+
+  tasks:
+
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - openssl
+          - docker.io
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create dedicated Twenty application user
+      ansible.builtin.user:
+        name: "{{ twenty_app_user }}"
+        shell: /bin/bash
+        create_home: true
+        groups: docker
+        append: true
+        state: present
+
+    - name: Create Twenty application directory
+      ansible.builtin.file:
+        path: "{{ twenty_app_dir }}"
+        state: directory
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_user }}"
+        mode: "0755"
+
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ twenty_repo_url }}"
+        dest: "{{ twenty_app_dir }}/repository"
+        version: "{{ twenty_repo_version }}"
+        update: false
+        force: false
+      become_user: "{{ twenty_app_user }}"
+
+    - name: Generate PostgreSQL password
+      ansible.builtin.shell: >
+        openssl rand -hex 16 > "{{ twenty_pg_password_file }}"
+      args:
+        creates: "{{ twenty_pg_password_file }}"
+      no_log: true
+
+    - name: Set PostgreSQL password permissions
+      ansible.builtin.file:
+        path: "{{ twenty_pg_password_file }}"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_user }}"
+        mode: "0600"
+
+    - name: Generate encryption key
+      ansible.builtin.shell: >
+        openssl rand -base64 32 > "{{ twenty_encryption_key_file }}"
+      args:
+        creates: "{{ twenty_encryption_key_file }}"
+      no_log: true
+
+    - name: Set encryption key permissions
+      ansible.builtin.file:
+        path: "{{ twenty_encryption_key_file }}"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_user }}"
+        mode: "0600"
+
+    - name: Read PostgreSQL password
+      ansible.builtin.slurp:
+        src: "{{ twenty_pg_password_file }}"
+      register: pg_password_content
+      no_log: true
+
+    - name: Read encryption key
+      ansible.builtin.slurp:
+        src: "{{ twenty_encryption_key_file }}"
+      register: encryption_key_content
+      no_log: true
+
+    - name: Set secret facts
+      ansible.builtin.set_fact:
+        twenty_pg_password: "{{ pg_password_content.content | b64decode | trim }}"
+        twenty_encryption_key: "{{ encryption_key_content.content | b64decode | trim }}"
+      no_log: true
+
+    - name: Configure Twenty environment
+      ansible.builtin.template:
+        src: .env.j2
+        dest: "{{ twenty_app_dir }}/.env"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_user }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    - name: Configure Docker Compose
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ twenty_app_dir }}/docker-compose.yml"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_user }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: present
+        pull: missing
+
+    - name: Wait for Twenty CRM health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_app_port }}/healthz"
+        method: GET
+        status_code: 200
+      register: twenty_health
+      retries: 30
+      delay: 5
+      until: twenty_health.status == 200
+
+    - name: Display Twenty CRM verification result
+      ansible.builtin.debug:
+        msg: "Twenty CRM is running successfully on port {{ twenty_app_port }}."
+
+  handlers:
+
+    - name: Restart Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: restarted
