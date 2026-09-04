@@ -1,0 +1,79 @@
+---
+- name: Automate Twenty CRM
+  hosts: twenty
+  become: true
+
+  vars_files:
+    - vars/main.yml
+
+  handlers:
+    - name: Restart Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+  tasks:
+
+    - name: Install Git
+      ansible.builtin.apt:
+        name: git
+        state: present
+        update_cache: false
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application group
+      ansible.builtin.group:
+        name: "{{ app_group }}"
+        state: present
+
+    - name: Create application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        groups: docker
+        append: true
+        create_home: true
+        state: present
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+
+    - name: Clone Twenty CRM repository
+      become_user: "{{ app_user }}"
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        version: "{{ repo_version }}"
+        dest: "{{ app_dir }}"
+        update: true
+
+    - name: Create Twenty environment file
+      ansible.builtin.template:
+        src: .env.j2
+        dest: "{{ compose_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    - name: Pull Twenty CRM Docker images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ compose_dir }}"
+      changed_when: false
+
+    - name: Start Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ compose_dir }}"
+      changed_when: false

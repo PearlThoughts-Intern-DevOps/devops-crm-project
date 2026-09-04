@@ -1,0 +1,25 @@
+repo_url: "https://github.com/twentyhq/twenty.git"
+repo_version: "main"
+
+app_user: "twenty"
+app_group: "twenty"
+app_dir: "/opt/twenty"
+compose_dir: "/opt/twenty/packages/twenty-docker"
+
+server_url: "http://localhost:3000"
+
+postgres_user: "postgres"
+postgres_password: "postgres"
+postgres_host: "db"
+postgres_port: "5432"
+postgres_db: "default"
+
+redis_url: "redis://redis:6379"
+
+storage_type: "local"
+
+encryption_key: "demo-encryption-key-for-task9"
+fallback_encryption_key: "demo-fallback-key-for-task9"
+app_secret: "demo-app-secret-for-task9"
+
+tag: "latest"
