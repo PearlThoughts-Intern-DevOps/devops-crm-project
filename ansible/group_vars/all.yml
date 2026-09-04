@@ -1,0 +1,38 @@
+---
+app_user: twenty
+app_group: twenty
+app_home: /home/twenty
+app_dir: /home/twenty/twenty-crm
+
+twenty_repo_url: https://github.com/twentyhq/twenty.git
+twenty_repo_version: main
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+twenty_app_port: 3000
+twenty_server_url: "https://bf57cdbf92cc-10-244-2-170-3000.papa.r.killercoda.com"
+
+twenty_pg_database_user: postgres
+twenty_pg_database_password: "ChangeMe_Str0ngPass!"
+twenty_pg_database_name: default
+
+twenty_app_secret: "please-generate-a-long-random-secret-key"
+
+twenty_encryption_key: "please-generate-a-long-encryption-key"
+twenty_fallback_encryption_key: "please-generate-a-long-fallback-encryption-key"
+
+twenty_storage_type: local
+twenty_disable_db_migrations: "false"
+
+twenty_storage_s3_region: ""
+twenty_storage_s3_name: ""
+twenty_storage_s3_endpoint: ""
+
+twenty_disable_cron_jobs_registration: "false"
+
+twenty_tag: latest
