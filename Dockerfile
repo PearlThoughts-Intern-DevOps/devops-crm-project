@@ -39,6 +39,9 @@ COPY --from=builder /app/.yarn ./.yarn
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app ./
 
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
+
 # Run as non-root user
 USER appuser
 
