@@ -1,0 +1,93 @@
+---
+- name: Automate Twenty CRM setup
+  hosts: twenty
+  become: true
+
+  vars:
+    app_user: twenty
+    app_dir: /opt/twenty
+    repo_url: https://github.com/twentyhq/twenty.git
+    repo_version: main
+    compose_file: docker-compose.yml
+    twenty_port: 3001
+    encryption_key: "task9-demo-encryption-key-12345678901234567890123456789012"
+
+  tasks:
+
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add application user to docker group
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Clone Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}/twenty"
+        version: "{{ repo_version }}"
+        depth: 1
+        single_branch: true
+        force: false
+      become_user: "{{ app_user }}"
+
+    - name: Deploy Docker Compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ app_dir }}/{{ compose_file }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: present
+
+    - name: Verify Twenty CRM containers
+      ansible.builtin.command:
+        cmd: docker compose -f "{{ app_dir }}/{{ compose_file }}" ps
+      register: twenty_status
+      changed_when: false
+
+    - name: Display Twenty CRM status
+      ansible.builtin.debug:
+        var: twenty_status.stdout
+
+  handlers:
+
+    - name: Restart Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: restarted
