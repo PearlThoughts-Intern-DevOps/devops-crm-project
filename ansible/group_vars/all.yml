@@ -1,0 +1,20 @@
+---
+twenty_user: twenty
+twenty_group: twenty
+
+twenty_app_dir: /opt/twenty
+twenty_repo_dir: /opt/twenty/source
+twenty_repo_url: https://github.com/twentyhq/twenty.git
+twenty_repo_version: main
+
+twenty_port: 2020
+twenty_image: twentycrm/twenty:latest
+twenty_server_url: "http://localhost:2020"
+twenty_app_secret: "kodekloud-task9-change-this-secret-2026"
+
+postgres_database: default
+postgres_user: postgres
+postgres_password: "twenty_postgres_password"
+
+docker_apt_key_url: https://download.docker.com/linux/ubuntu/gpg
+docker_apt_repository: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
