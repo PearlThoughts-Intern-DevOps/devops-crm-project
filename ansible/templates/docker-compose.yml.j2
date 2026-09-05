@@ -1,0 +1,35 @@
+services:
+  twenty:
+    image: twentycrm/twenty:latest
+    container_name: twenty
+    restart: unless-stopped
+    ports:
+      - "{{ twenty_port }}:3000"
+    environment:
+      NODE_PORT: 3000
+      SERVER_URL: "http://localhost:{{ twenty_port }}"
+      ENCRYPTION_KEY: "{{ encryption_key }}"
+      PG_DATABASE_URL: "postgres://postgres:postgres@postgres:5432/twenty"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: twenty
+    volumes:
+      - twenty-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: twenty-redis
+    restart: unless-stopped
+
+volumes:
+  twenty-postgres-data:
