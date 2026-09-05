@@ -144,6 +144,128 @@ localhost : ok=18 changed=0 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
 
 `changed=0` and `failed=0` demonstrate that the playbook is idempotent.
 
+## Issues Faced and Resolutions
+
+### 1. Ansible Version Was Too Old
+
+Ubuntu initially installed Ansible 2.10.8, which was too old for `community.docker` 5.2.2 and the `docker_compose_v2` module.
+
+The issue was resolved by installing a compatible Ansible Core release:
+
+```bash
+apt install -y python3-pip
+python3 -m pip install --upgrade 'ansible-core>=2.17,<2.18'
+ansible --version
+```
+
+The resulting version was Ansible Core 2.17.14.
+
+### 2. Docker Compose Ansible Module Was Unavailable
+
+The `community.docker.docker_compose_v2` module is not included with Ansible Core by default.
+
+The required collection was installed with:
+
+```bash
+ansible-galaxy collection install community.docker
+```
+
+### 3. Single-Node Inventory Configuration
+
+The KodeKloud Playground used the same machine as both the Ansible control node and the managed host, so a normal SSH inventory was unnecessary.
+
+The inventory was configured to use a local connection:
+
+```ini
+[twenty]
+localhost ansible_connection=local
+```
+
+The connection was verified with:
+
+```bash
+ansible -i inventory/hosts.ini twenty -m ping
+```
+
+Ansible returned `SUCCESS` and `pong`.
+
+### 4. Docker Engine and Compose Were Initially Unavailable
+
+Docker Engine and the Docker Compose plugin were not installed in the original playground environment.
+
+The playbook configured Docker's official Ubuntu repository and installed:
+
+```text
+docker-ce
+docker-ce-cli
+containerd.io
+docker-buildx-plugin
+docker-compose-plugin
+```
+
+The installation was verified with:
+
+```bash
+docker --version
+docker compose version
+```
+
+### 5. Twenty CRM Needed Time to Start
+
+Port `2020` opened before Twenty CRM was completely ready. The first HTTP checks failed while database migrations and application startup were still running.
+
+The playbook first waits for the port and then retries the HTTP request:
+
+```yaml
+retries: 30
+delay: 10
+until: twenty_http_check.status == 200
+```
+
+The check eventually succeeded, and the manual request returned `HTTP/1.1 200 OK`.
+
+### 6. Service Startup Order
+
+Twenty CRM depends on PostgreSQL and Redis. Starting it before PostgreSQL was ready could cause application startup failures.
+
+A PostgreSQL health check and Compose dependency conditions were added:
+
+```yaml
+depends_on:
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_started
+```
+
+The final Compose status showed PostgreSQL as healthy and all three services running.
+
+### 7. Configuration Changes Required a Restart
+
+Changes to the generated Docker Compose configuration needed to be applied without restarting the application on every playbook run.
+
+The template task notifies the `Restart Twenty CRM` handler only when its content changes:
+
+```yaml
+notify: Restart Twenty CRM
+```
+
+This applies configuration changes while avoiding unnecessary restarts.
+
+### 8. Ensuring Idempotency
+
+The playbook needed to avoid unnecessary changes during repeated execution.
+
+Declarative Ansible modules were used for packages, users, directories, Git, templates, services, and Docker Compose. The second execution produced:
+
+```text
+changed=0
+unreachable=0
+failed=0
+```
+
+This confirmed that the playbook is idempotent.
+
 ## Troubleshooting
 
 Check Docker and the deployed services:
