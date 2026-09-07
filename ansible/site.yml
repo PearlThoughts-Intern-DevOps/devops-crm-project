@@ -1,0 +1,99 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty
+  become: true
+
+  vars:
+    app_user: twenty
+    app_dir: /opt/twenty
+    twenty_repo: "https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git"
+    twenty_port: 3000
+
+  handlers:
+    - name: Restart Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+  tasks:
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create dedicated application user
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        system: true
+        shell: /bin/bash
+        create_home: true
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+
+    - name: Copy Twenty CRM repository
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ app_dir }}/source/"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: preserve
+      notify: Restart Twenty CRM
+
+    - name: Deploy environment configuration
+      ansible.builtin.template:
+        src: .env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    - name: Deploy Docker Compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      register: compose_result
+      changed_when: "'Started' in compose_result.stdout or 'Created' in compose_result.stdout"
+
+    - name: Verify Twenty CRM container
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+      register: compose_status
+      changed_when: false
+
+    - name: Display Twenty CRM status
+      ansible.builtin.debug:
+        var: compose_status.stdout
