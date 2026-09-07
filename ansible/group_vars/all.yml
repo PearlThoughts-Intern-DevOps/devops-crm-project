@@ -1,11 +1,13 @@
+cat << 'EOF' > group_vars/all.yml
 ---
 app_user: twentyapp
 app_group: twentyapp
 app_base_dir: /opt/twenty-crm
-twenty_repo_dir: "{{ app_base_dir }}/twenty"
+twenty_repo_dir: "{{ app_base_dir }}/devops-crm-project"
 
-repo_url: https://github.com/twentyhq/twenty.git
-repo_branch: main
+# Using your own repository as requested
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+repo_branch: harish-task9
 
 pg_database_user: postgres
 pg_database_password: "SuperSecureDatabasePassword123!"
@@ -29,3 +31,4 @@ storage_s3_endpoint: "http://localhost:9000"
 disable_db_migrations: "false"
 disable_cron_jobs_registration: "false"
 redis_url: "redis://redis:6379"
+EOF
