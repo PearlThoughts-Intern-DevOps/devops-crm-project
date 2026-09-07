@@ -122,19 +122,7 @@
         group: "{{ app_group }}"
         recurse: true
 
-    # This project's Dockerfile builder stage originally had a
-    # `COPY .yarn ./.yarn` line. The `.yarn/` directory is not committed
-    # to the repository (it's gitignored and only regenerated locally
-    # after running `yarn install`), so on any fresh clone this line
-    # fails the build with "/.yarn: not found". Removing it is safe —
-    # Corepack + `yarn install --immutable` regenerate everything needed
-    # inside the image on their own.
-    - name: Remove broken .yarn COPY line from Dockerfile
-      ansible.builtin.lineinfile:
-        path: "{{ twenty_repo_dir }}/Dockerfile"
-        regexp: '^\s*COPY \.yarn \./\.yarn\s*$'
-        state: absent
-
+    
     # ------------------------------------------------------------------
     # 5. Configure the application via a Jinja2 template
     # ------------------------------------------------------------------
