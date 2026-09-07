@@ -80,7 +80,7 @@ task09-production/
 │   └── vault.yml                        # AES256 encrypted secrets ← safe to commit
 │
 ├── inventory/
-│   ├── hosts.ini                        # INI format inventory
+│   ├                    
 │   └── hosts.yml                        # YAML format inventory
 │
 └── roles/
