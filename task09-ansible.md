@@ -326,10 +326,10 @@ Contents before encryption:
 
 ```yaml
 ---
-vault_db_password:    StrongDBPass123
-vault_app_secret:     supersecretappkeyfortesting
-vault_encryption_key: afe3c2b1d0e9f847625130abdce74918
-vault_db_name:        twenty
+vault_db_password:    
+vault_app_secret:     
+vault_encryption_key: 
+vault_db_name:        
 ```
 
 Encrypt it:
