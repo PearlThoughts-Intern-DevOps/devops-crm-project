@@ -17,7 +17,7 @@ Twenty CRM was deployed and run on the EC2 instance using Docker.
 
 The application was exposed on port `2020`.
 
-The application was successfully started and verified from the EC2 instance.
+The application was successfully started on the EC2 instance and verified locally using an HTTP 200 response.
 
 ## 3. CloudWatch Agent
 
@@ -67,7 +67,7 @@ Created a personal CloudWatch dashboard:
 
 `Tannu-Task10-Observability`
 
-A CPU utilization widget using the EC2 `CPUUtilization` metric was added to the dashboard.
+A CPU utilization widget using the EC2 CPUUtilization metric was added and configured for the EC2 instance. After the instance was terminated, the dashboard no longer displayed live metric data.
 
 ## 7. Testing
 
