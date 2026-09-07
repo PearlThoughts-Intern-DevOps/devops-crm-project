@@ -1,34 +1,31 @@
-# My Twenty App
+# Task 10 — AWS Observability with CloudWatch - Twenty CRM
 
-Describe your app in one or two sentences.
+This repository/folder contains the documentation and supporting evidence for **Task 10: AWS Observability with CloudWatch**, built on top of the Twenty CRM deployment from `devops-crm-project` (branch `fiza`).
 
-## Features
+## What this covers
 
-List the top things your app does, for example:
+- Launching and configuring an EC2 instance (t3.small, 20 GiB)
+- Deploying Twenty CRM on that instance via Docker (port 2020)
+- Exploring default EC2 metrics in CloudWatch
+- Installing and configuring the CloudWatch Agent for CPU, memory, and disk metrics
+- Creating CloudWatch Alarms (CPU, Disk, Memory) with SNS email notifications
+- Building a CloudWatch Dashboard
+- Load-testing the instance and validating the full monitoring/alerting pipeline
+- Documenting issues faced and how each was resolved
 
-- Feature one
-- Feature two
-- Feature three
+## Project structure
 
-## Getting started
+```
+.
+├── README.md               # this file
+├── EC2_OBSERVABILITY.pdf    # full write-up: setup, config, testing, screenshots, issues, conclusions
+└── Screenshots/             # supporting screenshots referenced in EC2_OBSERVABILITY.pdf
+```
 
-Setup instructions live in [SETUP.md](SETUP.md).
+## Where to start reading
 
-## Publishing
+Open **`EC2_OBSERVABILITY.pdf`** — it's the complete, step-by-step record of everything done for this task: EC2 launch, IAM role setup, Twenty CRM deployment, CloudWatch Agent installation/config, alarm and dashboard setup, the load test, and a table of every issue hit along with its fix.
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+## Status
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+Instance was terminated after all steps in this task were completed and verified. See the "Cleanup" section of `EC2_OBSERVABILITY.pdf` for details.
