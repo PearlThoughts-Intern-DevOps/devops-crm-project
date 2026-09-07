@@ -4,35 +4,54 @@
 
 This task deploys Twenty CRM on Amazon EC2 and adds infrastructure monitoring
 with Amazon CloudWatch. It covers default EC2 metrics, host-level metrics from
-the CloudWatch Agent, alarms, a dashboard, controlled activity testing, and
+the CloudWatch Agent, a CPU alarm, a dashboard, controlled activity testing, and
 troubleshooting.
 
 ## Architecture
 
 ```text
-User browser
-    |
-    | HTTP TCP 2020
-    v
-EC2 security group
-    |
-    v
-Amazon EC2: Amazon Linux 2023 / t3.micro / 20 GiB gp3
-    |
-    +-- Docker Compose
-    |     +-- Twenty CRM
-    |
-    +-- Amazon CloudWatch Agent
-          +-- CPU metrics
-          +-- Memory utilization
-          +-- Root-filesystem utilization
-                    |
-                    v
-              Amazon CloudWatch
-                    +-- Metrics
-                    +-- Alarms
-                    +-- Dashboard
+User Browser
+      |
+      | HTTP TCP 2020
+      v
+EC2 Security Group
+      |
+      v
+Amazon EC2: Amazon Linux 2023 / t3.small / 20 GiB gp3
+      |
+      +-- Docker Compose
+      |     +-- Twenty CRM
+      |
+      +-- Monitoring
+            |
+            +-- EC2 Default Metrics
+            |     +-- CPU Utilization
+            |
+            +-- Amazon CloudWatch Agent
+                  +-- Memory Utilization
+                  +-- Disk Utilization
+                            |
+                            v
+                      Amazon CloudWatch
+                            |
+                            +-- Metrics
+                            |     +-- CPU Utilization
+                            |     +-- Memory Utilization
+                            |     +-- Disk Utilization
+                            |
+                            +-- Alarm
+                            |     +-- CPU Utilization Alarm
+                            |
+                            +-- Dashboard
+                                  +-- CPU Utilization
+                                  +-- Memory Utilization
+                                  +-- Disk Utilization
 ```
+
+EC2 supplies the `CPUUtilization` metric used by the alarm and dashboard. The
+CloudWatch Agent supplies `mem_used_percent` and `disk_used_percent`. All three
+metrics are presented together on the CloudWatch dashboard, while only CPU
+utilization has an alarm in this implementation.
 
 ## EC2 Configuration
 
@@ -41,9 +60,9 @@ Amazon EC2: Amazon Linux 2023 / t3.micro / 20 GiB gp3
 | Region | `us-east-1` (US East, N. Virginia) |
 | AMI | Amazon Linux 2023 |
 | Architecture | 64-bit x86 |
-| Instance type | `t3.micro` |
+| Instance type | `t3.small` |
 | vCPUs | 2 |
-| Memory | Approximately 1 GiB |
+| Memory | Approximately 2 GiB |
 | Root storage | 20 GiB EBS `gp3` |
 | SSH user | `ec2-user` |
 | SSH port | TCP `22` |
@@ -162,10 +181,11 @@ df -h /
 lsblk
 ```
 
-## Swap Configuration for `t3.micro`
+## Swap Configuration for `t3.small`
 
-The `t3.micro` has approximately 1 GiB RAM, which is below Twenty's recommended
-memory. A 4 GiB swap file reduces the risk of an out-of-memory termination:
+The `t3.small` has approximately 2 GiB RAM. A 4 GiB swap file was added to
+provide additional protection against an out-of-memory termination while
+Twenty CRM and the monitoring agent were running:
 
 ```bash
 sudo dd if=/dev/zero of=/swapfile bs=1M count=4096 status=progress
@@ -286,7 +306,7 @@ Filter the metrics with the EC2 instance ID.
 | `DiskReadOps` | Completed instance-store read operations |
 | `DiskWriteOps` | Completed instance-store write operations |
 | `StatusCheckFailed` | Failed EC2 instance or system health checks |
-| `CPUCreditBalance` | Remaining burst credits on the `t3.micro` |
+| `CPUCreditBalance` | Remaining burst credits on the `t3.small` |
 | `CPUCreditUsage` | CPU burst credits consumed |
 
 Default EC2 monitoring cannot see guest operating-system memory or mounted
@@ -323,7 +343,7 @@ Expected metrics include:
 | `mem_used_percent` | Percentage of host memory used |
 | `disk_used_percent` | Percentage of the root filesystem used |
 
-## CloudWatch Alarms
+## CloudWatch Alarm
 
 ### CPU utilization alarm
 
@@ -332,58 +352,36 @@ Expected metrics include:
 | Namespace | `AWS/EC2` |
 | Metric | `CPUUtilization` |
 | Statistic | Average |
-| Period | 1 minute |
+| Period | 5 minutes |
 | Threshold | Greater than 70% |
-| Evaluation periods | 3 |
-| Datapoints to alarm | 2 out of 3 |
+| Evaluation periods | 1 |
+| Datapoints to alarm | 1 out of 1 |
 | Missing data | Treat missing data as missing |
 
-The default EC2 metric is used for the primary CPU alarm. A 70% threshold is
-useful for a controlled demonstration, while two breaching datapoints prevent
-a single short spike from immediately triggering the alarm.
+The default EC2 metric is used for the CPU alarm. A 70% threshold makes the
+alarm useful for identifying sustained CPU pressure during the controlled
+test. With a five-minute period and `1 out of 1` datapoint, the alarm changes
+state when the average CPU utilization for one complete five-minute period is
+greater than 70%.
 
-### Memory utilization alarm
-
-| Setting | Value |
-| --- | --- |
-| Namespace | `CWAgent` |
-| Metric | `mem_used_percent` |
-| Statistic | Average |
-| Period | 1 minute |
-| Threshold | Greater than 80% |
-| Evaluation periods | 3 |
-| Datapoints to alarm | 2 out of 3 |
-| Missing data | Treat missing data as missing |
-
-### Root-filesystem utilization alarm
-
-| Setting | Value |
-| --- | --- |
-| Namespace | `CWAgent` |
-| Metric | `disk_used_percent` |
-| Statistic | Average |
-| Period | 1 minute |
-| Threshold | Greater than 80% |
-| Evaluation periods | 3 |
-| Datapoints to alarm | 2 out of 3 |
-| Missing data | Treat missing data as missing |
-
-SNS notification actions are optional for this lab unless the task assessor
-specifically requires them.
+Only the CPU utilization alarm was created for this implementation. Memory
+and disk utilization were monitored on the dashboard but did not have alarms.
+No SNS notification action was required for this lab.
 
 ## CloudWatch Dashboard
 
-Create a dashboard named `Twenty-CRM-Observability` containing widgets for:
+The dashboard named `Chirag-TwentyCRM-Observability` contained these three
+metrics:
 
 - EC2 `CPUUtilization`
-- `CWAgent` memory utilization
-- `CWAgent` root-filesystem utilization
-- EC2 `NetworkIn` and `NetworkOut`
-- EC2 `CPUCreditBalance`
-- Alarm status
+- `CWAgent` `mem_used_percent`
+- `CWAgent` `disk_used_percent`
 
-The dashboard combines AWS infrastructure metrics and guest operating-system
-metrics into one operational view.
+The dashboard combines an AWS infrastructure metric with guest
+operating-system metrics in one view. In the captured dashboard, the displayed
+values were approximately 2.7% CPU utilization, 82% memory utilization, and
+40.5% disk utilization. These values are a point-in-time observation and will
+change as the workload changes.
 
 ## Controlled Activity and Alarm Testing
 
@@ -445,21 +443,11 @@ export TWENTY_API_KEY=not-used-for-task10
 docker compose up -d twenty
 ```
 
-### Limited memory on `t3.micro`
+### Limited memory on `t3.small`
 
-The instance provided approximately 1 GiB RAM. A persistent 4 GiB swap file
+The instance provided approximately 2 GiB RAM. A persistent 4 GiB swap file
 was configured, and utilization was checked with `free -h`, `swapon --show`,
 and `docker stats --no-stream`.
-
-### Incorrect Git upstream
-
-The local `chirag-task-10` branch initially tracked `origin/chirag-task-5`.
-Running the following command created the proper remote Task 10 branch and set
-its upstream:
-
-```bash
-git push -u origin chirag-task-10
-```
 
 ## How CloudWatch Helps with Monitoring
 
@@ -470,10 +458,9 @@ measurements. A dashboard makes changes and correlations easier to see.
 
 ## How CloudWatch Helps with Alerting
 
-CloudWatch alarms evaluate metrics against thresholds. They can identify
-sustained CPU pressure, high memory usage, a nearly full filesystem, exhausted
-CPU credits, or failed EC2 health checks. Requiring multiple breaching
-datapoints reduces alerts caused by brief spikes. Production alarms can send
+The CloudWatch CPU alarm evaluates EC2 CPU utilization against the configured
+70% threshold. It can identify sustained compute pressure without requiring an
+engineer to continuously watch the dashboard. Production alarms can send
 notifications through Amazon SNS or an incident-management service.
 
 ## How CloudWatch Helps with Troubleshooting
@@ -507,7 +494,7 @@ sudo tail -n 100 \
 
 Check each item only after capturing and verifying it:
 
-- [ ] EC2 instance details showing Amazon Linux 2023 and `t3.micro`
+- [ ] EC2 instance details showing Amazon Linux 2023 and `t3.small`
 - [ ] IAM role `CloudWatchAgentEC2Role`
 - [ ] Security-group rules for TCP 22 and TCP 2020
 - [ ] Successful SSH connection
@@ -518,8 +505,8 @@ Check each item only after capturing and verifying it:
 - [ ] Default `AWS/EC2` metrics
 - [ ] CloudWatch Agent configuration and running service
 - [ ] `CWAgent` CPU, memory, and disk metrics
-- [ ] CPU, memory, and disk alarms
-- [ ] CloudWatch dashboard
+- [x] CPU alarm configured at 70%, five minutes, and 1 out of 1
+- [x] Dashboard showing CPU, memory, and disk utilization
 - [ ] Metrics before and during controlled activity
 - [ ] CPU alarm transition to `ALARM` and recovery to `OK`
 - [ ] Git branch, commit, push, and pull request
@@ -538,11 +525,11 @@ AWS Console → EC2 → Instances → select instance
 
 ## Conclusion
 
-Twenty CRM was deployed on an Amazon Linux 2023 `t3.micro` EC2 instance in
+Twenty CRM was deployed on an Amazon Linux 2023 `t3.small` EC2 instance in
 `us-east-1` using Docker Compose. Default EC2 metrics provide
 infrastructure-level monitoring, while the CloudWatch Agent adds host memory,
-filesystem, and detailed CPU visibility. CloudWatch alarms and dashboards make
-resource pressure easier to detect, visualize, and troubleshoot.
+filesystem, and detailed CPU visibility. The CPU alarm and three-metric
+dashboard make resource pressure easier to detect, visualize, and troubleshoot.
 
 Any unchecked evidence items must be completed and supported with real
 screenshots before final submission.
