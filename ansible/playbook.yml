@@ -1,4 +1,10 @@
 ---
+# playbook.yml
+# Automates the setup and deployment of Twenty CRM on a target host.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini playbook.yml
+
 - name: Automate Twenty CRM setup with Docker Compose
   hosts: twenty_crm
   become: true
@@ -9,17 +15,23 @@
   handlers:
     - name: restart twenty crm
       community.docker.docker_compose_v2:
-        project_src: "{{ twenty_repo_dir }}/packages/twenty-docker"
+        project_src: "{{ twenty_repo_dir }}"
         state: restarted
       become: true
       become_user: "{{ app_user }}"
 
   tasks:
+    # ------------------------------------------------------------------
+    # 0. Ensure the required Ansible collection is available
+    # ------------------------------------------------------------------
     - name: Ensure community.docker collection is installed
       ansible.builtin.command: ansible-galaxy collection install community.docker
       args:
         creates: ~/.ansible/collections/ansible_collections/community/docker
 
+    # ------------------------------------------------------------------
+    # 1. Install required dependencies and Docker
+    # ------------------------------------------------------------------
     - name: Update apt package cache
       ansible.builtin.apt:
         update_cache: true
@@ -61,6 +73,9 @@
         state: started
         enabled: true
 
+    # ------------------------------------------------------------------
+    # 2. Create a dedicated application user
+    # ------------------------------------------------------------------
     - name: Create application group
       ansible.builtin.group:
         name: "{{ app_group }}"
@@ -76,6 +91,9 @@
         create_home: true
         state: present
 
+    # ------------------------------------------------------------------
+    # 3. Create required directories with correct permissions
+    # ------------------------------------------------------------------
     - name: Create application base directory
       ansible.builtin.file:
         path: "{{ app_base_dir }}"
@@ -84,7 +102,10 @@
         group: "{{ app_group }}"
         mode: "0755"
 
-    - name: Clone OFFICIAL Twenty CRM repository
+    # ------------------------------------------------------------------
+    # 4. Clone the Twenty CRM repository (company repo)
+    # ------------------------------------------------------------------
+    - name: Clone devops-crm-project repository
       ansible.builtin.git:
         repo: "{{ repo_url }}"
         dest: "{{ twenty_repo_dir }}"
@@ -101,27 +122,49 @@
         group: "{{ app_group }}"
         recurse: true
 
+    # This project's Dockerfile builder stage originally had a
+    # `COPY .yarn ./.yarn` line. The `.yarn/` directory is not committed
+    # to the repository (it's gitignored and only regenerated locally
+    # after running `yarn install`), so on any fresh clone this line
+    # fails the build with "/.yarn: not found". Removing it is safe —
+    # Corepack + `yarn install --immutable` regenerate everything needed
+    # inside the image on their own.
+    - name: Remove broken .yarn COPY line from Dockerfile
+      ansible.builtin.lineinfile:
+        path: "{{ twenty_repo_dir }}/Dockerfile"
+        regexp: '^\s*COPY \.yarn \./\.yarn\s*$'
+        state: absent
+
+    # ------------------------------------------------------------------
+    # 5. Configure the application via a Jinja2 template
+    # ------------------------------------------------------------------
     - name: Render .env file from template
       ansible.builtin.template:
         src: templates/env.j2
-        dest: "{{ twenty_repo_dir }}/packages/twenty-docker/.env"
+        dest: "{{ twenty_repo_dir }}/.env"
         owner: "{{ app_user }}"
         group: "{{ app_group }}"
         mode: "0600"
       notify: restart twenty crm
 
+    # ------------------------------------------------------------------
+    # 6. Start Twenty CRM using Docker Compose
+    # ------------------------------------------------------------------
     - name: Proactive disk cleanup before Docker Compose
       ansible.builtin.shell: docker system prune -f
       ignore_errors: true
 
     - name: Start Twenty CRM stack with Docker Compose
       community.docker.docker_compose_v2:
-        project_src: "{{ twenty_repo_dir }}/packages/twenty-docker"
+        project_src: "{{ twenty_repo_dir }}"
         state: present
         pull: always
       become: true
       become_user: "{{ app_user }}"
 
+    # ------------------------------------------------------------------
+    # 7. Verify Twenty CRM is running successfully
+    # ------------------------------------------------------------------
     - name: Wait for Twenty CRM to respond on its port
       ansible.builtin.uri:
         url: "http://localhost:{{ twenty_port }}"
@@ -134,4 +177,6 @@
 
     - name: Report final status
       ansible.builtin.debug:
-        msg: "Twenty CRM is up and responding at {{ server_url }} (HTTP {{ health_check.status }})"
+        msg: >-
+          Twenty CRM is up and responding at {{ server_url }}
+          (HTTP {{ health_check.status }})

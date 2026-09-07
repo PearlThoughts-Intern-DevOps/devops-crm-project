@@ -1,12 +1,12 @@
-
+---
 app_user: twentyapp
 app_group: twentyapp
 app_base_dir: /opt/twenty-crm
 twenty_repo_dir: "{{ app_base_dir }}/devops-crm-project"
 
-# Using your own repository as requested
+# Company repository (NOT the upstream twentyhq/twenty repo)
 repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
-repo_branch: harish-task9
+repo_branch: harish-task5
 
 pg_database_user: postgres
 pg_database_password: "SuperSecureDatabasePassword123!"
@@ -24,9 +24,4 @@ encryption_key: "ThisIsAnEncryptionKeyThatIsAtLeast32Chars!"
 fallback_encryption_key: "FallbackEncryptionKeyThatIsAtLeast32Chars!"
 
 storage_type: local
-storage_s3_region: "us-east-1"
-storage_s3_name: "twenty-storage"
-storage_s3_endpoint: "http://localhost:9000"
-disable_db_migrations: "false"
-disable_cron_jobs_registration: "false"
 redis_url: "redis://redis:6379"
