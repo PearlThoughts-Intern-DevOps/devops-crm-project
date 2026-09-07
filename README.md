@@ -1,4 +1,4 @@
-# Task 10 — AWS Observability with CloudWatch (Twenty CRM)
+# Task 10 — AWS Observability with CloudWatch - Twenty CRM
 
 This repository/folder contains the documentation and supporting evidence for **Task 10: AWS Observability with CloudWatch**, built on top of the Twenty CRM deployment from `devops-crm-project` (branch `fiza`).
 
