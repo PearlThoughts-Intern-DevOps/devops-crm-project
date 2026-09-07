@@ -1,0 +1,5 @@
+---
+# Role-specific variables (override defaults)
+twenty_image: twentycrm/twenty:latest
+db_image: postgres:16
+redis_image: redis:7

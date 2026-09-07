@@ -1,0 +1,6 @@
+---
+- name: Test Twenty CRM role
+  hosts: localhost
+  become: true
+  roles:
+    - twentycrm

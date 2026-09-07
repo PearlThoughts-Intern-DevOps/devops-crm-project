@@ -1,43 +1,43 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Vault password file - NEVER commit this
+.vault_pass
+*.vault_pass
+vault_pass
+vault_pass.txt
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 
-# codegen
-generated
+# Ansible retry files
+*.retry
 
-# testing
-/coverage
-
-# dev
-/dist/
-
-.twenty
-
-# production
-/build
-
-# misc
+# OS files
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+.env.local
+
+# SSH keys - never commit
 *.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# typescript
-*.tsbuildinfo
-*.d.ts
+*.key
+id_rsa
+id_rsa.pub

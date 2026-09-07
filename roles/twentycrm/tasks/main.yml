@@ -1,0 +1,62 @@
+---
+- name: Clone Twenty CRM repository (shallow)
+  ansible.builtin.git:
+    repo: "{{ twenty_repo }}"
+    dest: "{{ app_dir }}/repo"
+    version: "{{ twenty_version }}"
+    force: false
+    depth: 1
+  become_user: "{{ app_user }}"
+
+- name: Deploy .env from Jinja2 template
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0600"
+  notify: restart twentycrm
+
+- name: Deploy docker-compose from Jinja2 template
+  ansible.builtin.template:
+    src: docker-compose.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0644"
+  notify: restart twentycrm
+
+- name: Start Twenty CRM with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}"
+    state: present
+    pull: missing
+
+- name: Wait for migrations to complete first
+  ansible.builtin.pause:
+    seconds: 60
+    prompt: "Waiting 60s for Twenty CRM migrations to complete..."
+
+- name: Wait for Twenty CRM to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}"
+    status_code: [200, 302, 401, 404]
+    validate_certs: false
+  register: health
+  until: health.status in [200, 302, 401, 404]
+  retries: 60
+  delay: 15
+
+- name: Show running containers
+  ansible.builtin.command:
+    cmd: docker ps --format "table {% raw %}{{.Names}}\t{{.Status}}\t{{.Ports}}{% endraw %}"
+  register: containers
+  changed_when: false
+
+- name: Print running containers
+  ansible.builtin.debug:
+    msg: "{{ containers.stdout_lines }}"
+
+- name: Confirm Twenty CRM is running
+  ansible.builtin.debug:
+    msg: "✅ Twenty CRM is running at http://localhost:{{ app_port }}"

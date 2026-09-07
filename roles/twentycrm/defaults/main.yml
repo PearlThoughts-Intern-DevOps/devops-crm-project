@@ -1,0 +1,4 @@
+---
+twenty_repo: https://github.com/twentyhq/twenty.git
+twenty_version: main
+app_port: 3000
