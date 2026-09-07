@@ -1,9 +1,9 @@
-Task 10: **AWS** CloudWatch Observability & Twenty **CRM** Deployment
+Task 10: AWS CloudWatch Observability & Twenty CRM Deployment
 
-Name: Harish Date: 7 September **2026** 
-Task: Deploy Twenty **CRM** on **AWS** **EC2**, configure CloudWatch metrics collection, build an observability dashboard, and trigger a **CPU** alert using stress testing. 
-Loom link: [
-PR link: 
+Name: Harish Date: 7 September 2026
+Task: Deploy Twenty CRM on AWS EC2, configure CloudWatch metrics collection, build an observability dashboard, and trigger a **CPU** alert using stress testing. 
+Loom link: []
+PR link: []
 
 ## Objective
 
@@ -15,53 +15,6 @@ The objective of this task was to deploy Twenty **CRM** on an **AWS** **EC2** in
 - CloudWatch Agent Configuration: Installed amazon-cloudwatch-agent and created a custom **JSON** configuration file to monitor system **CPU**, memory, and disk utilization.
 - Dashboarding: Built a custom CloudWatch dashboard (DevOps-**CRM**-Dashboard) with time-series visual widgets.
 - Alarm Validation: Configured a CloudWatch Alarm (High-**CPU**-Alarm) triggering at >= 70% active **CPU** usage, verified using the stress tool.
-
-## CloudWatch Agent Configuration Code
-
-Configuration File (/opt/aws/amazon-cloudwatch-agent/bin/config.json):
-
-{
-    *agent*: {
-    *metrics_collection_interval*: 60,
-    *run_as_user*: *root*
-    },
-    *metrics*: {
-    *namespace*: *CWAgent*,
-    *append_dimensions*: {
-    *InstanceId*: *${aws:InstanceId}*
-    },
-    *metrics_collected*: {
-    *cpu*: {
-    *measurement*: [
-    *cpu_usage_active*,
-    *cpu_usage_idle*,
-    *cpu_usage_user*,
-    *cpu_usage_system*
-    ],
-    *metrics_collection_interval*: 60,
-    *totalcpu*: true
-    },
-    *mem*: {
-    *measurement*: [
-    *mem_used_percent*,
-    *mem_available_percent*
-    ],
-    *metrics_collection_interval*: 60
-    },
-    *disk*: {
-    *measurement*: [
-    *disk_used_percent*
-    ],
-    *metrics_collection_interval*: 60,
-    *resources*: [
-    */*
-    ]
-    }
-    }
-    }
-}
-
-Commands to Apply and Start CloudWatch Agent:
 
 # Download and install the Amazon CloudWatch Agent package
 
@@ -100,9 +53,59 @@ Issue 3: Custom OS Metrics Missing in Default **EC2** Console
 
 Step 5.1: Connect via **SSH** ssh -i *harish-cw-key.pem* [ubuntu@ec2-54-**226**-97-42.compute-1.amazonaws.com](mailto:ubuntu@ec2-54-**226**-97-42.compute-1.amazonaws.com)
 
-Step 5.2: Deploy Twenty **CRM** docker compose up --build -d
+Step 5.2: Deploy Twenty **CRM** 
+
+docker compose up --build -d
 
 Step 5.3: Install CloudWatch Agent wget [https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb](https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb) sudo dpkg -i amazon-cloudwatch-agent.deb
+
+## CloudWatch Agent Configuration Code
+
+Configuration File (/opt/aws/amazon-cloudwatch-agent/bin/config.json):
+```
+{
+"agent": {
+"metrics_collection_interval": 60,
+"run_as_user": "root"
+},
+"metrics": {
+"namespace": "CWAgent",
+"append_dimensions": {
+"InstanceId": "${aws:InstanceId}"
+},
+"metrics_collected": {
+"cpu": {
+"measurement": [
+"cpu_usage_active",
+"cpu_usage_idle",
+"cpu_usage_user",
+"cpu_usage_system"
+],
+"metrics_collection_interval": 60,
+"totalcpu": true
+},
+"mem": {
+"measurement": [
+"mem_used_percent",
+"mem_available_percent"
+],
+"metrics_collection_interval": 60
+},
+"disk": {
+"measurement": [
+"disk_used_percent"
+],
+"metrics_collection_interval": 60,
+"resources": [
+"/"
+]
+}
+}
+}
+}
+```
+Commands to Apply and Start CloudWatch Agent:
+
 
 Step 5.4: Configure CloudWatch Agent Code Create configuration file at /opt/aws/amazon-cloudwatch-agent/bin/config.json with metric rules for cpu, mem, and disk under CWAgent namespace. Apply configuration and start agent: sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
 
