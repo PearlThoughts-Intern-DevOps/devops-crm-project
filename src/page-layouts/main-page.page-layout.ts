@@ -7,7 +7,7 @@ import {
   MAIN_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
   MAIN_PAGE_WIDGET_UNIVERSAL_IDENTIFIER,
 } from 'src/constants/universal-identifiers';
-
+ 
 export default definePageLayout({
   universalIdentifier: MAIN_PAGE_LAYOUT_UNIVERSAL_IDENTIFIER,
   name: APP_DISPLAY_NAME,
