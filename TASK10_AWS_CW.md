@@ -2,8 +2,8 @@ Task 10: AWS CloudWatch Observability & Twenty CRM Deployment
 
 Name: Harish Date: 7 September 2026
 Task: Deploy Twenty CRM on AWS EC2, configure CloudWatch metrics collection, build an observability dashboard, and trigger a **CPU** alert using stress testing. 
-Loom link: []
-PR link: []
+Loom link: [https://www.loom.com/share/49faccca5cce443c977ba655b5178ea7]
+PR link: [https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/228]
 
 ## Objective
 
