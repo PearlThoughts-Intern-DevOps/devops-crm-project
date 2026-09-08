@@ -1,0 +1,34 @@
+# Downloaded providers, modules, and local initialization data
+.terraform/
+
+# Terraform state and state backups
+*.tfstate
+*.tfstate.*
+
+# Saved execution plans
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local configuration overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Temporary state lock information
+.terraform.tfstate.lock.info
+
+# Local variable values
+*.tfvars
+*.tfvars.json
+
+# Automatically loaded local variable files
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Keep the shared example and provider dependency lock file
+!terraform.tfvars.example
+!.terraform.lock.hcl
