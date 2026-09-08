@@ -4,62 +4,106 @@
 
 Implemented AWS observability for the Twenty CRM application running on an Amazon EC2 instance using Amazon CloudWatch.
 
+The setup includes EC2 monitoring, CloudWatch Agent configuration, CPU/memory/disk metrics, CloudWatch alarms, a personal dashboard, and live metric testing.
+
 ## 1. EC2 Instance Setup
 
-- Launched an Ubuntu EC2 instance in AWS.
-- Connected to the instance using SSH.
-- Instance type used: `t3.small`
-- AWS Region: `us-east-1 (N. Virginia)`
+* Launched an Ubuntu EC2 instance in AWS.
+* Instance type: `t3.small`
+* AWS Region: `us-east-1 (N. Virginia)`
+* Connected to the instance using SSH.
+* Instance ID: `i-00a8cbeb1116ee8b2`
+
+![EC2 instance running](screenshots/task-10-aws-observability/01-ec2-running.png)
+
+![SSH connection](screenshots/task-10-aws-observability/02-ssh-connected.png)
 
 ## 2. Twenty CRM Deployment
 
 Twenty CRM was deployed and run on the EC2 instance using Docker.
 
-The application was exposed on port `2020`.
+* Application port: `2020`
+* Docker was installed and configured.
+* Twenty CRM was successfully started and verified as healthy.
+* The application was accessed through the EC2 instance.
 
-The application was successfully started on the EC2 instance and verified locally using an HTTP 200 response.
+![Twenty CRM running](screenshots/task-10-aws-observability/03-twenty-crm-running.png)
 
-## 3. CloudWatch Agent
+## 3. CloudWatch Agent Installation and Configuration
 
-Installed and configured the Amazon CloudWatch Agent on the EC2 instance.
+The Amazon CloudWatch Agent was installed and configured on the EC2 instance.
 
-The agent was configured to collect:
+The agent was configured with:
 
-- CPU utilization
-- Memory utilization
-- Disk utilization
+* Metrics collection interval: 60 seconds
+* CPU monitoring
+* Memory monitoring
+* Disk monitoring
+* EC2 Instance ID as a metric dimension
 
-Metrics were configured with a 60-second collection interval.
+![CloudWatch Agent configuration](screenshots/task-10-aws-observability/04-cloudwatch-agent-file.png)
 
-## 4. CloudWatch Metrics Configuration
+![CloudWatch Agent running](screenshots/task-10-aws-observability/05-cloudwatch-agent-running.png)
 
-The CloudWatch Agent configuration included:
+## 4. CloudWatch Metrics
 
-- `cpu_usage_idle`
-- `cpu_usage_user`
-- `cpu_usage_system`
-- `cpu_usage_iowait`
-- `mem_used_percent`
-- Disk `used_percent`
+The CloudWatch Agent collects the following metrics:
 
-The disk metric was configured for the root filesystem `/`.
+### CPU
 
-## 5. CloudWatch Alarm
+* `cpu_usage_idle`
+* `cpu_usage_user`
+* `cpu_usage_system`
 
-Created the following CloudWatch alarm:
+### Memory
 
-`Tannu-Task10-CPU-High`
+* `mem_used_percent`
+
+### Disk
+
+* `used_percent`
+
+Disk monitoring was configured for the root filesystem `/`.
+
+The metrics were configured with a 60-second collection interval.
+
+## 5. CloudWatch Alarms
+
+Two CloudWatch alarms were created.
+
+### CPU Alarm
+
+Alarm name:
+
+`Tannu-Task10-High-CPU`
 
 Configuration:
 
-- Namespace: `AWS/EC2`
-- Metric: `CPUUtilization`
-- Statistic: Average
-- Period: 5 minutes
-- Threshold: CPU utilization greater than 70%
-- Evaluation: 1 datapoint within 5 minutes
+* Namespace: `AWS/EC2`
+* Metric: `CPUUtilization`
+* Statistic: Average
+* Period: 1 minute
+* Threshold: Greater than 70%
 
-The alarm was created without notification actions because the provided IAM user did not have permission to create/list SNS topics.
+![CloudWatch CPU alarm](screenshots/task-10-aws-observability/06-cloudwatch-high-cpu-alarm.png)
+
+### Memory Alarm
+
+Alarm name:
+
+`Tannu-Task10-High-Memory`
+
+Configuration:
+
+* Namespace: `CWAgent`
+* Metric: `mem_used_percent`
+* Statistic: Average
+* Period: 1 minute
+* Threshold: Greater than 80%
+
+![CloudWatch memory alarm](screenshots/task-10-aws-observability/07-cloudwatch-high-memory-alarm.png)
+
+The alarms were created without notification actions because SNS notification configuration was not required for this task.
 
 ## 6. CloudWatch Dashboard
 
@@ -67,59 +111,124 @@ Created a personal CloudWatch dashboard:
 
 `Tannu-Task10-Observability`
 
-A CPU utilization widget using the EC2 CPUUtilization metric was added and configured for the EC2 instance. After the instance was terminated, the dashboard no longer displayed live metric data.
+The dashboard contains three monitoring widgets:
 
-## 7. Testing
+* `CPUUtilization`
+* `mem_used_percent`
+* `disk_used_percent`
 
-The CloudWatch Agent was started successfully and its status showed:
+The widgets were configured for the EC2 instance and provide a single view of CPU, memory, and disk utilization.
 
-- Status: Running
-- Config status: Configured
+![CloudWatch dashboard](screenshots/task-10-aws-observability/08-cloudwatch-dashboard.png)
 
-The Twenty CRM container was also successfully started during the implementation.
+## 7. Live Metric Testing
 
-## 8. Issues Faced
+Live metric testing was performed after configuring the CloudWatch monitoring setup.
 
-### Redis connection issue
+Twenty CRM activity was generated on the running application.
 
-During Twenty CRM startup, Redis connection/session-store errors were observed.
+A temporary CPU load was also generated on the EC2 instance using two background `yes` processes:
 
-Redis was started and verified locally, after which the Twenty CRM application successfully started.
+```bash
+yes > /dev/null & P1=$!
+yes > /dev/null & P2=$!
+```
 
-### Disk space issue
+The CPU load was then stopped using:
 
-The EC2 instance had limited disk space and the root filesystem reached very high utilization.
+```bash
+kill $P1 $P2
+```
 
-The issue was handled by cleaning package cache, pruning unused Docker resources, and removing unnecessary local `node_modules`.
+This test was performed to generate CPU activity and verify that the CloudWatch CPU metric responds to changes in system activity.
 
-### Memory pressure
+The CloudWatch dashboard was refreshed after the test to verify updated metric data.
 
-Memory usage was high while running Twenty CRM.
+## 8. Issues Faced and Solutions
 
-A swap file was configured to provide additional virtual memory.
+### Disk Space Issue
 
-### EC2 termination
+The EC2 instance had limited disk space, which caused Docker and package installation issues.
 
-During the final verification stage, the EC2 instance became terminated.
+The issue was handled by:
 
-A replacement instance could not be launched because the provided IAM user had an explicit deny for:
+* Cleaning package cache
+* Removing unnecessary files
+* Pruning unused Docker resources
+* Removing unnecessary `node_modules`
+* Checking disk usage before continuing
 
-`ec2:RunInstances`
+### Memory Pressure
 
-Therefore, final live metric-change testing could not be completed.
+The `t3.small` instance had limited memory while running Twenty CRM and its supporting services.
 
-## 9. Final Status
+A 1 GB swap file was configured to provide additional virtual memory:
 
-The following components were successfully implemented:
+```bash
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
 
-- EC2 setup
-- SSH connection
-- Twenty CRM deployment
-- CloudWatch Agent installation
-- CPU monitoring configuration
-- Memory monitoring configuration
-- Disk monitoring configuration
-- CloudWatch CPU alarm
-- Personal CloudWatch dashboard
+This helped the instance handle the application workload without changing the EC2 instance type.
 
-Final live CRM activity and metric-change verification could not be completed because the EC2 instance was terminated before final testing.
+### Redis Memory Overcommit
+
+Redis-related memory behavior was addressed by enabling memory overcommit:
+
+```bash
+sudo sysctl vm.overcommit_memory=1
+```
+
+The configuration was also persisted using:
+
+```bash
+echo 'vm.overcommit_memory = 1' | sudo tee /etc/sysctl.d/99-twenty.conf
+```
+
+### EC2 Permission Restrictions
+
+Attempts to modify the EC2 volume and instance attributes were blocked by the provided IAM permissions.
+
+The following actions were denied:
+
+* `ec2:ModifyVolume`
+* `ec2:ModifyInstanceAttribute`
+
+Therefore, the existing `t3.small` instance configuration was retained and the memory limitation was handled using swap.
+
+## 9. Verification
+
+The following components were successfully verified:
+
+* EC2 instance running
+* SSH connectivity
+* Docker running
+* Twenty CRM running successfully
+* CloudWatch Agent running
+* CPU metrics available
+* Memory metrics available
+* Disk metrics available
+* CPU alarm created
+* Memory alarm created
+* CloudWatch dashboard created
+* Live CPU activity test performed
+* Metric data refreshed after testing
+
+## 10. Final Status
+
+AWS observability for Twenty CRM was successfully implemented using Amazon CloudWatch.
+
+The final setup provides:
+
+* EC2 infrastructure monitoring
+* CPU monitoring
+* Memory monitoring
+* Disk monitoring
+* CPU alerting
+* Memory alerting
+* A personal CloudWatch dashboard
+* Live metric-change testing
+
+The monitoring setup is ready for ongoing observation and troubleshooting of the Twenty CRM application running on EC2.
