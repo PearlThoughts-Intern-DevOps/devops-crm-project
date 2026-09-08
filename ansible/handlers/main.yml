@@ -1,0 +1,6 @@
+---
+- name: Restart Twenty CRM
+  community.docker.docker_compose_v2:
+    project_src: "{{ twenty_app_dir }}"
+    state: restarted
+  become: true
