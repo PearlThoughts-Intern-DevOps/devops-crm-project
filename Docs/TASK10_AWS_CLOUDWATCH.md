@@ -402,22 +402,22 @@ Twenty CRM was accessed and tested during monitoring, and changes in system metr
 ## Screenshots
 
 ### 1. EC2 Instance
-![EC2 Instance](images/instance.png)
+![EC2 Instance](Task-10-images/instance.png)
 
 ### 2. Twenty CRM Dashboard
-![Twenty CRM Dashboard](images/crm-dashboard.png)
+![Twenty CRM Dashboard](Task-10-images/crm-dashboard.png)
 
 ### 3. Docker Containers and Health Check
-![Docker and Health Check](images/docker-status.png)
+![Docker and Health Check](Task-10-images/docker-status.png)
 
 ### 4. CloudWatch Metrics
-![CloudWatch Metrics](images/metrics-dashboard.png)
+![CloudWatch Metrics](Task-10-images/metrics-dashboard.png)
 
 ### 5. CloudWatch Dashboard
-![CloudWatch Dashboard](images/cloudwatch-dashboard.png)
+![CloudWatch Dashboard](Task-10-images/cloudwatch-dashboard.png)
 
 ### 6. CloudWatch Alarms
-![CloudWatch Alarms](images/alarms.png)
+![CloudWatch Alarms](Task-10-images/alarms.png)
 
 ### 5. CloudWatch Hike Dashboard
-![CloudWatch Dashboard](images/cloudwatch-hikedashboard.png
+![CloudWatch Dashboard](Task-10-images/cloudwatch-hikedashboard.png)
