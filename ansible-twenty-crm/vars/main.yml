@@ -1,0 +1,6 @@
+app_user: twenty_user
+app_dir: /opt/twenty-crm
+repo_url: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+server_url: "http://{{ ansible_default_ipv4.address | default(ansible_host) }}:2020"
+frontend_url: "http://{{ ansible_default_ipv4.address | default(ansible_host) }}:2020"
+encryption_key: "dev_encryption_key_12345678"
