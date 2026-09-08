@@ -1,0 +1,5 @@
+aws_region          = "us-east-1"
+instance_type       = "t3.small"
+instance_name       = "shradha-task11-ec2"
+ami_id              = "ami-081b0a6eac00b4f53"
+ecr_repository_name = "twenty-crm"
