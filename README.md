@@ -1,284 +1,472 @@
-# Twenty CRM — Local Setup & Automation
+# Terraform Infrastructure Configuration
+## Twenty CRM — AWS Infrastructure as Code
 
-**PearlThoughts DevOps Internship — Task 03**
-**Author:** Shubham Singh
-
----
-
-## What is Twenty CRM?
-
-Twenty is an open-source CRM platform. This project is a custom Twenty SDK-based app that connects to a self-hosted Twenty backend running via Docker. It lets you manage companies, people, opportunities, tasks, and more.
+> **Task 11** | DevOps Internship — PearlsThoughts
+> **Author:** Shubham Singh
+> **Region:** us-east-1 (N. Virginia)
 
 ---
 
-## Tech Stack
+## Table of Contents
 
-| Layer | Tool | Purpose |
-|---|---|---|
-| **Runtime** | Node.js v24.5.0 | JavaScript runtime |
-| **Package Manager** | Yarn 4.13.0 | Dependency management |
-| **Language** | TypeScript 5.x | Type-safe JavaScript |
-| **Frontend Framework** | React 19 | UI rendering |
-| **CRM Platform** | Twenty SDK / Twenty UI | CRM components and API client |
-| **API Client** | twenty-client-sdk | Auto-generated GraphQL client |
-| **Build Tool** | esbuild / Rolldown | Fast JS/TS bundler |
-| **Dev Server** | Vite | Hot-reload dev server |
-| **Testing** | Vitest | Unit and integration tests |
-| **Linting** | OxLint | Fast Rust-based JS/TS linter |
-| **Database** | PostgreSQL | Relational data storage |
-| **Cache / Queue** | Redis | Background jobs and caching |
-| **Container** | Docker | Runs the Twenty backend stack |
-| **Node Version Manager** | NVM | Manages Node.js versions via `.nvmrc` |
-| **Automation** | Python 3 | Setup and startup automation script |
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Resources](#resources)
+- [Variables](#variables)
+- [Outputs](#outputs)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+- [Validation Results](#validation-results)
+- [Best Practices Applied](#best-practices-applied)
+
+---
+
+## Overview
+
+This repository contains Terraform configuration files that define
+the complete AWS infrastructure for the **Twenty CRM** application.
+Twenty CRM is an open-source customer relationship management system
+deployed using Docker containers on AWS EC2.
+
+The infrastructure is defined as code using **HashiCorp Terraform**,
+following Infrastructure as Code (IaC) principles. This means the
+entire AWS environment — networking, compute, and container registry —
+can be created, modified, or destroyed using simple commands, making
+it repeatable, version-controlled, and auditable.
+
+### What this configuration provisions
+
+```
+AWS Cloud (us-east-1)
+│
+├── VPC (Virtual Private Cloud)
+│   ├── Public Subnet (us-east-1a)
+│   ├── Internet Gateway
+│   └── Route Table → routes traffic to internet
+│
+├── EC2 Instance (t3.small)
+│   ├── Ubuntu 22.04 LTS
+│   ├── 20GB gp3 EBS volume
+│   ├── Security Group (ports 22, 80, 443, 3000)
+│   └── Twenty CRM running via Docker
+│
+└── ECR (Elastic Container Registry)
+    ├── Repository: twenty-crm
+    ├── Image scanning on push
+    └── Lifecycle policy (keeps last 10 images)
+```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AWS Cloud (us-east-1)                    │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              VPC (10.0.0.0/16)                       │  │
+│  │                                                      │  │
+│  │  ┌─────────────────────────────────────────────┐    │  │
+│  │  │         Public Subnet (10.0.1.0/24)         │    │  │
+│  │  │         Availability Zone: us-east-1a       │    │  │
+│  │  │                                             │    │  │
+│  │  │   ┌─────────────────────────────────────┐  │    │  │
+│  │  │   │        EC2 Instance (t3.small)       │  │    │  │
+│  │  │   │        Ubuntu 22.04 LTS              │  │    │  │
+│  │  │   │        20GB gp3 EBS Volume           │  │    │  │
+│  │  │   │                                     │  │    │  │
+│  │  │   │   ┌─────────────────────────────┐   │  │    │  │
+│  │  │   │   │    Docker Containers         │   │  │    │  │
+│  │  │   │   │  ┌──────────────────────┐   │   │  │    │  │
+│  │  │   │   │  │  Twenty CRM Server   │   │   │  │    │  │
+│  │  │   │   │  │  Port: 3000          │   │   │  │    │  │
+│  │  │   │   │  └──────────────────────┘   │   │  │    │  │
+│  │  │   │   │  ┌──────────────────────┐   │   │  │    │  │
+│  │  │   │   │  │  PostgreSQL DB        │   │   │  │    │  │
+│  │  │   │   │  └──────────────────────┘   │   │  │    │  │
+│  │  │   │   │  ┌──────────────────────┐   │   │  │    │  │
+│  │  │   │   │  │  Redis Cache         │   │   │  │    │  │
+│  │  │   │   │  └──────────────────────┘   │   │  │    │  │
+│  │  │   │   └─────────────────────────────┘   │  │    │  │
+│  │  │   └─────────────────────────────────────┘  │    │  │
+│  │  └─────────────────────────────────────────────┘    │  │
+│  │                         │                            │  │
+│  │              Internet Gateway                        │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                            │                               │
+│                        Internet                            │
+│                                                            │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │         ECR (Elastic Container Registry)            │  │
+│  │         Repository: twenty-crm                      │  │
+│  │         Image scanning: enabled                     │  │
+│  │         Lifecycle: keeps last 10 images             │  │
+│  └─────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Project Structure
 
 ```
-devops-crm-project/
-├── src/                   # App source code
-├── public/                # Static assets
-├── script/
-│   └── setup.py          # Python automation script
-├── package.json          # Dependencies and scripts
-├── .nvmrc                # Node version lock (read by nvm)
-├── .env                  # Environment config (not committed to Git)
-├── tsconfig.json         # TypeScript config
-├── vitest.config.ts      # Test config
-├── .oxlintrc.json        # Linter config
-└── yarn.lock             # Locked dependency tree
+terraform/
+│
+├── provider.tf          # AWS provider configuration and
+│                        # Terraform version constraints
+│
+├── variables.tf         # All input variable declarations
+│                        # with types, descriptions, defaults
+│
+├── main.tf              # Core infrastructure resources
+│                        # VPC, Subnet, IGW, Route Table,
+│                        # Security Group, EC2, ECR
+│
+├── outputs.tf           # Output values exported after apply
+│                        # IDs, IPs, URLs of created resources
+│
+├── terraform.tfvars     # Actual values assigned to variables
+│                        # environment-specific configuration
+│
+└── README.md            # This documentation file
 ```
+
+### Why this structure?
+
+Each file has a single clear responsibility:
+
+| File | Responsibility |
+|------|---------------|
+| `provider.tf` | Tells Terraform which cloud provider to use and version |
+| `variables.tf` | Defines all configurable inputs — no hardcoded values |
+| `main.tf` | The actual infrastructure resources being created |
+| `outputs.tf` | Exposes important values after resources are created |
+| `terraform.tfvars` | The actual values injected into variables |
+
+---
+
+## Resources
+
+### 1. VPC (Virtual Private Cloud)
+
+The VPC is the isolated network environment where all resources live.
+
+```hcl
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+}
+```
+
+| Property | Value | Reason |
+|----------|-------|--------|
+| CIDR block | `10.0.0.0/16` | Provides 65,536 IP addresses |
+| DNS hostnames | enabled | EC2 instances get public DNS names |
+| DNS support | enabled | Required for DNS resolution inside VPC |
+
+---
+
+### 2. Public Subnet
+
+The subnet is a subdivision of the VPC where EC2 lives.
+
+```hcl
+resource "aws_subnet" "public" {
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+}
+```
+
+| Property | Value | Reason |
+|----------|-------|--------|
+| CIDR block | `10.0.1.0/24` | 256 IPs for public resources |
+| AZ | `us-east-1a` | Single AZ for simplicity |
+| Auto public IP | true | EC2 gets public IP automatically |
+
+---
+
+### 3. Internet Gateway + Route Table
+
+Allows resources inside the VPC to communicate with the internet.
+
+```
+EC2 Instance
+    │
+    ▼
+Route Table (0.0.0.0/0 → IGW)
+    │
+    ▼
+Internet Gateway
+    │
+    ▼
+Internet
+```
+
+---
+
+### 4. Security Group
+
+Controls inbound and outbound traffic to the EC2 instance.
+
+#### Inbound Rules
+
+| Port | Protocol | Source | Purpose |
+|------|----------|--------|---------|
+| 22 | TCP | 0.0.0.0/0 | SSH access for administration |
+| 80 | TCP | 0.0.0.0/0 | HTTP web traffic |
+| 443 | TCP | 0.0.0.0/0 | HTTPS secure web traffic |
+| 3000 | TCP | 0.0.0.0/0 | Twenty CRM application port |
+
+#### Outbound Rules
+
+| Port | Protocol | Destination | Purpose |
+|------|----------|-------------|---------|
+| All | All | 0.0.0.0/0 | Allow all outbound traffic |
+
+---
+
+### 5. EC2 Instance
+
+The virtual machine running the Twenty CRM application.
+
+```hcl
+resource "aws_instance" "twenty_crm" {
+  ami           = "ami-0866a3c8686eaeeba"
+  instance_type = "t3.small"
+}
+```
+
+| Property | Value | Reason |
+|----------|-------|--------|
+| AMI | Ubuntu 22.04 LTS | Stable LTS Linux distribution |
+| Instance type | t3.small | 2 vCPU, 2GB RAM — sufficient for CRM |
+| Volume size | 20GB | Enough for OS + Docker + CRM data |
+| Volume type | gp3 | Better performance than gp2, lower cost |
+| Key pair | instance1-key | Existing key for SSH access |
+
+---
+
+### 6. ECR (Elastic Container Registry)
+
+Private Docker image registry for storing Twenty CRM container images.
+
+```hcl
+resource "aws_ecr_repository" "twenty_crm" {
+  name                 = "twenty-crm"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+```
+
+| Property | Value | Reason |
+|----------|-------|--------|
+| Name | `twenty-crm` | Repository for CRM images |
+| Tag mutability | MUTABLE | Allows overwriting tags (e.g. latest) |
+| Scan on push | true | Auto security scan on every image push |
+
+#### ECR Lifecycle Policy
+
+Automatically removes old images to save storage costs:
+
+```
+Rule: Keep only the last 10 images
+→ When 11th image is pushed
+→ Oldest image is automatically deleted
+→ Keeps storage costs minimal
+```
+
+---
+
+## Variables
+
+All configurable values are defined as variables — no hardcoded
+values exist in the resource definitions. This makes the
+configuration reusable across different environments.
+
+### Complete Variables Reference
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `aws_region` | string | `us-east-1` | AWS region for all resources |
+| `project_name` | string | `twenty-crm` | Used in resource names and tags |
+| `environment` | string | `dev` | Environment (dev/staging/prod) |
+| `vpc_cidr` | string | `10.0.0.0/16` | CIDR block for VPC |
+| `public_subnet_cidr` | string | `10.0.1.0/24` | CIDR for public subnet |
+| `availability_zone` | string | `us-east-1a` | AZ for subnet placement |
+| `instance_type` | string | `t3.small` | EC2 instance size |
+| `ami_id` | string | `ami-0866a3c8686eaeeba` | Ubuntu 22.04 LTS AMI |
+| `key_name` | string | `instance1-key` | SSH key pair name |
+| `root_volume_size` | number | `20` | EBS volume size in GB |
+| `ecr_repo_name` | string | `twenty-crm` | ECR repository name |
+| `image_tag_mutability` | string | `MUTABLE` | ECR image tag setting |
+
+### How variables flow through the configuration
+
+```
+terraform.tfvars            variables.tf             main.tf
+────────────────────        ────────────             ───────
+aws_region = "us-east-1" →  var.aws_region       →  provider region
+instance_type = "t3.small"→  var.instance_type   →  aws_instance
+ecr_repo_name = "twenty"  →  var.ecr_repo_name   →  aws_ecr_repository
+```
+
+---
+
+## Outputs
+
+After `terraform apply`, these values are printed to the terminal
+and can be used by other systems or CI/CD pipelines.
+
+| Output | Description | Example Value |
+|--------|-------------|---------------|
+| `vpc_id` | VPC unique identifier | `vpc-0abc123def456` |
+| `vpc_cidr` | VPC IP range | `10.0.0.0/16` |
+| `public_subnet_id` | Subnet identifier | `subnet-0abc123` |
+| `ec2_instance_id` | EC2 instance ID | `i-0abc123def456789` |
+| `ec2_public_ip` | Public IP address | `54.123.45.67` |
+| `ec2_public_dns` | Public DNS hostname | `ec2-54-123-45-67.compute-1.amazonaws.com` |
+| `ec2_instance_type` | Instance size used | `t3.small` |
+| `security_group_id` | Security group ID | `sg-0abc123def` |
+| `ecr_repository_url` | Full ECR URL for docker push | `123456789.dkr.ecr.us-east-1.amazonaws.com/twenty-crm` |
+| `ecr_repository_name` | ECR repo name | `twenty-crm` |
+| `ecr_registry_id` | ECR registry ID | `123456789012` |
 
 ---
 
 ## Prerequisites
 
-| Tool | Check Command |
-|---|---|
-| Git | `git --version` |
-| Node.js (via nvm) | `node --version` |
-| Yarn | `yarn --version` |
-| Docker | `docker --version` |
-| Python 3 | `python3 --version` |
-| NVM | `nvm --version` |
+### 1. Terraform installed (>= 1.0)
+```bash
+terraform version
+# Terraform v1.16.1
+```
+
+### 2. AWS credentials configured
+Required only for `terraform plan` and `terraform apply`.
+For this task (`init` and `validate` only) — no credentials needed.
 
 ---
 
-## Manual Setup (Step by Step)
+## Usage
 
-### Step 1 — Clone the Repository
-
+### Step 1 — Clone and navigate
 ```bash
 git clone https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
-cd devops-crm-project
+cd devops-crm-project/terraform
 ```
 
-### Step 2 — Set Correct Node Version
-
-The `.nvmrc` file locks the exact Node version needed for this project:
-
+### Step 2 — Initialize Terraform
 ```bash
-nvm install     # reads .nvmrc and installs the right version
-nvm use         # switches to that version
-node --version  # verify: should show v24.5.0
+terraform init
+```
+Downloads the AWS provider plugin. Run once per project setup.
+
+```
+Initializing provider plugins...
+- Installing hashicorp/aws v5.100.0...
+Terraform has been successfully initialized! ✅
 ```
 
-### Step 3 — Install Dependencies
-
+### Step 3 — Validate configuration
 ```bash
-yarn
+terraform validate
 ```
-
-### Step 4 — Configure Environment
-
-```bash
-cp .env.example .env   # if example exists, else create .env manually
-```
-
-Your `.env` should contain the following keys (fill in your own values):
-
-```env
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-NODE_ENV=development
-PORT=
-SERVER_URL=
-PG_DATABASE_URL=
-```
-
-> ⚠️ Never commit your `.env` file to Git. It is already listed in `.gitignore`.
-
-### Step 5 — Start PostgreSQL
-
-```bash
-sudo apt install postgresql -y
-sudo systemctl start postgresql
-sudo -u postgres psql -c "CREATE USER twenty WITH PASSWORD 'twenty';"
-sudo -u postgres psql -c 'CREATE DATABASE "default" OWNER twenty;'
-sudo -u postgres psql -c 'CREATE DATABASE "test" OWNER twenty;'
-```
-
-### Step 6 — Start Redis
-
-```bash
-sudo apt install redis-server -y
-sudo systemctl start redis-server
-redis-cli ping   # should return PONG
-```
-
-### Step 7 — Start the App via Docker
-
-Twenty's backend runs as a Docker container managed by the Twenty CLI:
-
-```bash
-yarn twenty docker:start
-```
-
-App available at: **http://localhost:2020**
-Login: `tim@apple.dev` / `tim@apple.dev`
-
----
-
-## Automated Setup (Python Script)
-
-All 7 steps above are automated in a single Python script — no manual steps needed.
-
-### Run Everything at Once
-
-```bash
-python3 script/setup.py all
-```
-
-### Individual Steps
-
-```bash
-python3 script/setup.py check      # verify all tools are installed
-python3 script/setup.py env        # copy .env files
-python3 script/setup.py install    # nvm + yarn install
-python3 script/setup.py start      # docker:start + wait for app
-python3 script/setup.py status     # check what's running
-python3 script/setup.py stop       # stop Docker container
-```
-
-### How the Script Works
+Checks syntax and internal consistency. No AWS API calls made.
+No credentials required.
 
 ```
-python3 setup.py all
-        │
-        ├── check    → verifies git, node, yarn, docker + daemon running
-        ├── env      → finds/copies .env (searches whole project tree)
-        ├── install  → reads .nvmrc → nvm install → nvm use → yarn
-        └── start    → yarn twenty docker:start → polls until app is up
-```
-
-**Key design decisions:**
-
-- **No hardcoding** — all config (port, DB, URL) read from `.env`
-- **Dynamic root detection** — `find_root()` walks up folders to find `package.json`, works from any directory
-- **Dynamic Node version** — reads `.nvmrc` so always installs the correct version
-- **Idempotent** — safe to run multiple times, skips already completed steps
-
----
-
-## Verification
-
-### Frontend
-
-Open **http://localhost:2020** → login with `tim@apple.dev` → navigate to Companies → see 600 seeded companies.
-
-### Backend Health Check
-
-```bash
-curl http://localhost:2020/healthz
-# Expected: {"status":"ok","info":{},"error":{},"details":{}}
-```
-
-### Database Verification
-
-```bash
-sudo -u postgres psql -d default
-```
-
-```sql
--- Verify company data
-SELECT name, "domainNamePrimaryLinkUrl", "addressAddressCountry"
-FROM "workspace_1wgvd1injqtife6y4rvfbu3h5"."company"
-WHERE name ILIKE '%shubham%';
-
--- Verify person data
-SELECT "nameFirstName", "nameLastName", "emailsPrimaryEmail"
-FROM "workspace_1wgvd1injqtife6y4rvfbu3h5"."person"
-WHERE "nameFirstName" ILIKE '%shubham%';
-```
-
-**Confirmed in DB:**
-
-| Field | Value |
-|---|---|
-| Company | Shubham Cloud Solutions |
-| Domain | ShubhamCloudSolution.com |
-| Country | INDIA |
-| Person | shubham singh |
-
-### Redis
-
-```bash
-redis-cli ping    # PONG = running
-```
-
-### Docker Container
-
-```bash
-yarn twenty docker:status   # container health
-yarn twenty docker:logs     # live logs
+Success! The configuration is valid. ✅
 ```
 
 ---
 
-## Available Scripts
+## Validation Results
 
-| Command | Description |
-|---|---|
-| `yarn twenty docker:start` | Start the CRM via Docker |
-| `yarn twenty docker:stop` | Stop the container |
-| `yarn twenty docker:status` | Check container health |
-| `yarn twenty docker:logs` | Stream live logs |
-| `yarn twenty docker:reset` | Reset all data and restart fresh |
-| `yarn test` | Run all tests with Vitest |
-| `yarn test:unit` | Run unit tests only |
-| `yarn lint` | Lint with OxLint |
-| `yarn typecheck` | TypeScript type check |
-
----
-
-## Issues Faced & Solutions
-
-| Issue | Cause | Solution |
-|---|---|---|
-| `Run from twenty repo root` error | Script was run from `script/` folder, looked for `package.json` in current directory | Added `find_root()` to walk up directory tree automatically — works from any folder |
-| `nx not found` | Script assumed standard Twenty CRM repo which uses Nx; this repo does not | Removed nx entirely; script now reads `package.json` scripts dynamically |
-| Password prompt for PostgreSQL | `subprocess.run` was passing DB password interactively | Switched to `sudo -u postgres psql` — runs as superuser, no password needed |
-| App URL wrong | Port 3000 was hardcoded but this repo runs on port 2020 | `PORT` and `SERVER_URL` now read directly from `.env` — no hardcoding |
-| `yarn twenty` only printed help | `twenty` is a CLI tool — running it alone just shows available commands | Correct start command is `yarn twenty docker:start` |
-| CI test failure on PR | Pre-existing bug in repo: `layoutMode VERTICAL_LIST` conflicts with widget `gridPosition` which requires `GRID` | Not caused by Task 03 changes — documented as existing repo issue |
-
----
-
-## Branch & PR
+Both required commands completed successfully on this configuration:
 
 ```bash
-git checkout -b shubham-singh
-git add script/setup.py README.md
-git commit -m "Task 03: Python automation script + README"
-git push origin shubham-singh
+$ terraform init
+
+Initializing the backend...
+Initializing provider plugins...
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v5.100.0
+
+Terraform has been successfully initialized! ✅
+
+$ terraform validate
+
+Success! The configuration is valid. ✅
 ```
 
 ---
 
-## Demo
+## Best Practices Applied
 
-Loom video: https://www.loom.com/share/704f77a822074b24badcfd3b0537cafc
+### 1. No hardcoded values
+```hcl
+# ❌ Bad practice
+instance_type = "t3.small"
+
+# ✅ Good practice (what we do)
+instance_type = var.instance_type
+```
+
+### 2. Consistent tagging on all resources
+```hcl
+tags = {
+  Name        = "${var.project_name}-vpc"
+  Environment = var.environment
+  Project     = var.project_name
+}
+```
+Every resource tagged for cost tracking and identification.
+
+### 3. Variables with descriptions and types
+```hcl
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.small"
+}
+```
+
+### 4. Outputs for all important values
+All resource IDs, IPs, and URLs exported as outputs for
+use in CI/CD pipelines or other Terraform configurations.
+
+### 5. Principle of least privilege on security group
+Only required ports opened — no unnecessary access.
+
+### 6. ECR lifecycle policy
+Automatic cleanup of old images prevents storage cost growth.
+
+### 7. gp3 over gp2 for EBS volumes
+gp3 is 20% cheaper with better baseline performance than gp2.
+
+### 8. Clean file separation
+Each file has one clear purpose — easy to navigate and maintain.
+
+---
+
+## Author
+
+| Field | Details |
+|-------|---------|
+| Name | Shubham Singh |
+| Role | Cloud Support Engineer Intern |
+| Education | MCA 2026 — Garden City University, Bangalore |
+| Task | Task-11 — Terraform Preparation |
+| Organization | PearlsThoughts DevOps Internship |
+| Date | September 2026 |
+
+---
+
+*This configuration is part of the PearlsThoughts DevOps Internship program.*
