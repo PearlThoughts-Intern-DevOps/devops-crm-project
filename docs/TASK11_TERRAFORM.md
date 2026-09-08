@@ -3,7 +3,7 @@
 **Name:** Harish
 **Date:** September 8, 2026
 **Task:** Prepare Terraform configuration for the AWS infrastructure used for the Twenty CRM application.
-**PR link**[]
+**PR link**[https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/256]
 **Loom link** [https://drive.google.com/file/d/1VgBjMlcvtmrv9Hyv3bXC13Vd8CSh2Qzq/view?usp=drive_link]
 
 ## 1. Objective
