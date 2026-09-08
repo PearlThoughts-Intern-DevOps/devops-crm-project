@@ -1,0 +1,7 @@
+# Ansible generated secrets
+.postgres_password
+.encryption_key
+
+# Ansible temporary/runtime files
+*.retry
+__pycache__/

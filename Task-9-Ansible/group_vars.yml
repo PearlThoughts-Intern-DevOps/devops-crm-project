@@ -1,0 +1,27 @@
+---
+# Twenty CRM configuration
+
+twenty_user: "twenty"
+twenty_group: "twenty"
+twenty_home: "/home/twenty"
+twenty_app_dir: "/opt/twenty"
+
+# Twenty CRM
+twenty_version: "latest"
+twenty_port: 3000
+twenty_server_url: "http://localhost:3000"
+
+# Database
+postgres_db: "default"
+postgres_user: "postgres"
+postgres_password: "{{ lookup('ansible.builtin.password', playbook_dir + '/.postgres_password length=32 chars=hexdigits') }}"
+
+# Twenty encryption
+twenty_encryption_key: "{{ lookup('ansible.builtin.password', playbook_dir + '/.encryption_key length=64 chars=hexdigits') }}"
+
+# Redis
+redis_url: "redis://redis:6379"
+
+# Repository
+twenty_repo: "https://github.com/twentyhq/twenty.git"
+twenty_repo_version: "main"

@@ -11,7 +11,7 @@ import {
 import {
   APP_DISPLAY_NAME,
   MAIN_PAGE_FRONT_COMPONENT_UNIVERSAL_IDENTIFIER,
-} from 'src/constants/universal-identifiers';
+} from '../constants/universal-identifiers';
 
 const DOCS_BASE_URL = 'https://docs.twenty.com/developers/extend/apps';
 
