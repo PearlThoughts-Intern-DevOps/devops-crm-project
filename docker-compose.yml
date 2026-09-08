@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DATABASE_NAME:-default}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DATABASE_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-net
+
+  twenty-server:
+    image: twentycrm/twenty:${TWENTY_VERSION:-latest}
+    restart: unless-stopped
+    command: ["yarn", "start:prod"]
+    environment:
+      NODE_PORT: 3000
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${PG_DATABASE_PASSWORD:-postgres}@db:5432/${PG_DATABASE_NAME:-default}
+      REDIS_URL: redis://redis:6379
+      SERVER_URL: ${SERVER_URL:-http://localhost:3000}
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set in .env}
+      STORAGE_TYPE: local
+    ports:
+      - "${TWENTY_PORT:-3000}:3000"
+    volumes:
+      - twenty-server-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    networks:
+      - twenty-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      TWENTY_API_URL: http://twenty-server:3000
+    depends_on:
+      twenty-server:
+        condition: service_healthy
+    networks:
+      - twenty-net
+
+networks:
+  twenty-net:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:
+  twenty-server-data:
