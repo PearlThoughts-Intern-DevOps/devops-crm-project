@@ -37,7 +37,22 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
+.env
 # typescript
 *.tsbuildinfo
 *.d.ts
+
+*.swp
+*.swo
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
