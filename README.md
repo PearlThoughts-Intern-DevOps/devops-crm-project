@@ -93,7 +93,8 @@ In this task, I implemented AWS Observability for the Twenty CRM application run
 
 After logging into the AWS Console, the services used for this task were EC2, CloudWatch, Simple Notification Service (SNS), and IAM — all visible in the recently visited panel.
 
-![AWS Console Home](images/aws-console-home.png)
+<img width="1917" height="973" alt="Screenshot 2026-09-08 135007" src="https://github.com/user-attachments/assets/238907b0-296b-48a4-9a19-0f60b0faabe0" />
+
 
 *AWS Console home showing recently visited services: EC2, CloudWatch, SNS, and IAM used during Task 10.*
 
@@ -135,7 +136,8 @@ This role contains the `CloudWatchAgentServerPolicy` which allows:
 
 After completing the task, the EC2 instance was terminated as per the internship policy. All three team instances (tannu-task10, shubham-sing..., vasundara-tas...) are shown in terminated state.
 
-![EC2 Instances Terminated](images/ec2-terminated.png)
+<img width="1917" height="1027" alt="Screenshot 2026-09-08 134924" src="https://github.com/user-attachments/assets/87f49a1c-89f6-4457-b90b-9c8a7257f581" />
+
 
 *EC2 Instances dashboard showing all 3 task-10 instances (tannu-task10, shubham-sing..., vasundara-tas...) in terminated state after task completion — region us-east-1, instance type t3.small.*
 
@@ -197,7 +199,8 @@ yarn twenty docker:status
 
 The Twenty CRM application was successfully deployed and accessible, showing 599 companies seeded in the workspace.
 
-![Twenty CRM Application](images/twenty-crm.png)
+<img width="1915" height="907" alt="Screenshot 2026-09-08 143821" src="https://github.com/user-attachments/assets/2b018108-90a8-4fe2-91d8-3e3b23ea295a" />
+
 
 *Twenty CRM application running successfully — Companies view showing 599 seeded companies (Google, Microsoft, Meta, SLB, Cisco, Uber, Salesforce, etc.) accessible at `http://<EC2-IP>:2020`.*
 
@@ -397,7 +400,8 @@ After starting the agent and waiting 3-5 minutes:
 
 The graph below shows the `cpu_usage_user` metric spiking sharply to 83.45% at approximately 07:45 UTC, crossing the 80% threshold (red dashed line) and triggering the alarm.
 
-![CPU Alarm Triggered](images/cpu-alarm-triggered.png)
+<img width="1912" height="877" alt="Screenshot 2026-09-08 131735" src="https://github.com/user-attachments/assets/172acad3-4ed2-469c-be45-ecd2434bfda0" />
+
 
 *CloudWatch CPU alarm `shubham-singh-task-10` in **IN ALARM** state — `cpu_usage_user` spiked to 83.45%, exceeding the static threshold of 80% (1 datapoint within 1 minute). The alarm bar at the bottom shows the red IN ALARM band at the far right.*
 
@@ -421,11 +425,11 @@ The graph below shows the `cpu_usage_user` metric spiking sharply to 83.45% at a
 
 The disk usage graph shows a steady reading around 42–61% — comfortably below the 80% alarm threshold (red line).
 
-![Disk Alarm OK - View 1](images/disk-alarm-ok.png)
+<img width="1917" height="876" alt="Screenshot 2026-09-08 131824" src="https://github.com/user-attachments/assets/5662c618-4e02-4098-a5d9-f776a121013a" />
+
 
 *CloudWatch disk alarm `shubbham-singh-task-10-disk-usage` — showing `disk_used_percent` metric in **OK** state. Disk usage ranged between ~42% and ~61%, staying well below the 80% threshold (red line). Total alarms: 11 in OK state, 0 in alarm.*
 
-![Disk Alarm OK - View 2](images/disk-alarm-ok-2.png)
 
 *Second view of the disk usage alarm in **OK** state — same alarm `shubbham-singh-task-10-disk-usage` with 10 alarms visible in the list panel, confirming stable disk utilization throughout the load test period.*
 
@@ -456,7 +460,8 @@ The disk usage graph shows a steady reading around 42–61% — comfortably belo
 
 The dashboard below shows all 4 widgets during the load test, with visible spikes across CPU, Disk, and Memory metrics at approximately 07:00–07:30 UTC.
 
-![CloudWatch Dashboard](images/cloudwatch-dashboard.png)
+<img width="1916" height="963" alt="Screenshot 2026-09-08 132720" src="https://github.com/user-attachments/assets/92e9c55e-b6cd-4b7b-9ab7-684bf0dab7ee" />
+
 
 *CloudWatch Dashboard `shubham-singh-task-10` showing all 4 metric widgets during load testing:*
 - *Widget 1 (CPU): `cpu_usage_user` and `cpu_usage_idle` — spike visible, reaching ~99%*
