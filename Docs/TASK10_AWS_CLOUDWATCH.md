@@ -399,3 +399,25 @@ The CloudWatch Agent collects CPU, memory, and disk metrics every 60 seconds. Cl
 
 Twenty CRM was accessed and tested during monitoring, and changes in system metrics were observed on the CloudWatch dashboard.
 
+## Screenshots
+
+### 1. EC2 Instance
+![EC2 Instance](images/instance.png)
+
+### 2. Twenty CRM Dashboard
+![Twenty CRM Dashboard](images/crm-dashboard.png)
+
+### 3. Docker Containers and Health Check
+![Docker and Health Check](images/docker-status.png)
+
+### 4. CloudWatch Metrics
+![CloudWatch Metrics](images/metrics-dashboard.png)
+
+### 5. CloudWatch Dashboard
+![CloudWatch Dashboard](images/cloudwatch-dashboard.png)
+
+### 6. CloudWatch Alarms
+![CloudWatch Alarms](images/alarms.png)
+
+### 5. CloudWatch Hike Dashboard
+![CloudWatch Dashboard](images/cloudwatch-hikedashboard.png
