@@ -1,6 +1,6 @@
 output "vpc_id" {
-  description = "The ID of the VPC being used"
-  value       = data.aws_vpc.default.id
+  description = "The ID of the default VPC"
+  value       = aws_default_vpc.default.id
 }
 
 output "ec2_security_group_id" {

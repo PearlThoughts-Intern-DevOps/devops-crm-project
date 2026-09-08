@@ -10,18 +10,10 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
-
-  # Allows terraform validate/init to run without configured AWS credentials
+  region                      = var.aws_region
+  access_key                  = "mock_access_key"
+  secret_key                  = "mock_secret_key"
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
-
-  default_tags {
-    tags = {
-      Project     = "Twenty-CRM"
-      Environment = var.environment
-      ManagedBy   = "Terraform"
-    }
-  }
 }
