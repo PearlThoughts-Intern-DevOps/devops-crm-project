@@ -10,6 +10,7 @@
   "keywords": [],
   "packageManager": "yarn@4.13.0",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "twenty": "twenty",
     "lint": "oxlint -c .oxlintrc.json .",
     "lint:fix": "oxlint --fix -c .oxlintrc.json .",
