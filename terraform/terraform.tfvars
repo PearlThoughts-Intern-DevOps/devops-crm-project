@@ -1,0 +1,6 @@
+aws_region          = "us-east-1"
+project_name        = "twenty-crm"
+instance_type       = "t3.small"
+ecr_repository_name = "twenty-crm"
+vpc_id              = "vpc-04b47886866017101"
+subnet_id           = "subnet-0a593f32ba819948d"
