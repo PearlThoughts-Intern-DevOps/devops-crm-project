@@ -12,3 +12,12 @@ data "aws_subnets" "default" {
 data "aws_subnet" "selected" {
   id = data.aws_subnets.default.ids[0]
 }
+
+data "aws_iam_instance_profile" "ecr_pull" {
+  name = "EC2ECRPullRole"
+}
+
+data "aws_security_group" "default" {
+  vpc_id = data.aws_vpc.default.id
+  name   = "default"
+}
