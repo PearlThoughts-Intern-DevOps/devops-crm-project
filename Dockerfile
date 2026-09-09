@@ -3,7 +3,7 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare yarn@4.13.0 --activate
+RUN corepack enable
 
 COPY . .
 
@@ -16,7 +16,7 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare yarn@4.13.0 --activate
+RUN corepack enable
 
 COPY --from=builder --chown=node:node /app .
 
