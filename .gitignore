@@ -1,6 +1,104 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+cat > .gitignore << 'EOF'
+# ============================================================
+# TERRAFORM
+# ============================================================
 
-# dependencies
+# local terraform directory — contains providers, modules
+# very large, never commit (can be 100MB+)
+.terraform/
+.terraform.lock.hcl
+
+# state files — contains real IP addresses, resource IDs
+# NEVER commit — use S3 remote backend instead
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# plan files — can contain sensitive values in plaintext
+tfplan
+*.tfplan
+*.plan
+
+# variable files with real values — NEVER commit
+# only commit terraform.tfvars.example (the template)
+terraform.tfvars
+*.auto.tfvars
+
+# crash logs
+crash.log
+crash.*.log
+
+# override files — local developer overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# terraform cloud token
+.terraformrc
+terraform.rc
+
+# ============================================================
+# SECRETS AND CREDENTIALS
+# ============================================================
+
+# env files with real secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# AWS credentials (never commit these)
+.aws/
+credentials
+aws-credentials.json
+
+# SSH keys
+*.pub
+id_rsa
+id_rsa.*
+gitea-key
+gitea-key.pub
+
+# ============================================================
+# SCRIPTS WITH REAL VALUES
+# ============================================================
+
+# bootstrap.sh is safe to commit (no secrets inside)
+# but if you have a version with hardcoded values — ignore it
+bootstrap.local.sh
+
+# ============================================================
+# OS FILES
+# ============================================================
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# EDITOR FILES
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+
+# ============================================================
+# LOGS
+# ============================================================
+*.log
+terraform.log
+logs/
+
+# ============================================================
+# NODE / JAVASCRIPT (keep if you have any JS in project)
+# ============================================================
 /node_modules
 /.pnp
 .pnp.*
@@ -10,37 +108,13 @@
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-
-# codegen
-generated
-
-# testing
 /coverage
-
-# dev
 /dist/
-
-.twenty
-
-# production
 /build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-.env
-# typescript
 *.tsbuildinfo
 *.d.ts
-
-*.swp
-*.swo
+EOF
