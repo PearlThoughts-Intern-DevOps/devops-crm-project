@@ -17,3 +17,8 @@ output "ecr_repository_url" {
   description = "ECR repository URL"
   value       = aws_ecr_repository.twenty_crm.repository_url
 }
+
+output "twenty_crm_url" {
+  description = "Twenty CRM application URL"
+  value       = "http://${aws_instance.twenty_crm.public_ip}:${var.host_port}"
+}

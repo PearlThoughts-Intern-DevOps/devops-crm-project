@@ -6,7 +6,7 @@ services:
     ports:
       - "2020:3000"
     environment:
-      SERVER_URL: http://54.173.117.217:2020
+      SERVER_URL: http://98.86.172.227:2020
       PG_DATABASE_URL: postgres://twenty:twenty@postgres:5432/default
       REDIS_URL: redis://redis:6379
       STORAGE_TYPE: local
@@ -55,9 +55,7 @@ services:
       - twenty-network
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: 579138738751.dkr.ecr.us-east-1.amazonaws.com/mujtaba-task-12-twenty-crm:latest
     container_name: twenty-app
     depends_on:
       twenty:
