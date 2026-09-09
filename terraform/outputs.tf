@@ -1,6 +1,6 @@
 output "vpc_id" {
   description = "ID of the existing default VPC"
-  value       = data.aws_vpc.default.id
+  value       = var.vpc_id
 }
 
 output "ec2_instance_id" {
