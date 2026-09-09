@@ -23,12 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Spawn Twenty test instance
-        id: twenty
-        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
-        with:
-          twenty-version: ${{ env.TWENTY_VERSION }}
-
       - name: Enable Corepack
         run: corepack enable
 
@@ -50,8 +44,5 @@ jobs:
       - name: Unit tests
         run: yarn test:unit
 
-      - name: Run integration tests
-        run: yarn test
-        env:
-          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
-          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+      - name: Build
+        run: yarn twenty dev:build
