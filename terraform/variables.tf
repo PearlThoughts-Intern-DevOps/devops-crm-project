@@ -25,13 +25,13 @@ variable "subnet_id" {
 variable "ami_id" {
   description = "AMI ID for Ubuntu 22.04 LTS in us-east-1"
   type        = string
-  default     = "ami-0c7217cdde317cfec" # Official Canonical Ubuntu 22.04 LTS in us-east-1
+  default     = "ami-0c7217cdde317cfec" 
 }
 
 variable "instance_type" {
   description = "EC2 instance type for Twenty CRM"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.small"
 }
 
 variable "instance_name" {

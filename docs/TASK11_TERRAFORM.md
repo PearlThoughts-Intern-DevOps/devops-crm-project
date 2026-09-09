@@ -135,9 +135,9 @@ The EC2 instance is configured using Terraform variables.
 Configuration includes:
 
 * **AMI:** `ami-0c7217cdde317cfec`
-* **Instance type:** `t3.medium`
+* **Instance type:** `t3.small`
 * **Instance name:** `twenty-crm-server`
-* **Root volume:** 30 GB
+* **Root volume:** 20 GB
 * **Volume type:** gp3
 * **Encryption:** Enabled
 * **Delete on termination:** Enabled
