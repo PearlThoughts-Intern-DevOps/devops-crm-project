@@ -7,13 +7,13 @@ variable "aws_region" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t2.micro"
+  default     = "t3.small"
 }
 
 variable "key_name" {
-  description = "Optional EC2 key pair name"
+  description = "EC2 key pair name"
   type        = string
-  default     = null
+  default     = "vasundara-task12"
 }
 
 variable "ecr_repository_name" {

@@ -1,4 +1,6 @@
-# Existing/default VPC
+# ============================================================
+# Existing Default VPC
+# ============================================================
 
 data "aws_vpc" "default" {
   default = true
@@ -9,88 +11,34 @@ data "aws_subnets" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
 }
 
-# Latest Amazon Linux 2023 AMI
+# ============================================================
+# Specific Amazon Linux 2023 AMI
+# ============================================================
 
 data "aws_ami" "amazon_linux" {
-  most_recent = true
+  most_recent = false
   owners      = ["amazon"]
 
   filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  filter {
-    name   = "root-device-type"
-    values = ["ebs"]
+    name   = "image-id"
+    values = ["ami-081b0a6eac00b4f53"]
   }
 }
 
+# ============================================================
 # Security Group
+# ============================================================
 
-resource "aws_security_group" "twenty_crm" {
-  name        = "twenty-crm-sg"
-  description = "Security group for Twenty CRM"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.ssh_allowed_cidr]
-  }
-
-  ingress {
-    description = "Twenty CRM"
-    from_port   = 2020
-    to_port     = 2020
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "twenty-crm-sg"
-    Environment = "dev"
-    Project     = "twenty-crm"
-  }
+data "aws_security_group" "twenty_crm" {
+  id = "sg-0c7378db08ee3b97f"
 }
-
-# EC2
-
-resource "aws_instance" "twenty_crm" {
-  ami           = data.aws_ami.amazon_linux.id
-  instance_type = var.instance_type
-  subnet_id     = data.aws_subnets.default.ids[0]
-  key_name      = var.key_name
-
-  vpc_security_group_ids = [
-    aws_security_group.twenty_crm.id
-  ]
-
-  tags = {
-    Name        = "twenty-crm-server"
-    Environment = "dev"
-    Project     = "twenty-crm"
-  }
-}
-
-# ECR
 
 resource "aws_ecr_repository" "twenty_crm" {
   name                 = var.ecr_repository_name
@@ -102,6 +50,45 @@ resource "aws_ecr_repository" "twenty_crm" {
 
   tags = {
     Name        = "twenty-crm"
+    Environment = "dev"
+    Project     = "twenty-crm"
+  }
+}
+
+# ============================================================
+# Existing IAM Instance Profile for EC2 ECR Pull
+# ============================================================
+
+data "aws_iam_instance_profile" "ec2_ecr_profile" {
+  name = "EC2ECRPullRole"
+}
+
+# ============================================================
+# EC2 Instance
+# ============================================================
+
+resource "aws_instance" "twenty_crm" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+
+  subnet_id = data.aws_subnets.default.ids[0]
+
+  key_name = var.key_name
+
+  user_data_replace_on_change = true
+
+  vpc_security_group_ids = [
+    data.aws_security_group.twenty_crm.id
+  ]
+
+  iam_instance_profile = data.aws_iam_instance_profile.ec2_ecr_profile.name
+
+  user_data = templatefile("${path.module}/user_data.sh", {
+    ecr_repository_url = aws_ecr_repository.twenty_crm.repository_url
+  })
+
+  tags = {
+    Name        = "twenty-crm-server"
     Environment = "dev"
     Project     = "twenty-crm"
   }
