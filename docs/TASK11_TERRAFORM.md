@@ -98,7 +98,7 @@ It contains:
 ```hcl
 aws_region    = "us-east-1"
 environment   = "dev"
-instance_type = "t3.medium"
+instance_type = "t3.small"
 instance_name = "twenty-crm-server"
 ecr_repo_name = "twenty-crm-repo"
 ami_id        = "ami-0c7217cdde317cfec"
