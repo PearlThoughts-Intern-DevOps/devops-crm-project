@@ -1,6 +1,6 @@
 aws_region          = "us-east-1"
 instance_type       = "t3.small"
-key_name            = "demo-value"
-ecr_repository_name = "twenty-crm"
+key_name            = "task7-netaji"
+ecr_repository_name = "netaji-twenty-crm"
 environment         = "dev"
 project_name        = "twenty-crm"

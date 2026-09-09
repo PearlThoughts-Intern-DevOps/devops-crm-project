@@ -33,3 +33,15 @@ variable "project_name" {
   type        = string
   default     = "twenty-crm"
 }
+
+variable "image_tag" {
+  description = "Docker image tag to build, push, and pull (must match on both the local push and the EC2 user-data pull)"
+  type        = string
+  default     = "latest"
+}
+
+variable "ami_id" {
+  description = "Approved Amazon Linux 2023 AMI ID for us-east-1"
+  type        = string
+  default     = "ami-081b0a6eac00b4f53"
+}

@@ -27,3 +27,8 @@ output "ecr_repository_url" {
   description = "Amazon ECR repository URL"
   value       = aws_ecr_repository.twenty.repository_url
 }
+
+output "ec2_iam_instance_profile" {
+  description = "Existing IAM instance profile used by the EC2 instance"
+  value       = data.aws_iam_instance_profile.ec2_ecr_profile.name
+}
