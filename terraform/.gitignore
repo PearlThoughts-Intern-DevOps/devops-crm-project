@@ -1,0 +1,36 @@
+# ============================================================
+# TERRAFORM
+# ============================================================
+
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+tfplan
+*.tfplan
+*.plan
+terraform.tfvars
+*.auto.tfvars
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ============================================================
+# SECRETS AND CREDENTIALS
+# ============================================================
+
+.env
+.env.*
+*.pem
+*.key
+*.crt
+.aws/
+credentials
+gitea-key
+gitea-key.pub
