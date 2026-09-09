@@ -156,12 +156,24 @@ Configuration:
 
 The following commands were executed one by one.
 
-## Step 1: Terraform Version
+##
 
 Command:
 
 ```bash
 terraform version
+terraform init
+terraform validate
+terraform plan
+terraform fmt
+terraform plan -out=tfplan
+terraform show
+terraform show tfplan
+```
+The workflow stopped at the planning stage.
+
+```bash
+terraform apply
 ```
 
 Status
