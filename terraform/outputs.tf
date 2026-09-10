@@ -1,20 +1,24 @@
-output "ecr_repository_url" {
-  value = aws_ecr_repository.crm_repo.repository_url
-}
-
 output "ec2_public_ip" {
-  value = aws_instance.crm_instance.public_ip
+  description = "Public IP of EC2 instance"
+  value       = aws_instance.crm_server.public_ip
 }
 
 output "ec2_instance_id" {
-  value = aws_instance.crm_instance.id
+  description = "EC2 Instance ID"
+  value       = aws_instance.crm_server.id
 }
 
-output "crm_app_url" {
-  value = "http://${aws_instance.crm_instance.public_ip}:${var.app_port}"
+output "ecr_repository_url" {
+  description = "ECR Repository URL"
+  value       = aws_ecr_repository.crm_repo.repository_url
 }
 
-output "private_key_pem" {
-  value     = tls_private_key.crm_key.private_key_pem
-  sensitive = true
+output "app_url" {
+  description = "Application URL"
+  value       = "http://${aws_instance.crm_server.public_ip}:3000"
+}
+
+output "security_group_id" {
+  description = "Security Group ID"
+  value       = aws_security_group.crm_sg.id
 }
