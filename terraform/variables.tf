@@ -32,3 +32,15 @@ variable "ecr_repository_name" {
   type        = string
   default     = "twenty-crm"
 }
+
+variable "docker_image_tag" {
+  description = "Docker image tag to deploy"
+  type        = string
+  default     = "latest"
+}
+
+variable "container_port" {
+  description = "Twenty CRM container port"
+  type        = number
+  default     = 3000
+}

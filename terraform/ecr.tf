@@ -7,6 +7,13 @@ resource "aws_ecr_repository" "twenty_crm" {
   }
 
   tags = {
-    Name = var.ecr_repository_name
+    Name        = var.ecr_repository_name
+    Environment = "dev"
+    ManagedBy   = "terraform"
+    Project     = var.ecr_repository_name
+  }
+
+  lifecycle {
+    ignore_changes = [tags]
   }
 }
