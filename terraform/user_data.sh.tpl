@@ -7,7 +7,7 @@ echo "  Twenty CRM Bootstrap Started"
 echo "  $(date -u)"
 echo "========================================="
 
-echo "[1/5] Installing Docker and AWS CLI..."
+echo "[1/3] Installing Docker and AWS CLI..."
 apt-get update -y
 apt-get install -y docker.io awscli curl
 
@@ -25,11 +25,11 @@ APP_PORT="${app_port}"
 APP_NAME="${app_name}"
 FULL_IMAGE="$ECR_REPO_URL:$IMAGE_TAG"
 
-echo "[2/5] Authenticating with ECR..."
+echo "[2/3] Authenticating with ECR..."
 aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "$ECR_REPO_URL"
 
-echo "[3/5] Pulling image: $FULL_IMAGE"
+echo "[3/3] Pulling image: $FULL_IMAGE"
 MAX_RETRIES=30
 RETRY_INTERVAL=60
 attempt=1
@@ -52,17 +52,5 @@ while [ $attempt -le $MAX_RETRIES ]; do
   attempt=$((attempt + 1))
 done
 
-echo "[4/5] Starting Twenty CRM App..."
-docker rm -f "$APP_NAME" 2>/dev/null || true
-docker run -d \
-  --name "$APP_NAME" \
-  --restart unless-stopped \
-  -p "$APP_PORT:3000" \
-  -e NODE_ENV=production \
-  "$FULL_IMAGE"
-
-echo "[5/5] Done!"
-echo "========================================="
-echo "  App running on port $APP_PORT"
-echo "  $(date -u)"
+echo "[] Done!"
 echo "========================================="
