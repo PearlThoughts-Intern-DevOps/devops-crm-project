@@ -124,9 +124,9 @@ echo "[INFO] Waiting for Twenty CRM HTTP endpoint..."
 HEALTH_SUCCESS=0
 
 for attempt in $(seq 1 60); do
-  if curl -fsS "http://127.0.0.1:$${HOST_PORT}" >/dev/null 2>&1; then
+  if curl -fsS "http://127.0.0.1:$${HOST_PORT}/healthz" >/dev/null 2>&1; then
     HEALTH_SUCCESS=1
-    echo "[OK] Twenty CRM is responding on port $${HOST_PORT}."
+    echo "[OK] Twenty CRM health check passed on port $${HOST_PORT}."
     break
   fi
 
