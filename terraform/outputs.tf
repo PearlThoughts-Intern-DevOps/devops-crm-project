@@ -4,7 +4,7 @@ output "vpc_id" {
 }
 
 output "subnet_id" {
-  description = "ID of the selected default subnet."
+  description = "ID of the selected existing default subnet."
   value       = data.aws_subnet.selected.id
 }
 
@@ -23,12 +23,27 @@ output "ec2_public_dns" {
   value       = aws_instance.twenty.public_dns
 }
 
+output "twenty_url" {
+  description = "HTTP URL for the Twenty CRM web application."
+  value       = "http://${aws_instance.twenty.public_ip}:${var.application_port}"
+}
+
 output "security_group_id" {
   description = "ID of the security group attached to the EC2 instance."
   value       = aws_security_group.twenty.id
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL used when tagging and pushing container images."
-  value       = aws_ecr_repository.twenty.repository_url
+output "s3_bucket_name" {
+  description = "Name of the S3 bucket used by Twenty CRM."
+  value       = aws_s3_bucket.twenty_storage.id
+}
+
+output "s3_bucket_arn" {
+  description = "ARN of the S3 bucket used by Twenty CRM."
+  value       = aws_s3_bucket.twenty_storage.arn
+}
+
+output "iam_instance_profile_name" {
+  description = "Existing IAM instance profile attached to EC2; it is not managed by Terraform."
+  value       = var.iam_instance_profile_name
 }

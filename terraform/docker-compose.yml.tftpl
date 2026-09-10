@@ -1,0 +1,83 @@
+name: twenty
+
+services:
+  server:
+    image: twentycrm/twenty:${twenty_version}
+    ports:
+      - "${application_port}:3000"
+    environment:
+      NODE_PORT: "3000"
+      PG_DATABASE_URL: "postgres://postgres:$${PG_DATABASE_PASSWORD}@db:5432/default"
+      SERVER_URL: "$${SERVER_URL}"
+      REDIS_URL: "redis://redis:6379"
+      IS_CONFIG_VARIABLES_IN_DB_ENABLED: "false"
+      STORAGE_TYPE: "S_3"
+      STORAGE_S3_REGION: "${aws_region}"
+      STORAGE_S3_NAME: "${bucket_name}"
+      ENCRYPTION_KEY: "$${ENCRYPTION_KEY}"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: always
+
+  worker:
+    image: twentycrm/twenty:${twenty_version}
+    command: ["yarn", "worker:prod"]
+    environment:
+      PG_DATABASE_URL: "postgres://postgres:$${PG_DATABASE_PASSWORD}@db:5432/default"
+      SERVER_URL: "$${SERVER_URL}"
+      REDIS_URL: "redis://redis:6379"
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      IS_CONFIG_VARIABLES_IN_DB_ENABLED: "false"
+      STORAGE_TYPE: "S_3"
+      STORAGE_S3_REGION: "${aws_region}"
+      STORAGE_S3_NAME: "${bucket_name}"
+      ENCRYPTION_KEY: "$${ENCRYPTION_KEY}"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "$${PG_DATABASE_PASSWORD}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d default"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+volumes:
+  db-data:
+  server-local-data:

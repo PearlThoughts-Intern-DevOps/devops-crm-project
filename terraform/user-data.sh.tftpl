@@ -1,54 +1,35 @@
 #!/bin/bash
 set -euo pipefail
 
+exec > >(tee /var/log/twenty-user-data.log | logger -t twenty-user-data -s 2>/dev/console) 2>&1
+
 echo "Installing Docker and bootstrap dependencies"
 dnf install -y docker openssl
-aws --version
-
-echo "Starting Docker"
 systemctl enable --now docker
 
-echo "Preparing Twenty configuration"
-install -d -m 700 /etc/twenty
+echo "Installing the pinned Docker Compose plugin"
+install -d -m 755 /usr/local/lib/docker/cli-plugins
+curl --fail --location --retry 3 \
+  "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-linux-x86_64" \
+  --output /usr/local/lib/docker/cli-plugins/docker-compose
+echo "${docker_compose_sha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check
+chmod 755 /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
 
-echo "Preparing persistent Docker volumes"
-docker volume create twenty-crm-database
-docker volume create twenty-crm-storage
-echo "Writing deployment settings"
-cat > /etc/twenty/deployment.env <<'EOF'
-AWS_REGION=${aws_region}
-ECR_REPOSITORY_URL=${ecr_repository_url}
-IMAGE_TAG=${image_tag}
-APPLICATION_PORT=${application_port}
-EOF
-chmod 600 /etc/twenty/deployment.env
-
-echo "Preparing application secret"
-if [ ! -s /etc/twenty/app.env ]; then
-  APP_SECRET=$(openssl rand -hex 32)
-  printf 'APP_SECRET=%s\n' "$APP_SECRET" > /etc/twenty/app.env
+echo "Creating swap for the 2 GiB t3.small host"
+if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
+  if [ ! -f /swapfile ]; then
+    fallocate -l 4G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+  fi
+  swapon /swapfile
 fi
-chmod 600 /etc/twenty/app.env
-echo "Creating ECR image pull script"
-cat > /usr/local/bin/twenty-start <<'SCRIPT'
-#!/bin/bash
-set -euo pipefail
+grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
-source /etc/twenty/deployment.env
+echo "Preparing Twenty CRM configuration"
+install -d -m 700 /opt/twenty
 
-ECR_REGISTRY=$(echo "$ECR_REPOSITORY_URL" | cut -d/ -f1)
-IMAGE="$ECR_REPOSITORY_URL:$IMAGE_TAG"
-
-until aws ecr get-login-password --region "$AWS_REGION" \
-  | docker login --username AWS --password-stdin "$ECR_REGISTRY" \
-  && docker pull "$IMAGE"; do
-  echo "ECR login or image pull failed; retrying in 30 seconds"
-  sleep 30
-done
-
-echo "Image downloaded successfully: $IMAGE"
-
-echo "Reading EC2 public IPv4 address"
 TOKEN=$(curl --fail --silent --show-error \
   --connect-timeout 5 --max-time 10 \
   -X PUT \
@@ -60,36 +41,54 @@ PUBLIC_IP=$(curl --fail --silent --show-error \
   -H "X-aws-ec2-metadata-token: $TOKEN" \
   http://169.254.169.254/latest/meta-data/public-ipv4)
 
-echo "Starting Twenty CRM"
-if docker container inspect twenty-crm >/dev/null 2>&1; then
-  docker rm -f twenty-crm
+if [ ! -s /opt/twenty/.env ]; then
+  ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')
+  PG_DATABASE_PASSWORD=$(openssl rand -hex 24)
+
+  umask 077
+  cat > /opt/twenty/.env <<EOF
+SERVER_URL=http://$PUBLIC_IP:${application_port}
+ENCRYPTION_KEY=$ENCRYPTION_KEY
+PG_DATABASE_PASSWORD=$PG_DATABASE_PASSWORD
+STORAGE_TYPE=S_3
+STORAGE_S3_REGION=${aws_region}
+STORAGE_S3_NAME=${bucket_name}
+EOF
 fi
+chmod 600 /opt/twenty/.env
 
-docker run -d \
-  --name twenty-crm \
-  --restart unless-stopped \
-  --publish "$APPLICATION_PORT:2020" \
-  --env-file /etc/twenty/app.env \
-  --env NODE_PORT=2020 \
-  --env SERVER_URL="http://$PUBLIC_IP:$APPLICATION_PORT" \
-  --mount source=twenty-crm-database,target=/data/postgres \
-  --mount source=twenty-crm-storage,target=/app/packages/twenty-server/.local-storage \
-  "$IMAGE"
+echo "Writing the pinned Twenty Docker Compose configuration"
+cat > /opt/twenty/docker-compose.yml <<'COMPOSE'
+${docker_compose}
+COMPOSE
+chmod 600 /opt/twenty/docker-compose.yml
+
+cat > /usr/local/bin/twenty-start <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+cd /opt/twenty
+
+until docker compose pull; do
+  echo "Twenty image pull failed; retrying in 30 seconds"
+  sleep 30
+done
+
+docker compose up -d
 SCRIPT
-
 chmod 700 /usr/local/bin/twenty-start
 
-echo "Creating Twenty startup service"
-cat > /etc/systemd/system/twenty-start.service <<'UNIT'
+cat > /etc/systemd/system/twenty.service <<'UNIT'
 [Unit]
-Description=Pull Twenty CRM from ECR and start its container
+Description=Twenty CRM Docker Compose application
 Wants=network-online.target
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
+WorkingDirectory=/opt/twenty
 ExecStart=/usr/local/bin/twenty-start
+ExecStop=/usr/bin/docker compose down
 RemainAfterExit=yes
 TimeoutStartSec=0
 Restart=on-failure
@@ -100,7 +99,7 @@ WantedBy=multi-user.target
 UNIT
 
 systemctl daemon-reload
-systemctl enable twenty-start.service
-systemctl start --no-block twenty-start.service
+systemctl enable twenty.service
+systemctl start --no-block twenty.service
 
-echo "Twenty startup service scheduled"
+echo "Twenty CRM startup has been scheduled"
