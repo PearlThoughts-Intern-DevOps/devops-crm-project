@@ -35,20 +35,20 @@ variable "instance_type" {
   #   default     = "t3.small"
 }
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
-  type        = string
-}
+# variable "ami_id" {
+#   description = "AMI ID for the EC2 instance"
+#   type        = string
+# }
 
 # variable "subnet_id" {
 #   description = "Subnet ID for the EC2 instance"
 #   type        = string
 # }
 
-# variable "key_name" {
-#   description = "EC2 key pair name"
-#   type        = string
-# }
+variable "key_name" {
+  description = "EC2 key pair name"
+  type        = string
+}
 
 variable "allowed_ssh_cidr" {
   description = "CIDR block allowed to access SSH"
@@ -60,4 +60,10 @@ variable "ecr_repository_name" {
   description = "ECR repository name"
   type        = string
   default     = "twenty-crm"
+}
+
+variable "docker_image_tag" {
+  description = "Docker image tag to deploy"
+  type        = string
+  default     = "latest"
 }
