@@ -1,66 +1,106 @@
 # ============================================================
-# Existing Default VPC
+# Task 13 - Twenty CRM + AWS S3 using Terraform
 # ============================================================
+
+# ------------------------------------------------------------
+# Existing Default VPC
+# ------------------------------------------------------------
 
 data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
+# ------------------------------------------------------------
+# Existing Default Subnet
+# ------------------------------------------------------------
 
-  filter {
-    name   = "default-for-az"
-    values = ["true"]
-  }
+data "aws_subnet" "default" {
+  id = var.subnet_id
 }
 
-# ============================================================
-# Specific Amazon Linux 2023 AMI
-# ============================================================
+# ------------------------------------------------------------
+# Approved AMI
+# ------------------------------------------------------------
 
-data "aws_ami" "amazon_linux" {
+data "aws_ami" "twenty_crm" {
   most_recent = false
   owners      = ["amazon"]
 
   filter {
     name   = "image-id"
-    values = ["ami-081b0a6eac00b4f53"]
+    values = [var.ami_id]
   }
 }
 
-# ============================================================
-# Security Group
-# ============================================================
+# ------------------------------------------------------------
+# Existing Security Group
+# ------------------------------------------------------------
 
 data "aws_security_group" "twenty_crm" {
-  id = "sg-0c7378db08ee3b97f"
+  id = var.security_group_id
 }
 
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
+# ------------------------------------------------------------
+# Existing IAM Instance Profile
+# ------------------------------------------------------------
 
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+data "aws_iam_instance_profile" "ec2_s3" {
+  name = "EC2S3AccessRole"
+}
+
+# ============================================================
+# S3 Bucket
+# ============================================================
+
+resource "aws_s3_bucket" "twenty_storage" {
+  bucket        = var.s3_bucket_name
+  force_destroy = true
 
   tags = {
-    Name        = "twenty-crm"
+    Name        = "twenty-crm-storage"
     Environment = "dev"
     Project     = "twenty-crm"
+    Task        = "task-13"
   }
 }
 
-# ============================================================
-# Existing IAM Instance Profile for EC2 ECR Pull
-# ============================================================
+# ------------------------------------------------------------
+# S3 Versioning
+# ------------------------------------------------------------
 
-data "aws_iam_instance_profile" "ec2_ecr_profile" {
-  name = "EC2ECRPullRole"
+resource "aws_s3_bucket_versioning" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# ------------------------------------------------------------
+# S3 Server-Side Encryption
+# ------------------------------------------------------------
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# ------------------------------------------------------------
+# S3 Block Public Access
+# ------------------------------------------------------------
+
+resource "aws_s3_bucket_public_access_block" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # ============================================================
@@ -68,28 +108,30 @@ data "aws_iam_instance_profile" "ec2_ecr_profile" {
 # ============================================================
 
 resource "aws_instance" "twenty_crm" {
-  ami           = data.aws_ami.amazon_linux.id
+  ami           = data.aws_ami.twenty_crm.id
   instance_type = var.instance_type
 
-  subnet_id = data.aws_subnets.default.ids[0]
+  subnet_id = data.aws_subnet.default.id
 
   key_name = var.key_name
-
-  user_data_replace_on_change = true
 
   vpc_security_group_ids = [
     data.aws_security_group.twenty_crm.id
   ]
 
-  iam_instance_profile = data.aws_iam_instance_profile.ec2_ecr_profile.name
+  iam_instance_profile = data.aws_iam_instance_profile.ec2_s3.name
+
+  user_data_replace_on_change = true
 
   user_data = templatefile("${path.module}/user_data.sh", {
-    ecr_repository_url = aws_ecr_repository.twenty_crm.repository_url
+    s3_bucket_name = aws_s3_bucket.twenty_storage.bucket
+    aws_region     = var.aws_region
   })
 
   tags = {
     Name        = "twenty-crm-server"
     Environment = "dev"
     Project     = "twenty-crm"
+    Task        = "task-13"
   }
 }
