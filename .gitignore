@@ -41,3 +41,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 *.d.ts
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
