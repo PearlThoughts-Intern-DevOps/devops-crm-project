@@ -10,70 +10,24 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# Security group for Twenty CRM EC2
-resource "aws_security_group" "twenty_crm" {
-  name        = "${var.project_name}-sg"
-  description = "Allow SSH and app traffic"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Twenty CRM app port"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name    = "${var.project_name}-sg"
-    Project = var.project_name
-  }
-}
-
-# Amazon ECR repository
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name    = "twenty-crm"
-    Project = "devops-crm-project"
-    Task    = "12"
-  }
+data "aws_security_group" "twenty_crm" {
+  id = "sg-0fbbf6b0659d81a04"
 }
 
 # EC2 instance for Twenty CRM
 resource "aws_instance" "twenty_crm" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
+  key_name               = "tannu-task-7-key"
   subnet_id              = var.subnet_id
-  vpc_security_group_ids = [aws_security_group.twenty_crm.id]
+  vpc_security_group_ids = [data.aws_security_group.twenty_crm.id]
 
   root_block_device {
-  volume_size = 20
-  volume_type = "gp3"
-}
+    volume_size = 20
+    volume_type = "gp3"
+  }
 
-  iam_instance_profile        = "EC2ECRPullRole"
+  iam_instance_profile        = "EC2S3AccessRole"
   user_data_replace_on_change = true
 
   user_data = <<-EOF
@@ -101,28 +55,7 @@ PUBLIC_IP=$(curl -sS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.25
 # Create application directory
 mkdir -p /opt/twenty
 
-# Login to Amazon ECR
-aws ecr get-login-password --region ${var.aws_region} | \
-docker login --username AWS --password-stdin ${aws_ecr_repository.twenty_crm.repository_url}
-
-# Pull the Twenty CRM image.
-# Retry because the image may not exist when EC2 starts.
-IMAGE_AVAILABLE=false
-
-for attempt in $(seq 1 60); do
-  if docker pull ${aws_ecr_repository.twenty_crm.repository_url}:latest; then
-    IMAGE_AVAILABLE=true
-    break
-  fi
-
-  echo "Twenty CRM image not available yet. Retrying in 30 seconds..."
-  sleep 30
-done
-
-if [ "$IMAGE_AVAILABLE" != "true" ]; then
-  echo "Twenty CRM image was not available after multiple attempts."
-  exit 1
-fi
+docker pull twentycrm/twenty:latest
 
 # Create Docker network
 docker network create twenty-network || true
@@ -175,14 +108,15 @@ docker run -d \
   -e REDIS_URL="redis://twenty-redis:6379" \
   -e SERVER_URL="http://$${PUBLIC_IP}:3000" \
   -e DISABLE_CRON_JOBS_REGISTRATION="true" \
-  -e STORAGE_TYPE=local \
+  -e STORAGE_TYPE=s3 \
+-e STORAGE_S3_REGION="${var.aws_region}" \
+-e STORAGE_S3_NAME="${aws_s3_bucket.twenty_crm.bucket}" \
+-e STORAGE_S3_ENDPOINT="https://s3.${var.aws_region}.amazonaws.com" \
   -e ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e FALLBACK_ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e APP_SECRET="twenty-ec2-app-secret-change-me" \
   -v twenty_data:/app/packages/twenty-server/.local-storage \
---entrypoint node \
-${aws_ecr_repository.twenty_crm.repository_url}:latest \
-dist/main
+  twentycrm/twenty:latest
 
 # Start Twenty CRM worker
 docker rm -f twenty-worker 2>/dev/null || true
@@ -196,13 +130,16 @@ docker run -d \
   -e REDIS_URL="redis://twenty-redis:6379" \
   -e SERVER_URL="http://$${PUBLIC_IP}:3000" \
   -e DISABLE_CRON_JOBS_REGISTRATION="true" \
-  -e STORAGE_TYPE=local \
+  -e STORAGE_TYPE=s3 \
+-e STORAGE_S3_REGION="${var.aws_region}" \
+-e STORAGE_S3_NAME="${aws_s3_bucket.twenty_crm.bucket}" \
+-e STORAGE_S3_ENDPOINT="https://s3.${var.aws_region}.amazonaws.com" \
   -e ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e FALLBACK_ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e APP_SECRET="twenty-ec2-app-secret-change-me" \
   -v twenty_data:/app/packages/twenty-server/.local-storage \
-  ${aws_ecr_repository.twenty_crm.repository_url}:latest \
-  yarn worker:prod
+  twentycrm/twenty:latest \
+yarn worker:prod
 
 echo "Twenty CRM deployment completed."
 EOF

@@ -16,12 +16,6 @@ variable "instance_type" {
   default     = "t3.small"
 }
 
-variable "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  type        = string
-  default     = "twenty-crm"
-}
-
 variable "vpc_id" {
   description = "ID of the existing/default AWS VPC"
   type        = string
@@ -29,5 +23,10 @@ variable "vpc_id" {
 
 variable "subnet_id" {
   description = "ID of the existing subnet in the default VPC"
+  type        = string
+}
+
+variable "s3_bucket_name" {
+  description = "Name of the S3 bucket used by Twenty CRM"
   type        = string
 }
