@@ -1,52 +1,73 @@
 # ============================================================
-# Amazon ECR Repository
+# S3 Bucket
 # ============================================================
 
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+resource "aws_s3_bucket" "twenty_storage" {
+  bucket = var.bucket_name
 
   tags = {
-    Name        = var.project_name
+    Name        = "${var.project_name}-storage"
     Project     = var.project_name
-    Environment = "dev"
+    Environment = "production"
+    ManagedBy   = "Terraform"
   }
 }
 
+resource "aws_s3_bucket_public_access_block" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
 
 # ============================================================
-# Security Group
+# EC2 Instance
 # ============================================================
 
-resource "aws_security_group" "twenty_crm" {
+
+resource "aws_security_group" "twenty" {
   name        = "${var.project_name}-sg"
-  description = "Security group for Twenty CRM EC2 instance"
+  description = "Security group for Twenty CRM"
   vpc_id      = data.aws_vpc.default.id
 
-  # SSH
   ingress {
-    description = "SSH access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.ssh_ingress_cidr]
-  }
-
-  # Twenty CRM
-  ingress {
-    description = "Twenty CRM application"
-    from_port   = var.app_port
-    to_port     = var.app_port
+    description = "Twenty CRM"
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Outbound traffic
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
+    description = "Allow outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -54,42 +75,29 @@ resource "aws_security_group" "twenty_crm" {
   }
 
   tags = {
-    Name    = "${var.project_name}-sg"
-    Project = var.project_name
+    Name      = "${var.project_name}-sg"
+    Project   = var.project_name
+    ManagedBy = "Terraform"
   }
 }
 
-
-# ============================================================
-# EC2 Instance
-# ============================================================
-
-resource "aws_instance" "twenty_crm" {
-  ami = var.ami_id
+resource "aws_instance" "twenty" {
+  ami           = var.ami_id
   instance_type = var.instance_type
 
   subnet_id = data.aws_subnets.default.ids[0]
 
   key_name = var.key_name
 
+  iam_instance_profile = var.iam_role_name
+
   vpc_security_group_ids = [
-    aws_security_group.twenty_crm.id
+    aws_security_group.twenty.id
   ]
 
-  # Existing IAM instance profile for ECR access
-  iam_instance_profile = data.aws_iam_instance_profile.ecr_pull.name
-
-  # Root volume
-  root_block_device {
-    volume_size = var.root_volume_size
-    volume_type = "gp3"
-  }
-
-  # EC2 startup automation
-  user_data = templatefile("${path.module}/user-data.sh", {
-    aws_region         = var.aws_region
-    ecr_repository_url = aws_ecr_repository.twenty_crm.repository_url
-    app_port           = var.app_port
+  user_data = templatefile("${path.module}/user_data.sh", {
+    s3_bucket  = aws_s3_bucket.twenty_storage.bucket
+    aws_region = var.aws_region
   })
 
   user_data_replace_on_change = true
@@ -97,6 +105,7 @@ resource "aws_instance" "twenty_crm" {
   tags = {
     Name        = "${var.project_name}-server"
     Project     = var.project_name
-    Environment = "dev"
+    Environment = "production"
+    ManagedBy   = "Terraform"
   }
 }

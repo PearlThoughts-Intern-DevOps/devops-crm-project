@@ -1,39 +1,39 @@
 output "vpc_id" {
-  description = "ID of the existing default VPC"
+  description = "Default VPC ID"
   value       = data.aws_vpc.default.id
 }
 
 output "subnet_id" {
-  description = "Subnet used by the EC2 instance"
+  description = "Subnet used by EC2"
   value       = data.aws_subnets.default.ids[0]
-}
-
-output "ecr_repository_name" {
-  description = "ECR repository name"
-  value       = aws_ecr_repository.twenty_crm.name
-}
-
-output "ecr_repository_url" {
-  description = "ECR repository URL"
-  value       = aws_ecr_repository.twenty_crm.repository_url
 }
 
 output "ec2_instance_id" {
   description = "Twenty CRM EC2 instance ID"
-  value       = aws_instance.twenty_crm.id
+  value       = aws_instance.twenty.id
 }
 
 output "ec2_public_ip" {
-  description = "Public IP address of the Twenty CRM EC2 instance"
-  value       = aws_instance.twenty_crm.public_ip
+  description = "Public IP of Twenty CRM server"
+  value       = aws_instance.twenty.public_ip
 }
 
-output "ec2_public_dns" {
-  description = "Public DNS name of the Twenty CRM EC2 instance"
-  value       = aws_instance.twenty_crm.public_dns
+output "twenty_url" {
+  description = "Twenty CRM URL"
+  value       = "http://${aws_instance.twenty.public_ip}:3000"
 }
 
-output "twenty_crm_url" {
-  description = "URL for accessing Twenty CRM"
-  value       = "http://${aws_instance.twenty_crm.public_ip}:${var.app_port}"
+output "s3_bucket_name" {
+  description = "Twenty CRM S3 storage bucket"
+  value       = aws_s3_bucket.twenty_storage.bucket
+}
+
+output "s3_bucket_arn" {
+  description = "Twenty CRM S3 bucket ARN"
+  value       = aws_s3_bucket.twenty_storage.arn
+}
+
+output "iam_instance_profile" {
+  description = "Existing IAM instance profile attached to EC2"
+  value       = var.iam_role_name
 }
