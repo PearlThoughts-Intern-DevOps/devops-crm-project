@@ -1,65 +1,69 @@
 variable "aws_region" {
-  description = "AWS region for provisioning resources"
+  description = "AWS region for infrastructure provisioning"
   type        = string
   default     = "us-east-1"
 }
 
 variable "environment" {
-  description = "Deployment environment name (e.g. dev, staging, prod)"
+  description = "Deployment environment"
   type        = string
   default     = "dev"
 }
 
 variable "project_name" {
-  description = "Project name identifier for resource naming and tagging"
+  description = "Project name identifier"
   type        = string
   default     = "twenty-crm-mohit"
 }
 
 variable "instance_type" {
-  description = "EC2 instance type for running Twenty CRM"
+  description = "EC2 instance type (must be t3.small)"
   type        = string
   default     = "t3.small"
+
+  validation {
+    condition     = var.instance_type == "t3.small"
+    error_message = "Only t3.small instance type is permitted."
+  }
+}
+
+variable "ami_id" {
+  description = "Approved AMI ID for EC2 instance"
+  type        = string
+  default     = "ami-0b6d9d3d33ba97d99"
+
+  validation {
+    condition     = contains(["ami-081b0a6eac00b4f53", "ami-0b6d9d3d33ba97d99"], var.ami_id)
+    error_message = "Only approved AMIs (ami-081b0a6eac00b4f53 or ami-0b6d9d3d33ba97d99) are permitted."
+  }
 }
 
 variable "key_name" {
-  description = "EC2 Key Pair name for SSH access"
+  description = "EC2 Key Pair name"
   type        = string
   default     = "mohit-singh"
 }
 
+variable "iam_instance_profile" {
+  description = "Existing IAM instance profile for S3 access"
+  type        = string
+  default     = "EC2S3AccessRole"
+}
+
+variable "s3_bucket_name" {
+  description = "Name of the S3 bucket for Twenty CRM storage"
+  type        = string
+  default     = "mohit-twenty-crm-task13-storage"
+}
+
 variable "allowed_cidr_blocks" {
-  description = "CIDR blocks allowed for inbound SSH and HTTP/App traffic"
+  description = "CIDR blocks allowed for ingress traffic"
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
-variable "ecr_repository_name" {
-  description = "Name of the Amazon ECR repository"
+variable "docker_image" {
+  description = "Docker image for Twenty CRM"
   type        = string
-  default     = "mohit-twenty-crm"
-}
-
-variable "docker_image_tag" {
-  description = "Docker image tag to pull and run on EC2"
-  type        = string
-  default     = "latest"
-}
-
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile name for EC2 to pull from ECR"
-  type        = string
-  default     = "EC2ECRPullRole"
-}
-
-variable "app_port" {
-  description = "Host port exposed for Twenty CRM application access"
-  type        = number
-  default     = 2020
-}
-
-variable "ami_id" {
-  description = "Custom AMI ID for EC2 instance (optional, defaults to latest Amazon Linux 2023)"
-  type        = string
-  default     = ""
+  default     = "twentycrm/twenty-app-dev:latest"
 }

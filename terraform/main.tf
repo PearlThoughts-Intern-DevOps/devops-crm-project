@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Data Sources: Default VPC and Subnets
+# Data Sources: Existing Default VPC and Subnets
 # -----------------------------------------------------------------------------
 data "aws_vpc" "default" {
   default = true
@@ -18,26 +18,45 @@ data "aws_subnets" "default" {
 }
 
 # -----------------------------------------------------------------------------
-# Data Source: Amazon Linux 2023 AMI (or custom ami_id)
+# Resource: S3 Bucket with Versioning, Encryption, and Block Public Access
 # -----------------------------------------------------------------------------
-data "aws_ami" "al2023" {
-  count       = var.ami_id == "" ? 1 : 0
-  most_recent = true
-  owners      = ["amazon"]
+resource "aws_s3_bucket" "twenty_crm_storage" {
+  bucket        = var.s3_bucket_name
+  force_destroy = true
 
-  filter {
-    name   = "name"
-    values = ["al2023-ami-2023.*-kernel-*-x86_64"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+  tags = {
+    Name        = var.s3_bucket_name
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
   }
 }
 
-locals {
-  selected_ami_id = var.ami_id != "" ? var.ami_id : data.aws_ami.al2023[0].id
+resource "aws_s3_bucket_public_access_block" "twenty_crm_storage" {
+  bucket = aws_s3_bucket.twenty_crm_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "twenty_crm_storage" {
+  bucket = aws_s3_bucket.twenty_crm_storage.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "twenty_crm_storage" {
+  bucket = aws_s3_bucket.twenty_crm_storage.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -49,7 +68,7 @@ resource "aws_security_group" "twenty_crm" {
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "SSH Access"
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -57,9 +76,17 @@ resource "aws_security_group" "twenty_crm" {
   }
 
   ingress {
-    description = "Twenty CRM Web Application and API"
-    from_port   = var.app_port
-    to_port     = var.app_port
+    description = "Twenty CRM Web UI and API (2020)"
+    from_port   = 2020
+    to_port     = 2020
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_cidr_blocks
+  }
+
+  ingress {
+    description = "Twenty CRM Alternate Port (3000)"
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = var.allowed_cidr_blocks
   }
@@ -76,34 +103,19 @@ resource "aws_security_group" "twenty_crm" {
     Name        = "${var.project_name}-${var.environment}-sg"
     Environment = var.environment
     Project     = var.project_name
+    ManagedBy   = "Terraform"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
 # -----------------------------------------------------------------------------
-# Resource: Amazon ECR Repository
-# -----------------------------------------------------------------------------
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  force_delete = true
-
-  tags = {
-    Name        = var.ecr_repository_name
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Resource: EC2 Instance
+# Resource: EC2 Instance (t3.small with EC2S3AccessRole)
 # -----------------------------------------------------------------------------
 resource "aws_instance" "twenty_crm" {
-  ami                         = local.selected_ami_id
+  ami                         = var.ami_id
   instance_type               = var.instance_type
   subnet_id                   = data.aws_subnets.default.ids[0]
   key_name                    = var.key_name
@@ -118,19 +130,24 @@ resource "aws_instance" "twenty_crm" {
   }
 
   user_data = templatefile("${path.module}/user-data.sh", {
-    aws_region       = var.aws_region
-    ecr_repository   = aws_ecr_repository.twenty_crm.repository_url
-    docker_image_tag = var.docker_image_tag
-    app_port         = var.app_port
+    aws_region     = var.aws_region
+    s3_bucket_name = aws_s3_bucket.twenty_crm_storage.bucket
+    docker_image   = var.docker_image
   })
 
+  user_data_replace_on_change = true
+
   tags = {
-    Name        = "${var.project_name}-${var.environment}"
+    Name        = "${var.project_name}-${var.environment}-ec2"
     Environment = var.environment
     Project     = var.project_name
+    ManagedBy   = "Terraform"
   }
 
   depends_on = [
-    aws_ecr_repository.twenty_crm
+    aws_s3_bucket.twenty_crm_storage,
+    aws_s3_bucket_public_access_block.twenty_crm_storage,
+    aws_s3_bucket_versioning.twenty_crm_storage,
+    aws_s3_bucket_server_side_encryption_configuration.twenty_crm_storage
   ]
 }
