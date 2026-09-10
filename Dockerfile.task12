@@ -1,0 +1,11 @@
+# Task 12 runtime image.
+# The official Twenty development image already contains
+# the Twenty server, PostgreSQL, Redis, and worker components.
+
+FROM twentycrm/twenty-app-dev:latest
+
+LABEL task="task-12"
+LABEL application="twenty-crm"
+
+EXPOSE 2020
+
