@@ -11,7 +11,7 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "Ubuntu 24.04 AMI ID for EC2"
+  description = "Approved Ubuntu 24.04 AMI ID"
   type        = string
   default     = "ami-0b6d9d3d33ba97d99"
 }
@@ -19,13 +19,7 @@ variable "ami_id" {
 variable "key_name" {
   description = "EC2 key pair name"
   type        = string
-  default     = "Mujtaba-Task-12-Key"
-}
-
-variable "ecr_repository_name" {
-  description = "ECR repository name"
-  type        = string
-  default     = "mujtaba-task-12-twenty-crm"
+  default     = "Mujtaba-Task-13-Key"
 }
 
 variable "twenty_container_port" {
@@ -43,5 +37,17 @@ variable "host_port" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "Mujtaba-Task-12"
+  default     = "Mujtaba-Task-13"
+}
+
+variable "s3_bucket_prefix" {
+  description = "Prefix for the Twenty CRM S3 bucket"
+  type        = string
+  default     = "mujtaba-task-13-twenty-crm-"
+}
+
+variable "iam_instance_profile_name" {
+  description = "Existing IAM instance profile for EC2 S3 access"
+  type        = string
+  default     = "EC2S3AccessRole"
 }

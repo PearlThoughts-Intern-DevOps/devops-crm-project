@@ -7,23 +7,18 @@ apt-get update -y
 apt-get install -y docker.io awscli
 
 # Start Docker
-systemctl start docker
 systemctl enable docker
+systemctl start docker
 
-# Login to ECR
-aws ecr get-login-password --region ${aws_region} | \
-docker login --username AWS --password-stdin ${ecr_repository_url}
+# Pull the official Twenty CRM image
+docker pull twentycrm/twenty:latest
 
-# Wait for Twenty CRM image
-while ! docker pull ${ecr_repository_url}:latest
-do
-    echo "Waiting for Twenty CRM image in ECR..."
-    sleep 30
-done
-
-# Run Twenty CRM
+# Run Twenty CRM with S3 storage configuration
 docker run -d \
-    --name twenty-crm \
-    --restart unless-stopped \
-    -p ${host_port}:${twenty_container_port} \
-    ${ecr_repository_url}:latest
+  --name twenty-crm \
+  --restart unless-stopped \
+  -p ${host_port}:${twenty_container_port} \
+  -e STORAGE_TYPE=s3 \
+  -e STORAGE_S3_REGION=${aws_region} \
+  -e STORAGE_S3_NAME=${s3_bucket_name} \
+  twentycrm/twenty:latest

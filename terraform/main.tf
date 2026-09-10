@@ -1,9 +1,9 @@
-# Get the default VPC
+# Get the existing default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Get subnets from the default VPC
+# Get subnets from the existing default VPC
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
@@ -11,18 +11,52 @@ data "aws_subnets" "default" {
   }
 }
 
-# Create ECR repository
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "MUTABLE"
+# Get the existing IAM instance profile for S3 access
+data "aws_iam_instance_profile" "ec2_s3_access" {
+  name = var.iam_instance_profile_name
+}
 
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+# Create S3 bucket for Twenty CRM storage
+resource "aws_s3_bucket" "twenty_crm" {
+  bucket_prefix = var.s3_bucket_prefix
+  force_destroy = true
 
   tags = {
-    Name = var.project_name
+    Name    = var.project_name
+    Project = "Twenty CRM"
+    Task    = "Task-13"
+    Managed = "Terraform"
   }
+}
+
+# Enable S3 versioning
+resource "aws_s3_bucket_versioning" "twenty_crm" {
+  bucket = aws_s3_bucket.twenty_crm.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Enable server-side encryption
+resource "aws_s3_bucket_server_side_encryption_configuration" "twenty_crm" {
+  bucket = aws_s3_bucket.twenty_crm.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# Block public access
+resource "aws_s3_bucket_public_access_block" "twenty_crm" {
+  bucket = aws_s3_bucket.twenty_crm.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # Security group for EC2
@@ -75,8 +109,8 @@ resource "aws_instance" "twenty_crm" {
     aws_security_group.twenty_crm.id
   ]
 
-  # Use the existing IAM instance profile created by Ma'am
-  iam_instance_profile = "EC2ECRPullRole"
+  # Use the existing IAM instance profile provided for S3 access
+  iam_instance_profile = data.aws_iam_instance_profile.ec2_s3_access.name
 
   # 20 GB root volume
   root_block_device {
@@ -87,15 +121,17 @@ resource "aws_instance" "twenty_crm" {
   # EC2 startup configuration
   user_data = templatefile("${path.module}/user_data.sh", {
     aws_region            = var.aws_region
-    ecr_repository_url    = aws_ecr_repository.twenty_crm.repository_url
+    s3_bucket_name        = aws_s3_bucket.twenty_crm.bucket
     host_port             = var.host_port
     twenty_container_port = var.twenty_container_port
   })
 
   user_data_replace_on_change = true
 
-tags = {
-  Name = "Mujtaba-Task-12-PT"
-}
-
+  tags = {
+    Name    = "Mujtaba-Task-13-PT"
+    Project = "Twenty CRM"
+    Task    = "Task-13"
+    Managed = "Terraform"
+  }
 }

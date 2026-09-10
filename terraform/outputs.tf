@@ -13,9 +13,14 @@ output "ec2_public_ip" {
   value       = aws_instance.twenty_crm.public_ip
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL"
-  value       = aws_ecr_repository.twenty_crm.repository_url
+output "s3_bucket_name" {
+  description = "Twenty CRM S3 bucket name"
+  value       = aws_s3_bucket.twenty_crm.bucket
+}
+
+output "s3_bucket_arn" {
+  description = "Twenty CRM S3 bucket ARN"
+  value       = aws_s3_bucket.twenty_crm.arn
 }
 
 output "twenty_crm_url" {
