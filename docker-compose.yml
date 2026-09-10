@@ -1,0 +1,44 @@
+services:
+  twenty-server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-server
+    ports:
+      - "2020:2020"
+    environment:
+      NODE_PORT: 2020
+      SERVER_URL: http://localhost:2020
+      PG_DATABASE_URL: postgres://twenty:twenty@localhost:5432/default
+      REDIS_URL: redis://localhost:6379
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-app-dev-secret-not-for-production
+      APP_VERSION: v2.37.0
+      NODE_ENV: development
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+      IS_BILLING_ENABLED: "false"
+      SIGN_IN_PREFILLED: "true"
+      APPLICATION_LOG_DRIVER: CONSOLE
+    volumes:
+      - twenty-postgres-data:/data/postgres
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty-network
+
+  twenty-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-app
+    depends_on:
+      - twenty-server
+    networks:
+      - twenty-network
+    command: ["yarn", "twenty", "dev:build"]
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  twenty-postgres-data:
+  twenty-storage:
