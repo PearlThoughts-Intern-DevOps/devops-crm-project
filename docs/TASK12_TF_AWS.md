@@ -7,7 +7,7 @@
 **Date:** September 9, 2026
 
 **PR Link** https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/285
-
+**Loom link** 
 
 # PROJECT OVERVIEW
 ----------------
