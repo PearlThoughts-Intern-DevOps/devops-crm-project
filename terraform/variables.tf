@@ -67,6 +67,6 @@ variable "image_wait_secs" {
 variable "max_pull_retries" {
   description = "Maximum number of ECR image pull attempts"
   type        = number
-  default     = 20
+  default     = 60
 }
 
