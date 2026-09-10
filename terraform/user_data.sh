@@ -31,7 +31,6 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   curl \
   unzip
 
-# Install Docker from Ubuntu packages.
 echo "[INFO] Installing Docker..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io
 
@@ -41,7 +40,6 @@ systemctl start docker
 echo "[INFO] Docker version:"
 docker --version
 
-# Install AWS CLI v2 when it is not already available.
 if ! command -v aws >/dev/null 2>&1; then
   echo "[INFO] Installing AWS CLI v2..."
 
@@ -140,6 +138,10 @@ if [ "$${HEALTH_SUCCESS}" -ne 1 ]; then
   echo "[ERROR] Twenty CRM did not become ready."
   echo "[INFO] Container status:"
   docker ps -a --filter "name=$${CONTAINER_NAME}"
+
+  echo "[INFO] Twenty CRM container logs:"
+  docker logs --tail 200 "$${CONTAINER_NAME}" 2>&1 || true
+
   exit 1
 fi
 
