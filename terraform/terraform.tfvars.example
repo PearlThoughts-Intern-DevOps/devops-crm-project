@@ -1,0 +1,22 @@
+aws_region        = "us-east-1"
+project_name      = "devops-crm"
+environment       = "dev"
+availability_zone = "us-east-1a"
+
+# Task 13 permits only t3.small and the two approved AMIs.
+instance_type    = "t3.small"
+ami_id           = "ami-081b0a6eac00b4f53"
+root_volume_size = 20
+
+# Twenty listens on container port 3000. This value is its EC2 host port.
+application_port = 3000
+twenty_version   = "v2.38.1"
+
+# Replace these documentation-only values before planning.
+ssh_allowed_cidr         = "203.0.113.10/32"
+application_allowed_cidr = "203.0.113.10/32"
+key_name                 = "replace-with-existing-key-pair-name"
+
+# Ask the AWS administrator for the exact existing instance-profile name.
+# It must contain EC2S3AccessRole; Terraform will only attach it, not manage it.
+iam_instance_profile_name = "replace-with-existing-instance-profile-name"
