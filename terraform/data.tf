@@ -1,7 +1,9 @@
+# Existing default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
+# Existing subnets inside the default VPC
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
@@ -9,15 +11,8 @@ data "aws_subnets" "default" {
   }
 }
 
-data "aws_subnet" "selected" {
-  id = data.aws_subnets.default.ids[0]
-}
 
+# Existing IAM instance profile that allows EC2 to pull from ECR
 data "aws_iam_instance_profile" "ecr_pull" {
-  name = "EC2ECRPullRole"
-}
-
-data "aws_security_group" "default" {
-  vpc_id = data.aws_vpc.default.id
-  name   = "default"
+  name = var.iam_instance_profile_name
 }

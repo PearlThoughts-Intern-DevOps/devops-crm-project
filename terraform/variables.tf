@@ -1,45 +1,57 @@
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "project_name" {
+  description = "Project name"
+  type        = string
+  default     = "twenty-crm"
+}
+
+variable "ecr_repository_name" {
+  description = "ECR repository name"
+  type        = string
+  default     = "twenty-crm"
+}
+
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.small"
 }
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
-  type        = string
-}
-
 variable "key_name" {
-  type = string
+  description = "Existing EC2 key pair name"
+  type        = string
 }
 
-variable "ecr_repository_name" {
-  description = "Name of the ECR repository"
+variable "iam_instance_profile_name" {
+  description = "Existing IAM instance profile used by EC2 to pull images from ECR"
   type        = string
-  default     = "twenty"
-}
-
-variable "ec2_name" {
-  description = "Name tag for the EC2 instance"
-  type        = string
-  default     = "twenty-crm"
+  default     = "EC2ECRPullRole"
 }
 
 variable "ssh_ingress_cidr" {
-  description = "CIDR allowed to access SSH"
+  description = "CIDR allowed to SSH into EC2"
   type        = string
   default     = "0.0.0.0/0"
 }
 
 variable "app_port" {
-  description = "Port exposed for Twenty CRM"
+  description = "Port exposed by Twenty CRM"
   type        = number
   default     = 3000
 }
 
-variable "aws_region" {
+variable "root_volume_size" {
+  description = "EC2 root volume size in GB"
+  type        = number
+  default     = 20
+}
 
-  type    = string
-  default = "us-east-1"
-
+variable "ami_id" {
+  description = "Amazon Linux AMI ID"
+  type        = string
 }
