@@ -1,0 +1,106 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "Installing Docker and bootstrap dependencies"
+dnf install -y docker openssl
+aws --version
+
+echo "Starting Docker"
+systemctl enable --now docker
+
+echo "Preparing Twenty configuration"
+install -d -m 700 /etc/twenty
+
+echo "Preparing persistent Docker volumes"
+docker volume create twenty-crm-database
+docker volume create twenty-crm-storage
+echo "Writing deployment settings"
+cat > /etc/twenty/deployment.env <<'EOF'
+AWS_REGION=${aws_region}
+ECR_REPOSITORY_URL=${ecr_repository_url}
+IMAGE_TAG=${image_tag}
+APPLICATION_PORT=${application_port}
+EOF
+chmod 600 /etc/twenty/deployment.env
+
+echo "Preparing application secret"
+if [ ! -s /etc/twenty/app.env ]; then
+  APP_SECRET=$(openssl rand -hex 32)
+  printf 'APP_SECRET=%s\n' "$APP_SECRET" > /etc/twenty/app.env
+fi
+chmod 600 /etc/twenty/app.env
+echo "Creating ECR image pull script"
+cat > /usr/local/bin/twenty-start <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+source /etc/twenty/deployment.env
+
+ECR_REGISTRY=$(echo "$ECR_REPOSITORY_URL" | cut -d/ -f1)
+IMAGE="$ECR_REPOSITORY_URL:$IMAGE_TAG"
+
+until aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin "$ECR_REGISTRY" \
+  && docker pull "$IMAGE"; do
+  echo "ECR login or image pull failed; retrying in 30 seconds"
+  sleep 30
+done
+
+echo "Image downloaded successfully: $IMAGE"
+
+echo "Reading EC2 public IPv4 address"
+TOKEN=$(curl --fail --silent --show-error \
+  --connect-timeout 5 --max-time 10 \
+  -X PUT \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 60" \
+  http://169.254.169.254/latest/api/token)
+
+PUBLIC_IP=$(curl --fail --silent --show-error \
+  --connect-timeout 5 --max-time 10 \
+  -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/public-ipv4)
+
+echo "Starting Twenty CRM"
+if docker container inspect twenty-crm >/dev/null 2>&1; then
+  docker rm -f twenty-crm
+fi
+
+docker run -d \
+  --name twenty-crm \
+  --restart unless-stopped \
+  --publish "$APPLICATION_PORT:2020" \
+  --env-file /etc/twenty/app.env \
+  --env NODE_PORT=2020 \
+  --env SERVER_URL="http://$PUBLIC_IP:$APPLICATION_PORT" \
+  --mount source=twenty-crm-database,target=/data/postgres \
+  --mount source=twenty-crm-storage,target=/app/packages/twenty-server/.local-storage \
+  "$IMAGE"
+SCRIPT
+
+chmod 700 /usr/local/bin/twenty-start
+
+echo "Creating Twenty startup service"
+cat > /etc/systemd/system/twenty-start.service <<'UNIT'
+[Unit]
+Description=Pull Twenty CRM from ECR and start its container
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/twenty-start
+RemainAfterExit=yes
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable twenty-start.service
+systemctl start --no-block twenty-start.service
+
+echo "Twenty startup service scheduled"

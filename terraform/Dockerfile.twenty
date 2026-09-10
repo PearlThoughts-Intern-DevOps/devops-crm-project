@@ -1,0 +1,6 @@
+# Reuse the pinned Twenty development image for the Task 12 lab.
+FROM twentycrm/twenty-app-dev@sha256:53381e68f6fa50808f624f4c0125ce2143c6d21321ba25886e1115c73367c6e6
+
+LABEL org.opencontainers.image.title="Twenty CRM Task 12"
+
+EXPOSE 2020

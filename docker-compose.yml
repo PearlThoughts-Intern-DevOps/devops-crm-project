@@ -1,0 +1,58 @@
+name: twenty-crm-app
+
+services:
+  twenty:
+    image: ${TWENTY_IMAGE:-twentycrm/twenty-app-dev@sha256:53381e68f6fa50808f624f4c0125ce2143c6d21321ba25886e1115c73367c6e6}
+    environment:
+      NODE_PORT: "2020"
+      SERVER_URL: http://localhost:${TWENTY_PORT:-2020}
+    ports:
+      - "${TWENTY_PORT:-2020}:2020"
+    volumes:
+      - twenty_database:/data/postgres
+      - twenty_storage:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty_network
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://localhost:2020')
+          .then(response => { if (!response.ok) process.exit(1) })
+          .catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        NODE_VERSION: ${NODE_VERSION:-24.5.0}
+    environment:
+      NODE_ENV: production
+      TWENTY_API_URL: http://twenty:2020
+      TWENTY_API_KEY: ${TWENTY_API_KEY:?Set TWENTY_API_KEY in your local .env file}
+    depends_on:
+      twenty:
+        condition: service_healthy
+    networks:
+      - twenty_network
+    init: true
+    restart: "no"
+
+networks:
+  twenty_network:
+    driver: bridge
+
+volumes:
+  twenty_database:
+    name: twenty-crm-database
+  twenty_storage:
+    name: twenty-crm-storage
