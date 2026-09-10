@@ -51,6 +51,17 @@ resource "aws_instance" "twenty" {
   subnet_id                   = data.aws_subnet.selected.id
   vpc_security_group_ids      = [aws_security_group.twenty.id]
   associate_public_ip_address = true
+  iam_instance_profile        = "EC2ECRPullRole"
+  key_name                    = var.key_name
+  user_data = templatefile("${path.module}/user-data.sh.tftpl", {
+    aws_region         = var.aws_region
+    ecr_repository_url = aws_ecr_repository.twenty.repository_url
+    image_tag          = var.image_tag
+    application_port   = var.application_port
+  })
+
+  user_data_replace_on_change = true
+
 
   root_block_device {
     volume_size           = var.root_volume_size

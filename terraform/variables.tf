@@ -67,6 +67,17 @@ variable "ecr_repository_name" {
   default     = "twenty-crm"
 }
 
+variable "image_tag" {
+  description = "ECR image tag that EC2 will pull for Twenty CRM."
+  type        = string
+  default     = "task12-v1"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$", var.image_tag))
+    error_message = "Provide a valid Docker image tag of 1 to 128 characters."
+  }
+}
+
 variable "availability_zone" {
   description = "Availability zone containing the default subnet to use."
   type        = string
@@ -93,5 +104,15 @@ variable "application_allowed_cidr" {
   validation {
     condition     = can(cidrnetmask(var.application_allowed_cidr))
     error_message = "Provide a valid IPv4 CIDR."
+  }
+}
+
+variable "key_name" {
+  description = "Name of an existing EC2 key pair in the selected AWS region."
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.key_name)) > 0
+    error_message = "Provide an existing EC2 key pair name."
   }
 }
