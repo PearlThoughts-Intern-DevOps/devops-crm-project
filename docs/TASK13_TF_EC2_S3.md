@@ -2,6 +2,9 @@
 
 **Name:** Harish
 **Task:** Task 13 - Deploy Twenty CRM with Terraform and Amazon S3
+**Date** 10 September 2026
+**PR link** [https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/298]
+**Loom link** [https://drive.google.com/file/d/1w47kahTZJ5HtSjFDHnLLEM67Vi71EaBt/view?usp=drive_link]
 
 ## Objective
 
