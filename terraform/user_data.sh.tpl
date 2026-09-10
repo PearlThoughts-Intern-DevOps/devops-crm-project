@@ -57,7 +57,7 @@ docker rm -f "$APP_NAME" 2>/dev/null || true
 docker run -d \
   --name "$APP_NAME" \
   --restart unless-stopped \
-  -p "$APP_PORT:2020" \
+  -p "$APP_PORT:3000" \
   -e NODE_ENV=production \
   "$FULL_IMAGE"
 
