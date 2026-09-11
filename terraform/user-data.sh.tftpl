@@ -1,0 +1,105 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee /var/log/twenty-user-data.log | logger -t twenty-user-data -s 2>/dev/console) 2>&1
+
+echo "Installing Docker and bootstrap dependencies"
+dnf install -y docker openssl
+systemctl enable --now docker
+
+echo "Installing the pinned Docker Compose plugin"
+install -d -m 755 /usr/local/lib/docker/cli-plugins
+curl --fail --location --retry 3 \
+  "https://github.com/docker/compose/releases/download/${docker_compose_version}/docker-compose-linux-x86_64" \
+  --output /usr/local/lib/docker/cli-plugins/docker-compose
+echo "${docker_compose_sha256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check
+chmod 755 /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
+
+echo "Creating swap for the 2 GiB t3.small host"
+if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
+  if [ ! -f /swapfile ]; then
+    fallocate -l 4G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+  fi
+  swapon /swapfile
+fi
+grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+echo "Preparing Twenty CRM configuration"
+install -d -m 700 /opt/twenty
+
+TOKEN=$(curl --fail --silent --show-error \
+  --connect-timeout 5 --max-time 10 \
+  -X PUT \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 60" \
+  http://169.254.169.254/latest/api/token)
+
+PUBLIC_IP=$(curl --fail --silent --show-error \
+  --connect-timeout 5 --max-time 10 \
+  -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/public-ipv4)
+
+if [ ! -s /opt/twenty/.env ]; then
+  ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')
+  PG_DATABASE_PASSWORD=$(openssl rand -hex 24)
+
+  umask 077
+  cat > /opt/twenty/.env <<EOF
+SERVER_URL=http://$PUBLIC_IP:${application_port}
+ENCRYPTION_KEY=$ENCRYPTION_KEY
+PG_DATABASE_PASSWORD=$PG_DATABASE_PASSWORD
+STORAGE_TYPE=S_3
+STORAGE_S3_REGION=${aws_region}
+STORAGE_S3_NAME=${bucket_name}
+EOF
+fi
+chmod 600 /opt/twenty/.env
+
+echo "Writing the pinned Twenty Docker Compose configuration"
+cat > /opt/twenty/docker-compose.yml <<'COMPOSE'
+${docker_compose}
+COMPOSE
+chmod 600 /opt/twenty/docker-compose.yml
+
+cat > /usr/local/bin/twenty-start <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+cd /opt/twenty
+
+until docker compose pull; do
+  echo "Twenty image pull failed; retrying in 30 seconds"
+  sleep 30
+done
+
+docker compose up -d
+SCRIPT
+chmod 700 /usr/local/bin/twenty-start
+
+cat > /etc/systemd/system/twenty.service <<'UNIT'
+[Unit]
+Description=Twenty CRM Docker Compose application
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/twenty
+ExecStart=/usr/local/bin/twenty-start
+ExecStop=/usr/bin/docker compose down
+RemainAfterExit=yes
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable twenty.service
+systemctl start --no-block twenty.service
+
+echo "Twenty CRM startup has been scheduled"

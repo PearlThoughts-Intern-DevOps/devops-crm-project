@@ -1,0 +1,151 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: Load Twenty CRM handlers
+      ansible.builtin.import_tasks: handlers/main.yml
+
+  tasks:
+    - name: Verify Ubuntu 22.04
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_version is version("22.04", ">=")
+          - ansible_distribution_version is version("22.10", "<")
+        fail_msg: "This playbook requires Ubuntu 22.04."
+        success_msg: "Ubuntu 22.04 detected."
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - ca-certificates
+          - gnupg
+          - apt-transport-https
+        state: present
+
+    - name: Create the Docker apt keyring directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the Docker repository signing key
+      ansible.builtin.get_url:
+        url: "{{ docker_apt_key_url }}"
+        dest: /etc/apt/keyrings/docker.asc
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Configure the Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repository }}"
+        filename: docker
+        state: present
+        update_cache: true
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create the Twenty group
+      ansible.builtin.group:
+        name: "{{ twenty_group }}"
+        state: present
+
+    - name: Create the Twenty application user
+      ansible.builtin.user:
+        name: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        groups:
+          - docker
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create Twenty application directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        mode: "0755"
+      loop:
+        - "{{ twenty_app_dir }}"
+        - "{{ twenty_repo_dir }}"
+
+    - name: Clone the Twenty CRM repository
+      ansible.builtin.git:
+        repo: "{{ twenty_repo_url }}"
+        dest: "{{ twenty_repo_dir }}"
+        version: "{{ twenty_repo_version }}"
+        depth: 1
+        single_branch: true
+        update: true
+      become_user: "{{ twenty_user }}"
+
+    - name: Deploy the Docker Compose configuration
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ twenty_app_dir }}/docker-compose.yml"
+        owner: "{{ twenty_user }}"
+        group: "{{ twenty_group }}"
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Start Twenty CRM with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: present
+        pull: missing
+        remove_orphans: true
+
+    - name: Run configuration-change handlers now
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for Twenty CRM port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ twenty_port }}"
+        delay: 5
+        timeout: 300
+
+    - name: Verify Twenty CRM over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_port }}"
+        method: GET
+        status_code: 200
+        follow_redirects: all
+      register: twenty_http_check
+      retries: 30
+      delay: 10
+      until: twenty_http_check.status == 200
+
+    - name: Show successful verification
+      ansible.builtin.debug:
+        msg: "Twenty CRM is available at {{ twenty_server_url }}"

@@ -1,0 +1,47 @@
+---
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "{{ postgres_database }}"
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "pg_isready -U {{ postgres_user }} -d {{ postgres_database }}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  twenty:
+    image: "{{ twenty_image }}"
+    restart: unless-stopped
+    ports:
+      - "{{ twenty_port }}:3000"
+    environment:
+      PG_DATABASE_URL: "postgres://{{ postgres_user }}:{{ postgres_password }}@postgres:5432/{{ postgres_database }}"
+      REDIS_URL: "redis://redis:6379"
+      SERVER_URL: "{{ twenty_server_url }}"
+      APP_SECRET: "{{ twenty_app_secret }}"
+      STORAGE_TYPE: local
+      DISABLE_DB_MIGRATIONS: "false"
+      DISABLE_CRON_JOBS_REGISTRATION: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
