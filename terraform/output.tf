@@ -47,8 +47,3 @@ output "twenty_crm_url_2020" {
   description = "URL to access Twenty CRM on port 2020"
   value       = "http://${aws_instance.twenty_crm.public_ip}:2020"
 }
-
-output "twenty_crm_url_3000" {
-  description = "URL to access Twenty CRM on port 3000"
-  value       = "http://${aws_instance.twenty_crm.public_ip}:3000"
-}
