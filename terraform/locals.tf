@@ -8,7 +8,7 @@ locals {
     Project     = var.project_name
     Environment = var.environment
     ManagedBy   = "Terraform"
-    Task        = "13"
+    Task        = "14"
   }
 
   docker_compose_version = "v5.5.1"

@@ -157,3 +157,57 @@ variable "twenty_version" {
     error_message = "Twenty version must be a complete release tag such as v2.38.1."
   }
 }
+
+variable "associate_public_ip_address" {
+  description = "Whether the EC2 instance receives a public IPv4 address."
+  type        = bool
+  default     = true
+}
+
+variable "ecr_repository_name" {
+  description = "Name of the ECR repository."
+  type        = string
+  default     = "twenty-crm"
+}
+
+variable "ecr_image_tag_mutability" {
+  description = "Whether ECR image tags can be overwritten."
+  type        = string
+  default     = "IMMUTABLE"
+}
+
+variable "ecr_scan_on_push" {
+  description = "Whether ECR scans images when they are pushed."
+  type        = bool
+  default     = true
+}
+
+variable "ecr_encryption_type" {
+  description = "Encryption type used by the ECR repository."
+  type        = string
+  default     = "AES256"
+}
+
+variable "ecr_force_delete" {
+  description = "Whether Terraform may delete an ECR repository containing images."
+  type        = bool
+  default     = false
+}
+
+variable "s3_force_destroy" {
+  description = "Whether Terraform may delete the S3 bucket when it contains objects."
+  type        = bool
+  default     = true
+}
+
+variable "s3_versioning_status" {
+  description = "Versioning status for the S3 bucket."
+  type        = string
+  default     = "Enabled"
+}
+
+variable "s3_sse_algorithm" {
+  description = "Server-side encryption algorithm used by the S3 bucket."
+  type        = string
+  default     = "AES256"
+}

@@ -20,3 +20,14 @@ key_name                 = "replace-with-existing-key-pair-name"
 # Ask the AWS administrator for the exact existing instance-profile name.
 # It must contain EC2S3AccessRole; Terraform will only attach it, not manage it.
 iam_instance_profile_name = "replace-with-existing-instance-profile-name"
+associate_public_ip_address = true
+
+ecr_repository_name      = "twenty-crm"
+ecr_image_tag_mutability = "IMMUTABLE"
+ecr_scan_on_push         = true
+ecr_encryption_type      = "AES256"
+ecr_force_delete         = false
+
+s3_force_destroy     = true
+s3_versioning_status = "Enabled"
+s3_sse_algorithm     = "AES256"

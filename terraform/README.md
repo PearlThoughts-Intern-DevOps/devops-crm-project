@@ -1,329 +1,222 @@
-# Task 13: Twenty CRM with Amazon S3
+# Task 14: Reusable Terraform Modules
 
-This Terraform configuration deploys one Twenty CRM EC2 instance and one S3
-bucket in `us-east-1`. It reuses the account's default VPC, a default subnet,
-an existing EC2 key pair, and the existing instance profile containing
-`EC2S3AccessRole`.
+This Terraform configuration refactors the existing Twenty CRM AWS
+infrastructure into reusable EC2, ECR, and S3 modules.
 
-Terraform does not create or manage VPCs, subnets, key pairs, IAM roles, IAM
-policies, or IAM instance profiles.
+The configuration uses the account's existing default VPC, a default subnet,
+an existing EC2 key pair, and an existing IAM instance profile. Terraform does
+not create or manage the VPC, subnet, key pair, IAM role, or IAM instance
+profile.
 
-## Architecture
+Terraform Apply was intentionally not run for Task 14.
+
+## Directory Structure
 
 ```text
-AWS us-east-1
-|
-+-- Existing default VPC
-|   `-- Existing default subnet in us-east-1a
-|       `-- One t3.small EC2 instance
-|           +-- Existing EC2S3AccessRole instance profile
-|           +-- Amazon Linux 2023
-|           +-- Docker Compose
-|           +-- Twenty server (host TCP 3000)
-|           +-- Twenty worker
-|           +-- PostgreSQL 16
-|           `-- Redis 7
-|
-`-- One S3 bucket
-    +-- Block Public Access enabled
-    +-- Versioning enabled
-    +-- AES-256 server-side encryption
-    `-- force_destroy enabled for lab cleanup
+terraform/
+├── main.tf
+├── provider.tf
+├── versions.tf
+├── variables.tf
+├── outputs.tf
+├── locals.tf
+├── vpc.tf
+├── security-group.tf
+├── terraform.tfvars
+├── terraform.tfvars.example
+├── user-data.sh.tftpl
+├── docker-compose.yml.tftpl
+└── modules/
+    ├── ec2/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── ecr/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── s3/
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
 ```
 
-PostgreSQL and Redis are available only on the Docker network. The security
-group exposes SSH and the configured Twenty web port only.
+## Module Responsibilities
 
-## Files
+### EC2 module
 
-| File | Purpose |
-| --- | --- |
-| `versions.tf` | Terraform and AWS provider constraints |
-| `provider.tf` | AWS provider configuration |
-| `variables.tf` | Typed and validated inputs |
-| `locals.tf` | Common tags, names, and pinned Compose metadata |
-| `vpc.tf` | Existing default VPC and subnet lookups |
-| `security-group.tf` | Restricted SSH, application, and HTTPS rules |
-| `s3.tf` | S3 bucket security, versioning, and encryption |
-| `ec2.tf` | EC2 instance and rendered User Data |
-| `docker-compose.yml.tftpl` | Twenty, worker, PostgreSQL, and Redis services |
-| `user-data.sh.tftpl` | Docker installation and automatic startup |
-| `outputs.tf` | Network, EC2, URL, S3, and profile results |
-| `terraform.tfvars.example` | Safe example input values |
+The EC2 module manages the Twenty CRM instance. It accepts the AMI, instance
+type, subnet, security groups, public IP setting, key pair, IAM instance
+profile, root volume size, rendered User Data, and tags.
 
-## Fixed Task Requirements
+The module preserves the existing encrypted gp3 root volume, IMDSv2
+requirement, User Data behavior, and replacement when User Data changes.
 
-Terraform validation rejects a region other than `us-east-1`, an instance type
-other than `t3.small`, and any AMI other than:
+It exposes the instance ID, public IP, private IP, and public DNS name.
 
-- `ami-081b0a6eac00b4f53` — Amazon Linux 2023 x86_64
-- `ami-0b6d9d3d33ba97d99` — Ubuntu 26.04 x86_64
+### ECR module
 
-The default is the Amazon Linux AMI because User Data uses `dnf`.
+The ECR module restores and modularizes the repository configuration used in
+Task 12. It uses immutable image tags, scan-on-push, AES-256 encryption, and
+protection against deleting a repository that still contains images.
 
-## Existing IAM Profile
+It exposes the repository URL, name, and ARN.
 
-`iam_instance_profile_name` must be the exact existing instance-profile name
-that contains `EC2S3AccessRole`. A role cannot be attached directly to EC2;
-EC2 receives it through an instance profile.
+### S3 module
 
-The EC2 resource only references the supplied profile name:
+The S3 module manages the bucket used by Twenty CRM. It preserves Block Public
+Access, versioning, AES-256 server-side encryption, configurable
+`force_destroy`, and tags.
+
+It exposes the bucket ID, name, and ARN.
+
+## Root Configuration
+
+The root `main.tf` calls the three modules using local source paths:
 
 ```hcl
-iam_instance_profile = var.iam_instance_profile_name
+module "ec2" {
+  source = "./modules/ec2"
+}
+
+module "ecr" {
+  source = "./modules/ecr"
+}
+
+module "s3" {
+  source = "./modules/s3"
+}
 ```
 
-There are no Terraform IAM resources. The deploying principal still requires
-`iam:PassRole` for `EC2S3AccessRole`.
+For example, `source = "./modules/ec2"` tells Terraform to load the EC2
+module from the local `modules/ec2` directory.
 
-An administrator can verify the existing relationship and policies with:
+Root variables receive environment-specific values from `terraform.tfvars`
+and pass them into the modules. Root outputs access module results with
+references such as:
+
+```hcl
+module.ec2.instance_id
+module.ecr.repository_url
+module.s3.bucket_name
+```
+
+The existing VPC and subnet lookups remain in the root configuration because
+they are shared inputs. The security group also remains in the root and its ID
+is passed to the EC2 module.
+
+## Configurable Values
+
+Local environment values are stored in `terraform.tfvars`. This file is
+ignored by Git and must not contain AWS access keys or application secrets.
+
+`terraform.tfvars.example` is the safe, committed template for the required
+inputs. Task 14 added configurable values for public IP association, ECR
+settings, S3 versioning, S3 encryption, and S3 destruction behavior.
+
+## Preserved Functionality
+
+- The application continues to use the existing default VPC and selected
+  default subnet.
+- EC2 continues to use the existing key pair and IAM instance profile.
+- The Twenty CRM Docker Compose and User Data templates remain unchanged.
+- The EC2 instance still depends on the S3 module so bucket configuration is
+  completed first.
+- S3 remains private, versioned, and encrypted.
+- ECR uses the security settings from the earlier Task 12 configuration.
+- Common resource tags now identify Task 14.
+
+## Issues Encountered and Resolutions
+
+### 1. VS Code save conflict in `variables.tf`
+
+**Issue:** VS Code reported that the file on disk was newer than the unsaved
+editor copy. Overwriting the file would also have removed several existing
+Task 13 validation blocks.
+
+**Resolution:** The validated on-disk version was preserved, the new Task 14
+variables were appended to it, and VS Code was reloaded using `File: Revert
+File`. This retained all previous validations while adding the module inputs.
+
+### 2. Module files did not appear in the first directory listing
+
+**Issue:** `find` was initially run with `-maxdepth 2`. Module files such as
+`modules/ec2/main.tf` are three levels below the Terraform directory, so they
+were not displayed.
+
+**Resolution:** The directory check was repeated with:
 
 ```bash
-aws iam get-role --role-name EC2S3AccessRole
-aws iam list-instance-profiles-for-role --role-name EC2S3AccessRole
-aws iam list-attached-role-policies --role-name EC2S3AccessRole
-aws iam list-role-policies --role-name EC2S3AccessRole
+find . -maxdepth 3 -type f -not -path './.terraform/*' | sort
 ```
 
-The role needs bucket-level access such as `s3:ListBucket`, plus the required
-`s3:GetObject`, `s3:PutObject`, and `s3:DeleteObject` actions for objects in
-the Terraform-created bucket.
+This displayed all nine module files.
 
-## Twenty S3 Configuration
+### 3. Duplicate resource risk during the refactor
 
-Both the server and worker receive the supported Twenty settings:
+**Issue:** After adding the module calls, the original root `ec2.tf` and
+`s3.tf` resources would have represented duplicate EC2 and S3 resources if
+they had remained in the configuration.
 
-```text
-IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
-STORAGE_TYPE=S_3
-STORAGE_S3_REGION=us-east-1
-STORAGE_S3_NAME=<Terraform-created bucket name>
-```
+**Resolution:** Root outputs were changed to use module outputs, and the old
+root `ec2.tf` and `s3.tf` files were removed. The resource implementations now
+exist only inside their respective modules.
 
-`STORAGE_S3_ENDPOINT` is omitted because native AWS S3 does not need a custom
-endpoint. S3 access-key and secret-key variables are intentionally omitted.
-The AWS SDK uses temporary instance-profile credentials from IMDSv2.
-Environment-only configuration prevents a database-stored setting from
-overriding the Terraform-rendered S3 configuration.
+### 4. Empty local Terraform state
 
-The instance requires IMDSv2 and sets its response hop limit to `2` so the
-containerized server and worker can reach the credential provider.
+**Issue:** The local state contained no managed resources, so Terraform could
+not report existing root resources as state moves into the modules.
 
-Twenty listens on port `3000` inside its container. `application_port` controls
-the EC2 host port and defaults to `3000`.
+**Resolution:** No state migration was required. The plan was reviewed as a
+fresh creation plan and confirmed that it contained no changes or destroys.
+No apply was performed.
 
-## S3 Destruction Behavior
+### 5. Terraform plan note about the `-out` option
 
-Versioned buckets retain historical object versions and delete markers. AWS
-will refuse to delete a non-empty bucket. `force_destroy = true` directs the
-AWS provider to remove current objects, versions, and delete markers before
-deleting this lab bucket during `terraform destroy`.
+**Issue:** Terraform noted that the plan was not saved with `-out`.
 
-Do not add S3 Object Lock or retention rules to this lab bucket because they
-can prevent version deletion even when `force_destroy` is enabled.
-
-## Local Inputs
-
-Copy the example if a local file does not already exist:
-
-```bash
-cp terraform.tfvars.example terraform.tfvars
-```
-
-Replace the documentation-only CIDRs, key-pair name, and instance-profile name.
-Never add AWS access keys or application secrets. `terraform.tfvars` is ignored
-by Git.
+**Resolution:** This was expected because Task 14 specifically required the
+plain `terraform plan` command. It is informational and not an error or
+warning.
 
 ## Terraform Workflow
 
-Run from this directory:
+The following commands were run from the `terraform/` directory:
 
 ```bash
-terraform fmt -recursive
 terraform init
+terraform fmt -recursive
 terraform validate
-terraform plan -out=task13.tfplan
-terraform show task13.tfplan
-terraform apply task13.tfplan
+terraform plan
 ```
 
-Review the plan before applying. It should create exactly one
-`aws_instance.twenty` and one `aws_s3_bucket.twenty_storage`, plus the bucket
-configuration and security-group resources. Data sources only read existing
-infrastructure.
+`terraform apply` must not be run for Task 14.
 
-## Verification
+## Validation Results
 
-Show Terraform results:
+Task 14 was validated on September 11, 2026.
 
-```bash
-terraform state list
-terraform output
-```
+- `terraform init` discovered all three local modules and successfully reused
+  the locked AWS provider version `v6.63.0`.
+- `terraform fmt -recursive` formatted `main.tf` and the ignored local
+  `terraform.tfvars` file.
+- `terraform validate` returned `Success! The configuration is valid.`
+- `terraform plan` returned `Plan: 10 to add, 0 to change, 0 to destroy.`
 
-Verify S3 controls:
+The plan included one EC2 instance, one ECR repository, one S3 bucket with
+three S3 configuration resources, one security group, and three security-group
+rules. All planned infrastructure actions were creates; there were no destroy
+or replacement actions.
 
-```bash
-BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-aws s3api get-public-access-block --bucket "$BUCKET_NAME"
-aws s3api get-bucket-versioning --bucket "$BUCKET_NAME"
-aws s3api get-bucket-encryption --bucket "$BUCKET_NAME"
-```
+## Safety and Git Hygiene
 
-Verify the profile association:
+The following local artifacts are ignored and must not be committed:
 
-```bash
-INSTANCE_ID=$(terraform output -raw ec2_instance_id)
-aws ec2 describe-instances \
-  --instance-ids "$INSTANCE_ID" \
-  --query 'Reservations[0].Instances[0].IamInstanceProfile.Arn' \
-  --output text
-```
+- `terraform.tfvars`
+- `.terraform/`
+- `*.tfstate`
+- `*.tfstate.*`
+- `*.tfplan`
 
-Connect with the Amazon Linux user and verify the runtime:
-
-```bash
-ssh -i /path/to/key.pem ec2-user@$(terraform output -raw ec2_public_ip)
-sudo cloud-init status --wait --long
-sudo systemctl status twenty --no-pager
-sudo systemctl is-active twenty
-sudo systemctl is-enabled twenty
-sudo bash -c 'cd /opt/twenty && docker compose ps'
-curl --fail http://localhost:3000/healthz
-```
-
-`/opt/twenty` is intentionally accessible only to `root` because it contains
-generated application secrets. Do not change its permissions or display its
-`.env` file. Use the `sudo bash -c` form above for Compose commands.
-
-View the latest Twenty server startup logs without changing directories:
-
-```bash
-sudo docker logs twenty-server-1 --tail 100
-```
-
-Follow new server logs with `sudo docker logs -f twenty-server-1` and press
-`Ctrl+C` to stop. A successful startup includes:
-
-```text
-[NestApplication] Nest application successfully started
-```
-
-Docker's health status provides an alternative to the HTTP health command:
-
-```bash
-sudo docker inspect --format '{{.State.Health.Status}}' twenty-server-1
-```
-
-The expected result is `healthy`.
-
-On EC2, verify the role supplied to the instance:
-
-```bash
-TOKEN=$(curl -sS -X PUT \
-  -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' \
-  http://169.254.169.254/latest/api/token)
-curl -sS -H "X-aws-ec2-metadata-token: $TOKEN" \
-  http://169.254.169.254/latest/meta-data/iam/security-credentials/
-aws sts get-caller-identity
-```
-
-Test the instance role against the bucket without static credentials:
-
-```bash
-BUCKET_NAME=<terraform-output-bucket-name>
-echo 'Task 13 S3 verification' >/tmp/task13-s3-test.txt
-aws s3 cp /tmp/task13-s3-test.txt "s3://$BUCKET_NAME/verification/task13-s3-test.txt"
-aws s3 cp "s3://$BUCKET_NAME/verification/task13-s3-test.txt" -
-aws s3 rm "s3://$BUCKET_NAME/verification/task13-s3-test.txt"
-```
-
-Finally, upload a file through Twenty and confirm that an object appears under
-the bucket. This verifies that Twenty itself, rather than only the host CLI,
-uses S3.
-
-Confirm that the running server uses S3 and has no static AWS credentials:
-
-```bash
-sudo docker inspect twenty-server-1 \
-  --format '{{range .Config.Env}}{{println .}}{{end}}' | \
-  grep -E '^STORAGE_(TYPE|S3_REGION|S3_NAME)='
-
-sudo docker inspect twenty-server-1 \
-  --format '{{range .Config.Env}}{{println .}}{{end}}' | \
-  grep -E '^(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|STORAGE_S3_ACCESS_KEY_ID|STORAGE_S3_SECRET_ACCESS_KEY)=' || \
-  echo 'PASS: no static AWS credentials configured'
-```
-
-## Verified Task 13 Results
-
-The deployment was verified on September 10, 2026 with the following final
-configuration:
-
-- EC2 name: `devops-crm-dev-ec2`
-- EC2 type: `t3.small`
-- AMI: `ami-081b0a6eac00b4f53`
-- Existing instance profile: `EC2S3AccessRole`
-- S3 bucket: `devops-crm-dev-579138738751-twenty-storage`
-- Twenty image: `twentycrm/twenty:v2.38.1`
-- Twenty URL port: `3000`
-
-Verification confirmed that:
-
-- Cloud-init completed successfully and `twenty.service` became active.
-- PostgreSQL and Redis were healthy, the Twenty server was healthy, and the
-  worker was running.
-- Twenty loaded successfully in a browser.
-- The EC2 identity was an assumed-role session for `EC2S3AccessRole`.
-- The EC2 role successfully wrote, read, and deleted an S3 test object.
-- Twenty wrote `server/application-registration/...` objects to S3, proving
-  application-to-S3 integration through the instance profile.
-- The bucket had all four Block Public Access controls enabled, versioning
-  enabled, and `AES256` server-side encryption.
-- The Twenty containers had no static AWS access-key environment variables.
-- The final `terraform plan` reported `No changes`.
-
-## Repository Safety
-
-Terraform state, saved plans, and private variable values remain local and
-must not be committed. The Terraform `.gitignore` excludes:
-
-```text
-*.tfstate
-*.tfstate.*
-*.tfplan
-*.tfvars
-```
-
-Commit `terraform.tfvars.example` as the safe input template, but never commit
-`terraform.tfvars`.
-
-## Cleanup
-
-After testing and collecting evidence, save the resource identifiers before
-destroying the Terraform state:
-
-```bash
-INSTANCE_ID=$(terraform output -raw ec2_instance_id)
-BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-terraform plan -destroy -out=task13-destroy.tfplan
-terraform apply task13-destroy.tfplan
-terraform state list
-```
-
-An empty `terraform state list` confirms that no managed resources remain.
-Use these simple commands to verify the deleted resources:
-
-```bash
-aws s3api head-bucket --bucket "$BUCKET_NAME" --region us-east-1
-aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --region us-east-1 --query 'Reservations[0].Instances[0].State.Name' --output text
-```
-
-The bucket check should return `404 Not Found`, and the EC2 check should return
-`terminated`.
-
-The verified cleanup result was `0 added, 0 changed, 9 destroyed`. Terraform
-state was empty, the bucket returned `404 Not Found`, and the EC2 instance was
-`terminated`. The existing default VPC and subnet remained `available`, the
-existing `chirag-crm-server` key pair remained present, and no IAM resources
-were managed or destroyed.
+The work was completed on branch `chirag-task-14`. No AWS infrastructure was
+created or changed because `terraform apply` was not run.
