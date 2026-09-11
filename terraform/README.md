@@ -8,6 +8,7 @@ everything together via `terraform.tfvars`.
 ---
 
 ## Project Structure
+
 terraform/
 ├── main.tf # Root — VPC, subnets, IGW, route tables, module calls
 ├── variables.tf # All input variables (sensitive vars via env)
@@ -33,33 +34,34 @@ terraform/
 ---
 
 ## Architecture Overview
-                    ┌─────────────────────────────────┐
-                    │         AWS ap-south-1           │
-                    │                                  │
-                    │  ┌──────── VPC 10.0.0.0/16 ───┐ │
-                    │  │                              │ │
-                    │  │  ┌─────────────────────┐    │ │
-                    │  │  │  Public Subnet 1     │    │ │
-                    │  │  │  10.0.1.0/24  (AZ-a) │    │ │
-                    │  │  │  ┌───────────────┐   │    │ │
-                    │  │  │  │  EC2 t3.small │   │    │ │
-                    │  │  │  │  Ubuntu 22.04 │   │    │ │
-                    │  │  │  │  Twenty CRM   │   │    │ │
-                    │  │  │  │  :2020        │   │    │ │
-                    │  │  │  └───────────────┘   │    │ │
-                    │  │  └─────────────────────┘    │ │
-                    │  │  ┌─────────────────────┐    │ │
-                    │  │  │  Public Subnet 2     │    │ │
-                    │  │  │  10.0.2.0/24  (AZ-b) │    │ │
-                    │  │  └─────────────────────┘    │ │
-                    │  │           │                  │ │
-                    │  └───────────┼──────────────────┘ │
-                    │             │ IGW                  │
-                    │  ┌──────────┴───────────────────┐ │
-                    │  │  ECR  (private registry)      │ │
-                    │  │  S3   (storage + backups)     │ │
-                    │  └──────────────────────────────┘ │
-                    └─────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│ AWS ap-south-1 │
+│ │
+│ ┌────────── VPC 10.0.0.0/16 ───────┐ │
+│ │ │ │
+│ │ ┌──────────────────────────┐ │ │
+│ │ │ Public Subnet 1 │ │ │
+│ │ │ 10.0.1.0/24 (AZ-a) │ │ │
+│ │ │ ┌────────────────────┐ │ │ │
+│ │ │ │ EC2 t3.small │ │ │ │
+│ │ │ │ Ubuntu 22.04 LTS │ │ │ │
+│ │ │ │ Twenty CRM :2020 │ │ │ │
+│ │ │ └────────────────────┘ │ │ │
+│ │ └──────────────────────────┘ │ │
+│ │ ┌──────────────────────────┐ │ │
+│ │ │ Public Subnet 2 │ │ │
+│ │ │ 10.0.2.0/24 (AZ-b) │ │ │
+│ │ └──────────────────────────┘ │ │
+│ │ │ │ │
+│ └──────────────┼────────────────────┘ │
+│ │ IGW │
+│ ┌──────────────┴───────────────────┐ │
+│ │ ECR — private container registry│ │
+│ │ S3 — storage + backups │ │
+│ └───────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+
 
 ---
 
@@ -150,7 +152,7 @@ Creates a private S3 bucket with versioning, encryption, and lifecycle rules.
 
 ## `user_data.sh.tpl` — EC2 Bootstrap
 
-The `user_data.sh.tpl` file is a Terraform `templatefile` that runs automatically on first EC2 boot. It:
+The `user_data.sh.tpl` is a Terraform `templatefile` that runs on first EC2 boot. It:
 
 1. Installs Docker
 2. Fetches the public IP via IMDSv2 (token-based — secure)
@@ -160,7 +162,7 @@ The `user_data.sh.tpl` file is a Terraform `templatefile` that runs automaticall
 6. Starts the Twenty CRM worker container
 7. Logs everything to `/var/log/user-data.log`
 
-Template variables passed from `main.tf`:
+**Template variables passed from `main.tf`**
 
 | Variable | Source |
 |---|---|
@@ -235,17 +237,15 @@ terraform apply "tfplan"
 
 ### Step 7 — Access the application
 
-After apply, Terraform outputs:
-
 ```bash
-terraform output app_url        # http://<public-ip>:2020
-terraform output ssh_command    # ssh -i ~/.ssh/shubhamsingh-task07.pem ubuntu@<ip>
-terraform output ecr_docker_login_command
+terraform output app_url                  # http://<public-ip>:2020
+terraform output ssh_command              # ssh -i ~/.ssh/shubhamsingh-task07.pem ubuntu@<ip>
+terraform output ecr_docker_login_command # docker login command for ECR
 ```
 
 ---
 
-## Inputs (terraform.tfvars)
+## Inputs (`terraform.tfvars`)
 
 | Variable | Value | Description |
 |---|---|---|
@@ -263,8 +263,8 @@ terraform output ecr_docker_login_command
 | `public_subnet_1_cidr` | `10.0.1.0/24` | Subnet 1 CIDR (AZ-a) |
 | `public_subnet_2_cidr` | `10.0.2.0/24` | Subnet 2 CIDR (AZ-b) |
 
-Sensitive variables (`pg_password`, `encryption_key`, `app_secret`) are
-**never stored in tfvars** — always passed via `TF_VAR_*` environment variables.
+> Sensitive variables (`pg_password`, `encryption_key`, `app_secret`) are
+> never stored in tfvars — always passed via `TF_VAR_*` environment variables.
 
 ---
 
@@ -321,5 +321,5 @@ terraform destroy
 
 ## Author
 
-**Shubham Singh** — MCA 2026 · Garden City University, Bangalore  
-Task 14 · DevOps CRM Project · Branch: `shubham-singh-task-14`
+**Shubham Singh** — MCA 2026 · Garden City University, Bangalore
+Task 14 · DevOps CRM Project · Branch: `shubham-task-14`
