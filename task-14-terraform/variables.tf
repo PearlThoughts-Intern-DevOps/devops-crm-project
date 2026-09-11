@@ -1,0 +1,57 @@
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "instance_name" {
+  description = "Name of the Twenty CRM EC2 instance"
+  type        = string
+  default     = "twenty-crm-task14"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "ami_id" {
+  description = "Approved Ubuntu AMI ID"
+  type        = string
+  default     = "ami-0b6d9d3d33ba97d99"
+}
+
+variable "key_name" {
+  description = "Existing AWS EC2 key pair name"
+  type        = string
+}
+
+variable "ssh_allowed_cidr" {
+  description = "CIDR allowed to access SSH"
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "crm_allowed_cidr" {
+  description = "CIDR allowed to access Twenty CRM"
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "iam_instance_profile" {
+  description = "Existing IAM instance profile for EC2"
+  type        = string
+  default     = "EC2S3AccessRole"
+}
+
+variable "ecr_repository_name" {
+  description = "ECR repository name"
+  type        = string
+  default     = "twenty-crm"
+}
+
+variable "s3_bucket_name" {
+  description = "S3 bucket name"
+  type        = string
+}
