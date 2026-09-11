@@ -1,0 +1,67 @@
+services:
+  twenty-app:
+    image: twentycrm/twenty-app-dev:v2.35.0
+    container_name: twenty-task5
+    restart: unless-stopped
+
+    ports:
+      - "2020:2020"
+
+    environment:
+      NODE_PORT: 2020
+      SERVER_URL: http://localhost:2020
+
+      PG_DATABASE_URL: postgres://twenty:twenty@localhost:5432/default
+      REDIS_URL: redis://localhost:6379
+
+      STORAGE_TYPE: local
+      APP_SECRET: ${APP_SECRET:-twenty-task5-development-secret}
+      APP_VERSION: v2.35.0
+      NODE_ENV: development
+
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      IS_BILLING_ENABLED: "false"
+      SIGN_IN_PREFILLED: "true"
+      APPLICATION_LOG_DRIVER: CONSOLE
+
+    volumes:
+      - twenty-task5-data:/data/postgres
+      - twenty-task5-storage:/app/packages/twenty-server/.local-storage
+
+    networks:
+      - twenty-network
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:2020',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  app-builder:
+    image: vasundara-twenty-app:task5
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twenty-task5-app-builder
+    restart: "no"
+
+    networks:
+      - twenty-network
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  twenty-task5-data:
+    driver: local
+  twenty-task5-storage:
+    driver: local

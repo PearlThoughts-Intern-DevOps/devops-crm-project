@@ -1,0 +1,5 @@
+aws_region          = "us-east-1"
+instance_type       = "t3.small"
+key_name            = null
+ecr_repository_name = "twenty-crm"
+ssh_allowed_cidr    = "0.0.0.0/0"
