@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -10,8 +12,8 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_security_group" "twenty_crm" {
-  name        = "twenty-crm-task12-sg"
-  description = "Security group for Twenty CRM EC2 instance"
+  name        = "${var.project_name}-sg"
+  description = "Security group for Twenty CRM Task 13"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -32,104 +34,155 @@ resource "aws_security_group" "twenty_crm" {
 
   egress {
     from_port   = 0
-    to_port     = 0
+    to_port     0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "${var.project_name}-sg"
+    Name    = "${var.project_name}-sg"
+    Project = "Twenty CRM"
+    Task    = "Task 13"
   }
 }
 
-resource "aws_ecr_repository" "twenty_crm" {
-  name                 = var.project_name
-  force_delete         = true
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+resource "aws_s3_bucket" "twenty_storage" {
+  bucket = "${var.project_name}-${data.aws_caller_identity.current.account_id}"
 
   tags = {
-    Name = "${var.project_name}-ecr"
+    Name    = "${var.project_name}-storage"
+    Project = "Twenty CRM"
+    Task    = "Task 13"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "twenty_storage" {
+  bucket = aws_s3_bucket.twenty_storage.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
 }
 
 resource "aws_instance" "twenty_crm" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
-  key_name                    = "karthikeyan-key"
   subnet_id                   = data.aws_subnets.default.ids[0]
   vpc_security_group_ids      = [aws_security_group.twenty_crm.id]
   associate_public_ip_address = true
-  root_block_device {
-    volume_size = 20
-    volume_type = "gp3"
-    encrypted   = true
-  }
-  iam_instance_profile = "EC2ECRPullRole"
 
-  user_data = <<-EOF_USERDATA
+  key_name = "karthikeyan-key"
+
+  iam_instance_profile = var.s3_instance_profile
+
+  root_block_device {
+    volume_size           = 20
+    volume_type           = "gp3"
+    encrypted             = true
+  }
+
+  user_data = <<-EOF
     #!/bin/bash
     set -e
 
+    exec > >(tee -a /var/log/twenty-crm-task13-init.log | logger -t twenty-crm-init -s 2>/dev/console) 2>&1
+
     apt-get update -y
     DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io awscli
+
     systemctl enable docker
     systemctl start docker
 
-    ECR_REPOSITORY="${aws_ecr_repository.twenty_crm.repository_url}"
-    IMAGE="$${ECR_REPOSITORY}:latest"
-
-    mkdir -p /opt/twenty-crm
+    until docker info >/dev/null 2>&1; do
+      echo "Waiting for Docker..."
+      sleep 10
+    done
 
     docker network create twenty-network 2>/dev/null || true
 
+    docker rm -f twenty-postgres twenty-redis twenty-crm 2>/dev/null || true
+
     docker run -d \
-      --name postgres \
-      --restart unless-stopped \
+      --name twenty-postgres \
       --network twenty-network \
       -e POSTGRES_USER=twenty \
       -e POSTGRES_PASSWORD=twenty_password \
       -e POSTGRES_DB=twenty \
+      --restart unless-stopped \
       postgres:16
 
     docker run -d \
-      --name redis \
-      --restart unless-stopped \
+      --name twenty-redis \
       --network twenty-network \
+      --restart unless-stopped \
       redis:7-alpine
 
-    until aws ecr get-login-password --region "${var.aws_region}" | docker login --username AWS --password-stdin "$${ECR_REPOSITORY}"; do
-      sleep 30
+    until aws sts get-caller-identity --region ${var.aws_region} >/dev/null 2>&1; do
+      echo "Waiting for EC2 IAM role credentials..."
+      sleep 15
     done
 
-    until docker pull "$${IMAGE}"; do
-      echo "Waiting for Twenty CRM image..." >> /var/log/twenty-crm-init.log
-      sleep 60
+    until aws s3api head-bucket \
+      --bucket ${aws_s3_bucket.twenty_storage.bucket} \
+      --region ${var.aws_region} >/dev/null 2>&1; do
+      echo "Waiting for S3 bucket access..."
+      sleep 15
     done
 
-    docker rm -f twenty-crm 2>/dev/null || true
+    docker pull twentycrm/twenty:latest
+
+    until docker exec twenty-postgres pg_isready -U twenty -d twenty >/dev/null 2>&1; do
+      echo "Waiting for PostgreSQL..."
+      sleep 5
+    done
+
+    until docker exec twenty-redis redis-cli ping >/dev/null 2>&1; do
+      echo "Waiting for Redis..."
+      sleep 5
+    done
+
+    ENCRYPTION_KEY=$(openssl rand -hex 32)
 
     docker run -d \
       --name twenty-crm \
-      --restart unless-stopped \
       --network twenty-network \
       -p ${var.app_port}:3000 \
       -e NODE_PORT=3000 \
-      -e SERVER_URL=http://localhost:${var.app_port} \
-      -e PG_DATABASE_URL=postgresql://twenty:twenty_password@postgres:5432/twenty \
-      -e REDIS_URL=redis://redis:6379 \
-      -e ENCRYPTION_KEY=03f3262e22d393af76dd43269f3c7d22947f0ac1ea61e9f864955cf3555962ce \
-      "$${IMAGE}"
+      -e SERVER_URL=http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):${var.app_port} \
+      -e PG_DATABASE_URL=postgresql://twenty:twenty_password@twenty-postgres:5432/twenty \
+      -e REDIS_URL=redis://twenty-redis:6379 \
+      -e STORAGE_TYPE=S_3 \
+      -e STORAGE_S3_REGION=${var.aws_region} \
+      -e STORAGE_S3_NAME=${aws_s3_bucket.twenty_storage.bucket} \
+      -e ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+      --restart unless-stopped \
+      twentycrm/twenty:latest
 
-    echo "Twenty CRM startup completed." > /var/log/twenty-crm-init.log
-  EOF_USERDATA
+    echo "Twenty CRM Task 13 startup completed."
+  EOF
 
   tags = {
-    Name = "${var.project_name}-ec2"
+    Name    = "${var.project_name}-ec2"
+    Project = "Twenty CRM"
+    Task    = "Task 13"
   }
-
-  depends_on = [aws_ecr_repository.twenty_crm]
 }
