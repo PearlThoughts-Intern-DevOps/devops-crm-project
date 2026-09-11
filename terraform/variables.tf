@@ -1,11 +1,11 @@
 variable "aws_region" {
-  description = "AWS region for Task 13"
+  description = "AWS region"
   type        = string
   default     = "us-east-1"
 
   validation {
     condition     = var.aws_region == "us-east-1"
-    error_message = "Task 13 must use us-east-1."
+    error_message = "This task must use us-east-1."
   }
 }
 
@@ -23,7 +23,7 @@ variable "ami_id" {
       var.ami_id
     )
 
-    error_message = "AMI must be one of the AMIs approved by the mentor."
+    error_message = "AMI must be one of the approved AMIs."
   }
 }
 
@@ -34,7 +34,7 @@ variable "instance_type" {
 
   validation {
     condition     = var.instance_type == "t3.small"
-    error_message = "Task 13 requires t3.small."
+    error_message = "This task requires t3.small."
   }
 }
 
@@ -45,7 +45,7 @@ variable "project_name" {
 }
 
 variable "iam_instance_profile" {
-  description = "Existing IAM instance profile provided by mentor"
+  description = "Existing IAM instance profile"
   type        = string
   default     = "EC2S3AccessRole"
 }
@@ -57,7 +57,7 @@ variable "repo_url" {
 }
 
 variable "repo_branch" {
-  description = "PearlThoughts branch containing Dockerfile and docker-compose.yml"
+  description = "Git branch containing the CRM deployment files"
   type        = string
   default     = "harish-task13"
 }
@@ -68,13 +68,19 @@ variable "app_port" {
   default     = 3000
 }
 
+variable "ecr_repository_name" {
+  description = "ECR repository name"
+  type        = string
+  default     = "twenty-crm"
+}
+
 variable "tags" {
-  description = "Tags for AWS resources"
+  description = "Common tags for AWS resources"
   type        = map(string)
 
   default = {
     Project     = "Twenty CRM"
-    Task        = "Task 13"
+    Task        = "Task 14"
     Owner       = "Harish"
     ManagedBy   = "Terraform"
     Environment = "Internship"

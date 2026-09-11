@@ -1,22 +1,36 @@
-
 output "ec2_public_ip" {
   description = "Public IP of the Twenty CRM EC2 instance"
-  value       = aws_instance.crm_server.public_ip
+  value       = module.ec2.public_ip
 }
 
 output "ec2_public_dns" {
   description = "Public DNS of the Twenty CRM EC2 instance"
-  value       = aws_instance.crm_server.public_dns
+  value       = module.ec2.public_dns
 }
 
 output "s3_bucket_name" {
   description = "Name of the provisioned S3 bucket"
-  value       = aws_s3_bucket.crm_storage.bucket
+  value       = module.s3.bucket_name
 }
 
 output "s3_bucket_arn" {
   description = "ARN of the provisioned S3 bucket"
-  value       = aws_s3_bucket.crm_storage.arn
+  value       = module.s3.bucket_arn
+}
+
+output "ecr_repository_name" {
+  description = "Name of the ECR repository"
+  value       = module.ecr.repository_name
+}
+
+output "ecr_repository_url" {
+  description = "URL of the ECR repository"
+  value       = module.ecr.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ARN of the ECR repository"
+  value       = module.ecr.repository_arn
 }
 
 output "vpc_id" {
@@ -31,10 +45,10 @@ output "subnet_id" {
 
 output "ssh_command" {
   description = "SSH command to connect to the EC2 instance"
-  value       = "ssh -i ${var.project_name}.pem ec2-user@${aws_instance.crm_server.public_ip}"
+  value       = module.ec2.ssh_command
 }
 
 output "crm_url" {
   description = "Twenty CRM URL"
-  value       = "http://${aws_instance.crm_server.public_ip}:${var.app_port}"
+  value       = "http://${module.ec2.public_ip}:${var.app_port}"
 }
