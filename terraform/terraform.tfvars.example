@@ -8,3 +8,9 @@ ami_id              = "REPLACE_WITH_AMI_ID"
 allowed_ssh_cidr    = "REPLACE_WITH_YOUR_IP/32"
 # key_name          = "REPLACE_WITH_YOUR_KEY_PAIR_NAME"
 ecr_repository_name = "twenty-crm"
+
+key_name             = "REPLACE_WITH_YOUR_KEY_PAIR_NAME"
+iam_instance_profile = "EC2S3AccessRole"
+s3_bucket_name       = "REPLACE_WITH_S3_BUCKET
+allowed_cidr_blocks  = ["0.0.0.0/0"]
+docker_image         = "docker_image_NAME"
