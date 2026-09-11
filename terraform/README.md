@@ -171,13 +171,21 @@ not report existing root resources as state moves into the modules.
 fresh creation plan and confirmed that it contained no changes or destroys.
 No apply was performed.
 
-### 5. Terraform plan note about the `-out` option
+### 5. Incorrect EC2 module AMI input name
 
-**Issue:** Terraform noted that the plan was not saved with `-out`.
+**Issue:** The initial root module example used `ami = var.ami_id`, but the
+EC2 module declares its input as `ami_id`. The argument name therefore did not
+match the module variable name.
 
-**Resolution:** This was expected because Task 14 specifically required the
-plain `terraform plan` command. It is informational and not an error or
-warning.
+**Resolution:** The root EC2 module call was manually corrected to:
+
+```hcl
+ami_id = var.ami_id
+```
+
+The corrected `main.tf` was reviewed with `sed -n '1,140p' main.tf`, and the
+later successful `terraform validate` confirmed that the module input name was
+valid.
 
 ## Terraform Workflow
 
