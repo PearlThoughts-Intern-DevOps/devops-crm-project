@@ -1,34 +1,79 @@
-# My Twenty App
+# Task 14 — Terraform Modules (EC2, ECR, S3)
 
-Describe your app in one or two sentences.
+Refactors the Task 12/13 Terraform configuration into three reusable
+modules — `ec2`, `ecr`, and `s3` — called from a single root
+configuration, instead of one flat set of `.tf` files.
 
-## Features
+## Stack
 
-List the top things your app does, for example:
+- **Region:** us-east-1
+- **Compute:** 1x EC2, `t3.small`, approved AMI (via `ec2` module)
+- **Registry:** 1x ECR repository for the Twenty CRM image (via `ecr` module)
+- **Storage:** 1x S3 bucket — versioning, AES-256 encryption, Block
+  Public Access all enabled (via `s3` module)
+- **IAM:** existing `EC2S3AccessRole` attached to the instance (no new
+  IAM users/roles/policies created)
+- **Network:** default VPC / default subnet (no new VPC)
 
-- Feature one
-- Feature two
-- Feature three
+## Repo layout
 
-## Getting started
+```
+modules/
+  ec2/
+    variables.tf   # instance inputs (AMI, type, subnet, SG rules, etc.)
+    main.tf        # security group + aws_instance resources
+    outputs.tf     # instance_id, public_ip, public_dns, sg_id
+  ecr/
+    variables.tf   # repository name, scan/mutability settings
+    main.tf        # aws_ecr_repository resource
+    outputs.tf     # repository_url, repository_arn, repository_name
+  s3/
+    variables.tf   # bucket name, versioning/encryption/public-access flags
+    main.tf        # bucket + versioning + encryption + public-access-block
+    outputs.tf     # bucket_name, bucket_arn, bucket_id
+versions.tf         # Terraform + AWS provider version constraints
+variables.tf         # root-level inputs, shared across all modules
+data.tf               # default VPC/subnet lookups
+main.tf                 # calls module "ecr", module "s3", module "ec2"
+outputs.tf               # surfaces each module's outputs
+user_data.sh.tpl           # EC2 bootstrap script (Docker + app + S3/ECR env)
+terraform.tfvars.example    # template for deployment-specific values
+screenshots/                 # init/fmt/validate/plan proof
+TASK14-DOCUMENTATION.md       # full write-up of the task
+```
 
-Setup instructions live in [SETUP.md](SETUP.md).
+## Why modules
 
-## Publishing
+Each module is self-contained — its own `variables.tf` (inputs) and
+`outputs.tf` (return values) — and knows nothing about the other
+modules. The root `main.tf` is the only place that wires them
+together: it calls each module with `source = "./modules/<name>"`,
+passes in the required variables, and threads outputs between them
+where needed (the EC2 module's `user_data` script is rendered using
+`module.s3.bucket_name` and `module.ecr.repository_url`). Any of the
+three modules could be reused as-is in a different root configuration
+without modification.
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+## How to run
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
+```bash
+cp terraform.tfvars.example terraform.tfvars   # fill in your own bucket name, branch, key pair
+terraform init
+terraform fmt
+terraform validate
+terraform plan
+```
 
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
+**`terraform apply` is intentionally not run for this task.**
 
-## Changelog
+## Verification performed
 
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+- `terraform init` — all three modules and the AWS provider initialized successfully
+- `terraform fmt` — configuration reformatted to canonical style
+- `terraform validate` — `Success! The configuration is valid.`
+- `terraform plan` — `Plan: 7 to add, 0 to change, 0 to destroy`, with
+  the S3 module correctly proposing versioning enabled and all four
+  Block Public Access settings `true`
 
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+See `TASK14-DOCUMENTATION.md` for the full write-up and
+`screenshots/` for proof of each command's output.
