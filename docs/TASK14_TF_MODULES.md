@@ -3,8 +3,8 @@
 **Name:** Harish
 **Task:** Terraform Modules
 **Date:** 11 September 2026
-**PR link:**
-**Loom link:**
+**PR link:** [https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/316]
+**Loom link:** [https://drive.google.com/file/d/18TUluWrxjHrbU4TTlUdgr6GTSJhq2jJy/view?usp=drive_link]
 
 ## Objective
 
