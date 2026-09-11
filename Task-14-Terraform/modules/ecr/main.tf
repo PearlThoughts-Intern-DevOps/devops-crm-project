@@ -1,0 +1,20 @@
+resource "aws_ecr_repository" "twenty_crm" {
+  name                 = var.ecr_repository_name
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+    ]
+  }
+
+  tags = {
+    Name        = var.ecr_repository_name
+    Application = "Twenty CRM"
+    Purpose     = "Twenty CRM Container Images"
+  }
+}
