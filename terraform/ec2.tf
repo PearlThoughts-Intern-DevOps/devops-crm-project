@@ -1,9 +1,5 @@
 # -----------------------------------------------------------------------------
-# EC2
-#
-# Provisions the Twenty CRM host using the existing mentor-provided Ubuntu AMI.
-# The security group allows SSH (22) and Twenty CRM (2020).
-# User data installs Docker, authenticates with ECR, and runs the application.
+# EC2 - Task 13
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "twenty_crm" {
@@ -43,20 +39,18 @@ resource "aws_security_group" "twenty_crm" {
 }
 
 resource "aws_instance" "twenty_crm" {
-  # Existing AMI provided by the mentor
   ami                    = "ami-0b6d9d3d33ba97d99"
   instance_type          = var.instance_type
   subnet_id              = data.aws_subnet.selected.id
   vpc_security_group_ids = [aws_security_group.twenty_crm.id]
   key_name               = var.key_pair_name
-  iam_instance_profile   = "EC2ECRPullRole"
+  iam_instance_profile   = var.iam_instance_profile
 
   user_data = templatefile("${path.module}/user_data.sh.tpl", {
-    ecr_repository_url = aws_ecr_repository.twenty_crm.repository_url
-    aws_region         = var.aws_region
-    app_port           = var.app_port
+    aws_region     = var.aws_region
+    app_port       = var.app_port
+    s3_bucket_name = aws_s3_bucket.twenty_crm.bucket
   })
-
   user_data_replace_on_change = true
 
   root_block_device {
@@ -71,6 +65,9 @@ resource "aws_instance" "twenty_crm" {
     Environment = var.environment
   }
 
-  # Ensure ECR exists before EC2 user data tries to pull the image
-  depends_on = [aws_ecr_repository.twenty_crm]
+  depends_on = [
+    aws_s3_bucket.twenty_crm,
+    aws_s3_bucket_versioning.twenty_crm,
+    aws_s3_bucket_server_side_encryption_configuration.twenty_crm,
+  ]
 }
