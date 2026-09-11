@@ -1,0 +1,9 @@
+aws_region             = "us-east-1"
+ami_id                 = "ami-0c1b483e2bffb1e6f"
+instance_type          = "t2.micro"
+key_name               = "vikash-yadav"
+subnet_id              = "subnet-078d52bfe579c74f2"
+vpc_security_group_ids = ["sg-025938ad23963381c"]
+ecr_repository_name    = "vikash-yadav-devops-crm-ecr"
+s3_bucket_name         = "vikash-yadav-devops-crm-bucket-task14"
+environment            = "dev"
