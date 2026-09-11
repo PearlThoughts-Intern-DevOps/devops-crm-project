@@ -1,0 +1,6 @@
+aws_region     = "us-east-1"
+project_name   = "twenty-crm"
+instance_type  = "t3.small"
+vpc_id         = "vpc-0c241509159132524"
+subnet_id      = "subnet-078d52bfe579c74f2"
+s3_bucket_name = "twenty-crm-storage-tannu-task-13"
