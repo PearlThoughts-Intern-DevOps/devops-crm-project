@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: my-twenty-app:task-5
+    container_name: my-twenty-app-compose
+    ports:
+      - "2025:2020"
+    environment:
+      NODE_ENV: production
+      TWENTY_API_URL: http://host.docker.internal:2020
+    restart: unless-stopped
