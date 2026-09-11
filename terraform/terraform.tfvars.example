@@ -1,0 +1,14 @@
+# Copy this file to terraform.tfvars and fill in real values before running
+# terraform plan/apply. terraform.tfvars itself is gitignored since it may
+# contain environment-specific or sensitive values.
+
+aws_region          = "us-east-1"
+project_name        = "twenty-crm"
+environment         = "dev"
+instance_type       = "t3.small"
+root_volume_size    = 20
+key_pair_name       = "your-existing-ec2-key-pair-name"
+allowed_ssh_cidr    = "0.0.0.0/0"
+app_port            = 2020
+ecr_repository_name = "twenty-crm"
+iam_instance_profile = "EC2ECRPullRole"
