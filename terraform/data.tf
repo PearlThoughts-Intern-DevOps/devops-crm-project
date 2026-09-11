@@ -14,22 +14,6 @@ data "aws_security_group" "default" {
   vpc_id = data.aws_vpc.default.id
 }
 
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-*-x86_64"]
-  }
-
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
-  }
-
-  filter {
-    name   = "root-device-type"
-    values = ["ebs"]
-  }
+data "aws_iam_instance_profile" "s3_access" {
+  name = var.iam_instance_profile_name
 }

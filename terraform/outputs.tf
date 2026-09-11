@@ -18,17 +18,17 @@ output "ec2_public_ip" {
   value       = aws_instance.twenty.public_ip
 }
 
-output "ecr_repository_name" {
-  description = "Amazon ECR repository name"
-  value       = aws_ecr_repository.twenty.name
-}
-
-output "ecr_repository_url" {
-  description = "Amazon ECR repository URL"
-  value       = aws_ecr_repository.twenty.repository_url
-}
-
 output "ec2_iam_instance_profile" {
-  description = "Existing IAM instance profile used by the EC2 instance"
-  value       = data.aws_iam_instance_profile.ec2_ecr_profile.name
+  description = "Existing IAM instance profile attached to the EC2 instance"
+  value       = data.aws_iam_instance_profile.s3_access.name
+}
+
+output "s3_bucket_name" {
+  description = "S3 bucket used as Twenty CRM storage backend"
+  value       = aws_s3_bucket.twenty_storage.bucket
+}
+
+output "s3_bucket_arn" {
+  description = "ARN of the S3 storage bucket"
+  value       = aws_s3_bucket.twenty_storage.arn
 }

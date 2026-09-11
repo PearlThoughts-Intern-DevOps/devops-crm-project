@@ -1,118 +1,132 @@
 #!/bin/bash
-# user_data.sh.tpl
-#
-# Rendered by Terraform's templatefile() with:
-#   aws_region          - the AWS region (for ECR auth)
-#   ecr_repository_url  - the ECR repository URL created by Terraform
-#   image_tag           - the tag to pull (matches what's pushed locally)
-#
-# Runs automatically on first boot via EC2 user data. Logs go to
-# /var/log/user-data.log so progress/issues can be inspected via SSH
-# even though nobody is watching this run interactively.
 
 set -uo pipefail
 exec > >(tee /var/log/user-data.log) 2>&1
 
-echo "=== Twenty CRM EC2 bootstrap started at $(date) ==="
+echo "=== Twenty CRM S3 bootstrap started at $(date) ==="
 
-# ---------------------------------------------------------------------
-# 1. Install Docker and required dependencies
-# ---------------------------------------------------------------------
 echo "=== Installing Docker ==="
 dnf update -y
-dnf install -y docker
+dnf install -y docker openssl
+
 systemctl enable docker
 systemctl start docker
 
-# ec2-user isn't needed here since this script runs as root, but
-# adding it anyway makes manual `docker` commands work without sudo
-# for anyone who SSHes in afterward.
 usermod -aG docker ec2-user || true
 
-# ---------------------------------------------------------------------
-# 2. Authenticate with Amazon ECR
-# ---------------------------------------------------------------------
-# awscli v2 ships preinstalled on Amazon Linux 2023. Credentials come
-# from the IAM instance profile attached to this instance (see iam.tf)
-# -- no access keys are stored anywhere on this machine.
-echo "=== Authenticating with Amazon ECR ==="
-aws ecr get-login-password --region ${aws_region} | \
-  docker login --username AWS --password-stdin ${ecr_repository_url}
+echo "=== Adding 2GB swap ==="
+# Running 4 separate containers (Twenty server, Twenty worker, Postgres,
+# Redis) simultaneously on a t3.small's 2GB RAM caused severe memory
+# pressure without this -- SSH itself became unresponsive during the
+# migration-heavy startup phase. This exact swap setup resolved the
+# identical symptom in an earlier task on the same instance type.
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
 
-# ---------------------------------------------------------------------
-# 3. Attempt to pull the image, retrying periodically until available
-# ---------------------------------------------------------------------
-# The EC2 instance is created by `terraform apply` BEFORE the image is
-# built/pushed (that happens afterward, from the local machine using
-# the ECR URL from Terraform's output) -- so the image may genuinely
-# not exist in ECR yet on first boot. Retry with a fixed delay instead
-# of failing immediately.
-IMAGE="${ecr_repository_url}:${image_tag}"
-MAX_ATTEMPTS=30
-DELAY_SECONDS=30
+echo "=== Installing Docker Compose v2 ==="
+mkdir -p /usr/local/lib/docker/cli-plugins
 
-echo "=== Waiting for image $${IMAGE} to become available in ECR ==="
-for attempt in $(seq 1 $${MAX_ATTEMPTS}); do
-  if docker pull "$${IMAGE}"; then
-    echo "=== Image pulled successfully on attempt $${attempt} ==="
-    break
-  fi
-  echo "=== Attempt $${attempt}/$${MAX_ATTEMPTS} failed, retrying in $${DELAY_SECONDS}s ==="
-  sleep "$${DELAY_SECONDS}"
-done
+curl -SL \
+  https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
 
-if ! docker image inspect "$${IMAGE}" > /dev/null 2>&1; then
-  echo "=== ERROR: image never became available after $${MAX_ATTEMPTS} attempts ==="
-  exit 1
-fi
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-# ---------------------------------------------------------------------
-# 4. Run the Twenty CRM application
-# ---------------------------------------------------------------------
-# The app image alone can't run standalone -- it's a CLI-driven process
-# (see Dockerfile) that syncs into a separately-running Twenty CRM
-# server. Write a minimal docker-compose file so both come up together,
-# same architecture as the earlier Docker Containerization task.
-echo "=== Writing docker-compose.yml and starting the application ==="
+echo "=== Verifying Docker Compose ==="
+docker compose version
+
+echo "=== Preparing Twenty CRM directory ==="
 mkdir -p /opt/twenty-crm
-cat > /opt/twenty-crm/docker-compose.yml << COMPOSE_EOF
-services:
-  twenty:
-    image: twentycrm/twenty-app-dev:latest
-    container_name: twenty-crm-server
-    ports:
-      - "2020:2020"
-    volumes:
-      - twenty-server-data:/app/data
-    restart: unless-stopped
+cd /opt/twenty-crm
 
-  app:
-    image: $${IMAGE}
-    container_name: devops-crm-app
-    depends_on:
-      - twenty
-    network_mode: "service:twenty"
+echo "=== Generating Twenty encryption key ==="
+ENCRYPTION_KEY=$(openssl rand -hex 32)
+
+cat > /opt/twenty-crm/.env <<ENV_EOF
+ENCRYPTION_KEY=$${ENCRYPTION_KEY}
+STORAGE_TYPE=S_3
+STORAGE_S3_REGION=${aws_region}
+STORAGE_S3_NAME=${bucket_name}
+ENV_EOF
+
+chmod 600 /opt/twenty-crm/.env
+
+echo "=== Creating Docker Compose configuration ==="
+
+cat > /opt/twenty-crm/docker-compose.yml <<COMPOSE_EOF
+services:
+
+  server:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
+      NODE_PORT: 3000
+      SERVER_URL: http://localhost:3000
+      PG_DATABASE_URL: postgresql://postgres:postgres@db:5432/twenty
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: S_3
+      STORAGE_S3_REGION: ${aws_region}
+      STORAGE_S3_NAME: ${bucket_name}
+      ENCRYPTION_KEY: $${ENCRYPTION_KEY}
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    image: twentycrm/twenty:latest
+    container_name: twenty-crm-worker
+    restart: unless-stopped
+    command: ["yarn", "worker:prod"]
+    environment:
+      NODE_PORT: 3000
+      PG_DATABASE_URL: postgresql://postgres:postgres@db:5432/twenty
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: S_3
+      STORAGE_S3_REGION: ${aws_region}
+      STORAGE_S3_NAME: ${bucket_name}
+      ENCRYPTION_KEY: $${ENCRYPTION_KEY}
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    container_name: twenty-crm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: twenty
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - twenty-cli-config:/app/.twenty
+      - twenty-db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: twenty-crm-redis
+    restart: unless-stopped
+    volumes:
+      - twenty-redis-data:/data
 
 volumes:
-  twenty-server-data:
-  twenty-cli-config:
+  twenty-db-data:
+  twenty-redis-data:
 COMPOSE_EOF
 
-# docker-compose (not the built-in compose plugin) is used here for
-# consistency with earlier tasks on this same Amazon Linux 2023 AMI,
-# where the compose plugin isn't available via dnf.
-curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-  -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+echo "=== Validating Docker Compose configuration ==="
+docker compose -f /opt/twenty-crm/docker-compose.yml config >/dev/null
 
+echo "=== Starting Twenty CRM ==="
 cd /opt/twenty-crm
-/usr/local/bin/docker-compose up -d
+docker compose up -d
 
-echo "=== Twenty CRM bootstrap completed at $(date) ==="
-echo "=== NOTE: the app container still needs one-time CLI authentication ==="
-echo "===       (docker-compose exec app yarn twenty remote:add --url http://localhost:2020 --api-key '<key>') ==="
-echo "===       this cannot be automated here since it requires a key generated from the running Twenty UI ==="
+echo "=== Docker containers ==="
+docker compose ps
+
+echo "=== Twenty CRM S3 bootstrap completed at $(date) ==="
+echo "=== S3 bucket: ${bucket_name} ==="

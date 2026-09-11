@@ -16,12 +16,6 @@ variable "key_name" {
   default     = null
 }
 
-variable "ecr_repository_name" {
-  description = "Name of the Amazon ECR repository"
-  type        = string
-  default     = "twenty-crm"
-}
-
 variable "environment" {
   description = "Deployment environment"
   type        = string
@@ -34,14 +28,26 @@ variable "project_name" {
   default     = "twenty-crm"
 }
 
-variable "image_tag" {
-  description = "Docker image tag to build, push, and pull (must match on both the local push and the EC2 user-data pull)"
+variable "owner" {
+  description = "Owner tag used to identify resources"
   type        = string
-  default     = "latest"
+  default     = "netaji"
 }
 
 variable "ami_id" {
-  description = "Approved Amazon Linux 2023 AMI ID for us-east-1"
+  description = "Mentor-approved Amazon Linux 2023 AMI for us-east-1"
   type        = string
   default     = "ami-081b0a6eac00b4f53"
+}
+
+variable "iam_instance_profile_name" {
+  description = "Pre-existing IAM instance profile granting EC2 access to S3"
+  type        = string
+  default     = "EC2S3AccessRole"
+}
+
+variable "s3_bucket_name" {
+  description = "Globally unique S3 bucket name for Twenty CRM storage"
+  type        = string
+  default     = "netaji-twenty-crm-storage-2026"
 }
