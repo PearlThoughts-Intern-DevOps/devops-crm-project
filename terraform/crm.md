@@ -1,58 +1,28 @@
-TWENTY CRM – S3 STORAGE VERIFICATION
+Twenty CRM Docker Storage Verification
+1. Check Current Storage
 
-1. CHECK AWS IAM ROLE
+Check whether the Twenty CRM container is running:
 
-aws sts get-caller-identity
+docker ps
 
-Expected:
-EC2S3AccessRole
+Check which storage backend the container is configured to use:
 
+docker inspect twenty-app-dev | grep -E 'STORAGE_TYPE|STORAGE_S3_NAME|STORAGE_S3_REGION|STORAGE_S3_ENDPOINT'
+STORAGE_TYPE=local → Local storage
+STORAGE_TYPE=S3 → S3 storage
+2. Stop and Remove Existing Container
 
-2. CHECK S3 BUCKET
+Stop the container:
 
-aws s3 ls s3://rohith-crm-storaage --recursive
+docker stop twenty-app-dev
 
+Remove the container:
 
-3. TEST EC2 → S3 ACCESS
+docker rm twenty-app-dev
 
-echo "CRM S3 test" > /tmp/test.txt
+These commands remove the container but do not remove the Docker volumes.
 
-aws s3 cp /tmp/test.txt s3://rohith-crm-storaage/test.txt
-
-aws s3 ls s3://rohith-crm-storaage --recursive
-
-
-4. REMOVE MANUAL TEST FILE
-
-aws s3 rm s3://rohith-crm-storaage/test.txt
-
-aws s3 ls s3://rohith-crm-storaage --recursive
-
-
-5. CHECK TWENTY CONTAINER
-
-docker ps -a
-
-docker inspect twenty-app-dev \
---format '{{range .Config.Env}}{{println .}}{{end}}' \
-| grep -E 'STORAGE|S3'
-
-
-6. CHECK TWENTY STORAGE ENVIRONMENT
-
-docker exec twenty-app-dev sh -c \
-'env | sort | grep -Ei "STORAGE|S3|AWS"'
-
-
-7. CHECK TWENTY S3 CONFIGURATION
-
-docker exec twenty-app-dev sh -c \
-'find /app -type f \( -name "*.js" -o -name "*.ts" \) 2>/dev/null | \
-xargs grep -nE "STORAGE_TYPE|STORAGE_S3|S3_BUCKET|S3_NAME" 2>/dev/null | head -100'
-
-
-8. TWENTY S3 CONFIGURATION
-
+3. Run Twenty CRM with S3 Storage
 docker run -d \
   --name twenty-app-dev \
   -p 2020:2020 \
@@ -75,85 +45,58 @@ docker run -d \
   -e SIGN_IN_PREFILLED=true \
   -e APPLICATION_LOG_DRIVER=CONSOLE \
   twentycrm/twenty-app-dev:latest
-  
-  
-  
-  
-  STORAGE_TYPE=S3
 
+Important S3 settings:
+
+STORAGE_TYPE=S3
 STORAGE_S3_NAME=rohith-crm-storaage
-
 STORAGE_S3_REGION=us-east-1
-
 STORAGE_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
 
+These configure Twenty CRM to use the S3 bucket for file storage.
 
-9. CHECK TWENTY LOGS
+4. Verify Container and S3 Configuration
 
-docker logs twenty-app-dev --tail 100
+Check that the container is running:
 
+docker ps
 
-10. LOGIN TO TWENTY CRM
+Check the storage configuration:
 
-Open:
+docker inspect twenty-app-dev | grep -E 'STORAGE_TYPE|STORAGE_S3_NAME|STORAGE_S3_REGION|STORAGE_S3_ENDPOINT'
 
-http://54.242.102.193:2020
+Expected:
 
-Login:
+STORAGE_TYPE=S3
+STORAGE_S3_NAME=rohith-crm-storaage
+STORAGE_S3_REGION=us-east-1
+STORAGE_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
+5. Verify S3 Files
 
-Email:
-tim@apple.dev
-
-Password:
-tim@apple.dev
-
-
-11. UPLOAD FILE THROUGH TWENTY CRM
-
-Upload an image/file through the Twenty CRM interface.
-
-Do NOT use aws s3 cp for this test.
-
-The purpose is to verify that Twenty itself writes the file to S3.
-
-
-12. VERIFY TWENTY → S3
+List all objects in the S3 bucket:
 
 aws s3 ls s3://rohith-crm-storaage --recursive
+--recursive meaning
+aws
+ ↓
+AWS CLI
 
+s3
+ ↓
+S3 service
 
-13. EXPECTED RESULT
+ls
+ ↓
+List objects
 
-The S3 bucket should contain files similar to:
+s3://rohith-crm-storaage
+ ↓
+Target bucket
 
-20202020-1c25-4d02-bf25-6aeccf7ea419/de704230-063c-40c5-968c-1ce955620472/core-picture/9beb7c03-d670-4812-9b80-ef16fcaa6549.png
+--recursive
+ ↓
+List files inside all folders/prefixes
 
-20202020-1c25-4d02-bf25-6aeccf7ea419/de704230-063c-40c5-968c-1ce955620472/core-picture/a46d5eaa-11f1-4190-a864-e46d763d4870.png
-
-20202020-1c25-4d02-bf25-6aeccf7ea419/de704230-063c-40c5-968c-1ce955620472/core-picture/ccff6f65-9366-41cd-8d6c-f341d5082eac.jpg
-
-
-FINAL ARCHITECTURE
-
-Twenty CRM
-     ↓
-S3 Storage Driver
-     ↓
-EC2S3AccessRole
-     ↓
-Amazon S3
-     ↓
-rohith-crm-storaage
-     ↓
-CRM uploaded files
-
-
-FINAL RESULT
-
-EC2 → S3 was successfully tested using aws s3 cp.
-
-Twenty CRM → S3 was then verified by uploading files through the Twenty CRM application and checking the S3 bucket with:
+After uploading a file/image through Twenty CRM, run:
 
 aws s3 ls s3://rohith-crm-storaage --recursive
-
-The PNG and JPG objects appearing in the bucket confirm that Twenty CRM is using S3 for file storage.
