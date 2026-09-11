@@ -2,11 +2,6 @@ variable "aws_region" {
   description = "AWS region to deploy into"
   type        = string
   default     = "us-east-1"
-
-  validation {
-    condition     = var.aws_region == "us-east-1"
-    error_message = "Task 13 requires us-east-1."
-  }
 }
 
 variable "instance_type" {
@@ -16,7 +11,7 @@ variable "instance_type" {
 
   validation {
     condition     = var.instance_type == "t3.small"
-    error_message = "Task 13 requires t3.small only."
+    error_message = "Task 13/14 require t3.small only."
   }
 }
 
@@ -29,24 +24,24 @@ variable "ami_id" {
       "ami-081b0a6eac00b4f53",
       "ami-0b6d9d3d33ba97d99",
     ], var.ami_id)
-    error_message = "ami_id must be one of the two approved AMIs for Task 13."
+    error_message = "ami_id must be one of the two approved AMIs."
   }
 }
 
 variable "existing_iam_role_name" {
-  description = "Name of the pre-existing IAM role to attach to the EC2 instance"
+  description = "Name of the pre-existing IAM role/instance-profile to attach to the EC2 instance"
   type        = string
   default     = "EC2S3AccessRole"
 }
 
 variable "key_pair_name" {
-  description = "Name of an existing EC2 key pair for SSH access (leave null to skip SSH key)"
+  description = "Name of an existing EC2 key pair for SSH access (leave null to skip)"
   type        = string
   default     = null
 }
 
 variable "ssh_ingress_cidr" {
-  description = "CIDR allowed to SSH into the instance. Set to your own IP/32 for safety."
+  description = "CIDR allowed to SSH into the instance"
   type        = string
   default     = "0.0.0.0/0"
 }
@@ -56,14 +51,20 @@ variable "s3_bucket_name" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Short name used in resource tags"
+variable "ecr_repository_name" {
+  description = "Name of the ECR repository for the Twenty CRM image"
   type        = string
-  default     = "twenty-crm-task13"
+  default     = "twenty-crm"
+}
+
+variable "project_name" {
+  description = "Short name used in resource naming/tags"
+  type        = string
+  default     = "twenty-crm"
 }
 
 variable "owner" {
-  description = "Owner tag value (e.g. your name)"
+  description = "Owner tag value"
   type        = string
   default     = "fathima-fiza-c-p"
 }
