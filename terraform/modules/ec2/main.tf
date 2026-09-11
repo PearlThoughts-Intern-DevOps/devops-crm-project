@@ -1,3 +1,6 @@
+
+## AWS key-pair
+
 resource "tls_private_key" "crm_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -13,6 +16,8 @@ resource "local_file" "pem_file" {
   filename        = "${path.root}/${var.project_name}.pem"
   file_permission = "0400"
 }
+
+## security Group
 
 resource "aws_security_group" "crm_sg" {
   name        = "${var.project_name}-sg"

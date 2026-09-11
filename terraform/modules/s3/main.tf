@@ -12,6 +12,8 @@ resource "aws_s3_bucket" "crm_storage" {
   })
 }
 
+## Versioning
+
 resource "aws_s3_bucket_versioning" "crm_storage" {
   bucket = aws_s3_bucket.crm_storage.id
 
@@ -19,6 +21,8 @@ resource "aws_s3_bucket_versioning" "crm_storage" {
     status = "Enabled"
   }
 }
+
+## Server side encryption
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "crm_storage" {
   bucket = aws_s3_bucket.crm_storage.id
@@ -29,6 +33,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "crm_storage" {
     }
   }
 }
+
+## Block public access
 
 resource "aws_s3_bucket_public_access_block" "crm_storage" {
   bucket = aws_s3_bucket.crm_storage.id
