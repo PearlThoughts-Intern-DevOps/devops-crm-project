@@ -1,0 +1,7 @@
+aws_region          = "us-east-1"
+ami_id              = "ami-0b6d9d3d33ba97d99"
+instance_type       = "t3.small"
+s3_bucket_name      = "prabhas-task14-twenty-storage-bucket"
+ecr_repository_name = "prabhas-task14-twenty-crm"
+ssh_allowed_cidr    = "0.0.0.0/0"
+image_tag           = "v2.38.1"
