@@ -9,59 +9,61 @@ everything together via `terraform.tfvars`.
 
 ## Project Structure
 
+```plaintext
 terraform/
-├── main.tf # Root — VPC, subnets, IGW, route tables, module calls
-├── variables.tf # All input variables (sensitive vars via env)
-├── outputs.tf # All root outputs
-├── providers.tf # AWS + random providers, version constraints
-├── terraform.tfvars # Non-sensitive variable values
-├── user_data.sh.tpl # EC2 bootstrap script (Terraform templatefile)
+├── main.tf                  # Root — VPC, subnets, IGW, route tables, module calls
+├── variables.tf             # All input variables (sensitive vars via env)
+├── outputs.tf               # All root outputs
+├── providers.tf             # AWS + random providers, version constraints
+├── terraform.tfvars         # Non-sensitive variable values
+├── user_data.sh.tpl         # EC2 bootstrap script (Terraform templatefile)
 └── modules/
-├── ec2/
-│ ├── main.tf # Security group + EC2 instance (dynamic AMI lookup)
-│ ├── variables.tf # All EC2 module inputs
-│ └── outputs.tf # instance_id, public_ip, public_dns, sg_id, ami_id
-├── ecr/
-│ ├── main.tf # ECR repository + lifecycle policy
-│ ├── variables.tf # repository_name, scan_on_push, max_image_count
-│ └── outputs.tf # repository_url, repository_arn, docker_login_command
-└── s3/
-├── main.tf # S3 bucket + versioning + SSE + public access block + lifecycle
-├── variables.tf # bucket_name, versioning, sse_algorithm, lifecycle config
-└── outputs.tf # bucket_name, bucket_arn, bucket_id, domain_name
-
+    ├── ec2/
+    │   ├── main.tf          # Security group + EC2 instance (dynamic AMI lookup)
+    │   ├── variables.tf     # All EC2 module inputs
+    │   └── outputs.tf       # instance_id, public_ip, public_dns, sg_id, ami_id
+    ├── ecr/
+    │   ├── main.tf          # ECR repository + lifecycle policy
+    │   ├── variables.tf     # repository_name, scan_on_push, max_image_count
+    │   └── outputs.tf       # repository_url, repository_arn, docker_login_command
+    └── s3/
+        ├── main.tf          # S3 bucket + versioning + SSE + public access block + lifecycle
+        ├── variables.tf     # bucket_name, versioning, sse_algorithm, lifecycle config
+        └── outputs.tf       # bucket_name, bucket_arn, bucket_id, domain_name
+```
 
 ---
 
 ## Architecture Overview
 
-┌─────────────────────────────────────────┐
-│ AWS ap-south-1 │
-│ │
-│ ┌────────── VPC 10.0.0.0/16 ───────┐ │
-│ │ │ │
-│ │ ┌──────────────────────────┐ │ │
-│ │ │ Public Subnet 1 │ │ │
-│ │ │ 10.0.1.0/24 (AZ-a) │ │ │
-│ │ │ ┌────────────────────┐ │ │ │
-│ │ │ │ EC2 t3.small │ │ │ │
-│ │ │ │ Ubuntu 22.04 LTS │ │ │ │
-│ │ │ │ Twenty CRM :2020 │ │ │ │
-│ │ │ └────────────────────┘ │ │ │
-│ │ └──────────────────────────┘ │ │
-│ │ ┌──────────────────────────┐ │ │
-│ │ │ Public Subnet 2 │ │ │
-│ │ │ 10.0.2.0/24 (AZ-b) │ │ │
-│ │ └──────────────────────────┘ │ │
-│ │ │ │ │
-│ └──────────────┼────────────────────┘ │
-│ │ IGW │
-│ ┌──────────────┴───────────────────┐ │
-│ │ ECR — private container registry│ │
-│ │ S3 — storage + backups │ │
-│ └───────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-
+```plaintext
+┌─────────────────────────────────────────────────────────┐
+│                    AWS (ap-south-1)                     │
+│                                                         │
+│  ┌──────────────── VPC 10.0.0.0/16 ──────────────────┐ │
+│  │                                                    │ │
+│  │  ┌─────────────────────────────────────────────┐  │ │
+│  │  │       Public Subnet 1 — 10.0.1.0/24 (AZ-a)  │  │ │
+│  │  │                                             │  │ │
+│  │  │   ┌─────────────────────────────────────┐  │  │ │
+│  │  │   │        EC2 Instance (t3.small)       │  │  │ │
+│  │  │   │        Ubuntu 22.04 LTS              │  │  │ │
+│  │  │   │        Twenty CRM — port 2020        │  │  │ │
+│  │  │   └─────────────────────────────────────┘  │  │ │
+│  │  └─────────────────────────────────────────────┘  │ │
+│  │                                                    │ │
+│  │  ┌─────────────────────────────────────────────┐  │ │
+│  │  │       Public Subnet 2 — 10.0.2.0/24 (AZ-b)  │  │ │
+│  │  └─────────────────────────────────────────────┘  │ │
+│  │                          │                         │ │
+│  └──────────────────────────┼─────────────────────────┘ │
+│                             │ IGW                       │
+│  ┌──────────────────────────┴─────────────────────────┐ │
+│  │  ECR — private container registry                  │ │
+│  │  S3  — file storage + backups                      │ │
+│  └────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -182,7 +184,6 @@ The `user_data.sh.tpl` is a Terraform `templatefile` that runs on first EC2 boot
 - Terraform `>= 1.5.0`
 - AWS CLI configured with credentials for `ap-south-1`
 - Existing EC2 key pair: `shubhamsingh-task07`
-- Existing IAM instance profile: `EC2S3AccessRole`
 
 ---
 
@@ -238,9 +239,9 @@ terraform apply "tfplan"
 ### Step 7 — Access the application
 
 ```bash
-terraform output app_url                  # http://<public-ip>:2020
-terraform output ssh_command              # ssh -i ~/.ssh/shubhamsingh-task07.pem ubuntu@<ip>
-terraform output ecr_docker_login_command # docker login command for ECR
+terraform output app_url
+terraform output ssh_command
+terraform output ecr_docker_login_command
 ```
 
 ---
@@ -258,7 +259,6 @@ terraform output ecr_docker_login_command # docker login command for ECR
 | `app_port` | `2020` | Twenty CRM port |
 | `volume_size` | `20` | EBS size in GB |
 | `twenty_image` | `twentycrm/twenty:v2.35.0` | Docker image |
-| `iam_instance_profile_name` | `EC2S3AccessRole` | Existing IAM profile |
 | `vpc_cidr` | `10.0.0.0/16` | VPC CIDR |
 | `public_subnet_1_cidr` | `10.0.1.0/24` | Subnet 1 CIDR (AZ-a) |
 | `public_subnet_2_cidr` | `10.0.2.0/24` | Subnet 2 CIDR (AZ-b) |
@@ -302,7 +302,6 @@ terraform output ecr_docker_login_command # docker login command for ECR
 | AMI drift protection | `lifecycle { ignore_changes = [ami] }` |
 | SG replace safety | `lifecycle { create_before_destroy = true }` |
 | ECR cost control | Lifecycle policy — expire images beyond last 10 |
-| IAM reuse | `data "aws_iam_instance_profile"` — no duplicate roles |
 | Dependency ordering | `depends_on` ensures IGW, S3, ECR ready before EC2 |
 | Common tags | `merge(local.common_tags, {...})` on every resource |
 
