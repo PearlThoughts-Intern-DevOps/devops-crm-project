@@ -53,7 +53,33 @@ xargs grep -nE "STORAGE_TYPE|STORAGE_S3|S3_BUCKET|S3_NAME" 2>/dev/null | head -1
 
 8. TWENTY S3 CONFIGURATION
 
-STORAGE_TYPE=S3
+docker run -d \
+  --name twenty-app-dev \
+  -p 2020:2020 \
+  -v twenty-app-dev-data:/data/postgres \
+  -v twenty-app-dev-storage:/app/packages/twenty-server/.local-storage \
+  -e SERVER_URL=http://localhost:2020 \
+  -e NODE_PORT=2020 \
+  -e PG_DATABASE_URL=postgres://twenty:twenty@localhost:5432/default \
+  -e REDIS_URL=redis://localhost:6379 \
+  -e STORAGE_TYPE=S3 \
+  -e STORAGE_S3_NAME=rohith-crm-storaage \
+  -e STORAGE_S3_REGION=us-east-1 \
+  -e STORAGE_S3_ENDPOINT=https://s3.us-east-1.amazonaws.com \
+  -e APP_SECRET=twenty-app-dev-secret-not-for-production \
+  -e APP_VERSION=v2.39.5 \
+  -e NODE_ENV=development \
+  -e DISABLE_DB_MIGRATIONS=true \
+  -e DISABLE_CRON_JOBS_REGISTRATION=true \
+  -e IS_BILLING_ENABLED=false \
+  -e SIGN_IN_PREFILLED=true \
+  -e APPLICATION_LOG_DRIVER=CONSOLE \
+  twentycrm/twenty-app-dev:latest
+  
+  
+  
+  
+  STORAGE_TYPE=S3
 
 STORAGE_S3_NAME=rohith-crm-storaage
 
