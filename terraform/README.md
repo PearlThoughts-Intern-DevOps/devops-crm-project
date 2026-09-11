@@ -1,166 +1,270 @@
-# Task 13: Twenty CRM + AWS S3 using Terraform
+# Task 14 — Terraform Modules: EC2, ECR, S3
 
-## Overview
-
-This task deploys **Twenty CRM** on an AWS EC2 instance and configures **Amazon S3** as the persistent file storage backend. All infrastructure is provisioned using **Terraform** following best practices.
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    AWS (us-east-1)                  │
-│                                                     │
-│   ┌─────────────────────┐                          │
-│   │   Default VPC        │                          │
-│   │                     │                          │
-│   │  ┌───────────────┐  │     ┌─────────────────┐ │
-│   │  │  EC2 Instance  │  │     │    S3 Bucket     │ │
-│   │  │  (t3.small)   │──┼────▶│  (File Storage)  │ │
-│   │  │               │  │     │                  │ │
-│   │  │  Docker        │  │     │  ✅ Versioning   │ │
-│   │  │  Twenty CRM   │  │     │  ✅ Encryption   │ │
-│   │  │  :2020        │  │     │  ✅ Block Public  │ │
-│   │  └───────────────┘  │     └─────────────────┘ │
-│   │         │           │                          │
-│   │  EC2S3AccessRole    │                          │
-│   └─────────────────────┘                          │
-└─────────────────────────────────────────────────────┘
-         ▲
-         │
-    User Browser
-  http://<ip>:2020
-```
+Refactors the Twenty CRM infrastructure into reusable, production-grade
+Terraform modules. All resources are defined as modules with their own
+`variables.tf` and `outputs.tf`. The root module calls them and wires
+everything together via `terraform.tfvars`.
 
 ---
 
-## Infrastructure Components
-
-| Resource | Details |
-|---|---|
-| **EC2 Instance** | `t3.small`, AMI `ami-0b6d9d3d33ba97d99`, Ubuntu |
-| **S3 Bucket** | Versioning + AES256 Encryption + Block Public Access |
-| **Security Group** | Ports 22 (SSH), 80 (HTTP), 2020 (Twenty CRM) |
-| **IAM Role** | Existing `EC2S3AccessRole` attached to EC2 |
-| **VPC** | Default VPC — no new VPC created |
-| **Docker Image** | `twentycrm/twenty:latest` from Docker Hub |
-
----
-
-## File Structure
-
-```
+## Project Structure
 terraform/
-├── main.tf               # Provider configuration (AWS + Random)
-├── vpc.tf                # Default VPC and subnet data sources
-├── sg.tf                 # Security group with idempotent name_prefix
-├── iam.tf                # Reference existing EC2S3AccessRole
-├── s3.tf                 # S3 bucket with versioning, encryption, public access block
-├── ec2.tf                # EC2 instance with IAM role and user_data
-├── variables.tf          # All input variables
-├── outputs.tf            # Useful outputs after apply
-├── terraform.tfvars      # Variable values
-├── user_data.sh.tpl      # Bootstrap script — installs Docker, runs Twenty CRM
-└── .gitignore            # Excludes .terraform/, tfstate, tfvars
-```
+├── main.tf # Root — VPC, subnets, IGW, route tables, module calls
+├── variables.tf # All input variables (sensitive vars via env)
+├── outputs.tf # All root outputs
+├── providers.tf # AWS + random providers, version constraints
+├── terraform.tfvars # Non-sensitive variable values
+├── user_data.sh.tpl # EC2 bootstrap script (Terraform templatefile)
+└── modules/
+├── ec2/
+│ ├── main.tf # Security group + EC2 instance (dynamic AMI lookup)
+│ ├── variables.tf # All EC2 module inputs
+│ └── outputs.tf # instance_id, public_ip, public_dns, sg_id, ami_id
+├── ecr/
+│ ├── main.tf # ECR repository + lifecycle policy
+│ ├── variables.tf # repository_name, scan_on_push, max_image_count
+│ └── outputs.tf # repository_url, repository_arn, docker_login_command
+└── s3/
+├── main.tf # S3 bucket + versioning + SSE + public access block + lifecycle
+├── variables.tf # bucket_name, versioning, sse_algorithm, lifecycle config
+└── outputs.tf # bucket_name, bucket_arn, bucket_id, domain_name
+
 
 ---
 
-## Key Design Decisions
+## Architecture Overview
+                    ┌─────────────────────────────────┐
+                    │         AWS ap-south-1           │
+                    │                                  │
+                    │  ┌──────── VPC 10.0.0.0/16 ───┐ │
+                    │  │                              │ │
+                    │  │  ┌─────────────────────┐    │ │
+                    │  │  │  Public Subnet 1     │    │ │
+                    │  │  │  10.0.1.0/24  (AZ-a) │    │ │
+                    │  │  │  ┌───────────────┐   │    │ │
+                    │  │  │  │  EC2 t3.small │   │    │ │
+                    │  │  │  │  Ubuntu 22.04 │   │    │ │
+                    │  │  │  │  Twenty CRM   │   │    │ │
+                    │  │  │  │  :2020        │   │    │ │
+                    │  │  │  └───────────────┘   │    │ │
+                    │  │  └─────────────────────┘    │ │
+                    │  │  ┌─────────────────────┐    │ │
+                    │  │  │  Public Subnet 2     │    │ │
+                    │  │  │  10.0.2.0/24  (AZ-b) │    │ │
+                    │  │  └─────────────────────┘    │ │
+                    │  │           │                  │ │
+                    │  └───────────┼──────────────────┘ │
+                    │             │ IGW                  │
+                    │  ┌──────────┴───────────────────┐ │
+                    │  │  ECR  (private registry)      │ │
+                    │  │  S3   (storage + backups)     │ │
+                    │  └──────────────────────────────┘ │
+                    └─────────────────────────────────┘
 
-### Idempotent S3 Bucket Name
-```hcl
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
-}
-locals {
-  bucket_name = "${var.s3_bucket_name}-${random_id.bucket_suffix.hex}"
-}
-```
-Random suffix prevents `BucketAlreadyExists` errors on re-apply.
+---
 
-### Idempotent Security Group
-```hcl
-resource "aws_security_group" "twenty_crm" {
-  name_prefix = "${var.project_name}-sg-"
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-```
-`name_prefix` prevents `InvalidGroup.Duplicate` errors on re-apply.
+## Modules
 
-### EC2 waits for S3
-```hcl
-depends_on = [
-  aws_s3_bucket.twenty_crm_storage,
-  aws_s3_bucket_versioning.twenty_crm_storage,
-  aws_s3_bucket_server_side_encryption_configuration.twenty_crm_storage,
-  aws_s3_bucket_public_access_block.twenty_crm_storage
-]
-```
-EC2 only starts after S3 bucket is fully configured.
+### `modules/ec2`
 
-### S3 as Storage Backend
-Twenty CRM is configured via environment variables to use S3:
-```bash
-docker run -d \
-  -e STORAGE_TYPE=s3 \
-  -e STORAGE_S3_REGION="us-east-1" \
-  -e STORAGE_S3_NAME="<bucket-name>" \
-  twentycrm/twenty:latest
-```
+Creates a security group and an EC2 instance.
+
+| Feature | Detail |
+|---|---|
+| AMI | Dynamic lookup — always latest Ubuntu 22.04 LTS (Canonical) |
+| Security group | Dynamic `ingress_rules` variable — fully configurable |
+| IMDSv2 | Enforced (`http_tokens = "required"`) |
+| EBS | Encrypted gp3, configurable size |
+| IAM | Accepts existing instance profile — does not create one |
+| Idempotency | `lifecycle { ignore_changes = [ami] }` prevents replacement on AMI update |
+
+**Key variables**
+
+| Variable | Type | Description |
+|---|---|---|
+| `project_name` | string | Used in all resource names |
+| `vpc_id` | string | VPC to launch into |
+| `subnet_id` | string | Subnet for the instance |
+| `instance_type` | string | e.g. `t3.small` |
+| `key_pair_name` | string | Existing EC2 key pair |
+| `iam_instance_profile` | string | Existing IAM profile name |
+| `ingress_rules` | list(object) | Ports/CIDRs for security group |
+| `user_data` | string | Bootstrap script content |
+| `volume_size` | number | EBS size in GB |
+
+**Outputs:** `instance_id`, `public_ip`, `public_dns`, `private_ip`, `security_group_id`, `ami_id_used`
+
+---
+
+### `modules/ecr`
+
+Creates a private ECR repository with image scanning and lifecycle management.
+
+| Feature | Detail |
+|---|---|
+| Encryption | AES256 at rest |
+| Scan on push | Enabled — vulnerability scanning on every image push |
+| Lifecycle policy | Keeps last N images — old images auto-expired |
+| Region | Fetched dynamically via `data.aws_region.current` — no hardcoding |
+
+**Key variables**
+
+| Variable | Type | Description |
+|---|---|---|
+| `repository_name` | string | ECR repo name |
+| `image_tag_mutability` | string | `MUTABLE` or `IMMUTABLE` |
+| `scan_on_push` | bool | Enable vulnerability scanning |
+| `max_image_count` | number | Images to retain (default: 10) |
+
+**Outputs:** `repository_url`, `repository_arn`, `repository_name`, `registry_id`, `docker_login_command`
+
+---
+
+### `modules/s3`
+
+Creates a private S3 bucket with versioning, encryption, and lifecycle rules.
+
+| Feature | Detail |
+|---|---|
+| Unique name | `random_id` suffix appended — idempotent across deploys |
+| Versioning | Enabled — protects against accidental deletion |
+| Encryption | AES256 SSE with bucket key enabled |
+| Public access | Fully blocked — all 4 public access block settings enabled |
+| Lifecycle | Abort incomplete multipart uploads after 7 days |
+| Lifecycle | Expire noncurrent versions after 30 days |
+
+**Key variables**
+
+| Variable | Type | Description |
+|---|---|---|
+| `bucket_name` | string | Base name (random suffix appended) |
+| `force_destroy` | bool | Allow destroy even with objects |
+| `versioning_enabled` | bool | Enable S3 versioning |
+| `sse_algorithm` | string | `AES256` or `aws:kms` |
+| `enable_lifecycle` | bool | Enable lifecycle rules |
+| `noncurrent_version_expiry_days` | number | Days before old versions expire |
+
+**Outputs:** `bucket_name`, `bucket_arn`, `bucket_id`, `bucket_regional_domain_name`
+
+---
+
+## `user_data.sh.tpl` — EC2 Bootstrap
+
+The `user_data.sh.tpl` file is a Terraform `templatefile` that runs automatically on first EC2 boot. It:
+
+1. Installs Docker
+2. Fetches the public IP via IMDSv2 (token-based — secure)
+3. Creates a Docker network
+4. Starts PostgreSQL 16 and Redis 7 containers
+5. Starts the Twenty CRM server container on port `2020`
+6. Starts the Twenty CRM worker container
+7. Logs everything to `/var/log/user-data.log`
+
+Template variables passed from `main.tf`:
+
+| Variable | Source |
+|---|---|
+| `aws_region` | `var.aws_region` |
+| `app_port` | `var.app_port` |
+| `app_name` | `var.project_name` |
+| `s3_bucket_name` | `module.s3.bucket_name` |
+| `twenty_image` | `var.twenty_image` |
+| `encryption_key` | `var.encryption_key` (sensitive) |
+| `app_secret` | `var.app_secret` (sensitive) |
+| `pg_password` | `var.pg_password` (sensitive) |
 
 ---
 
 ## Prerequisites
 
 - Terraform `>= 1.5.0`
-- AWS CLI configured with appropriate permissions
-- EC2 Key Pair: `shubhamsingh-task07`
-- Existing IAM Instance Profile: `EC2S3AccessRole`
+- AWS CLI configured with credentials for `ap-south-1`
+- Existing EC2 key pair: `shubhamsingh-task07`
+- Existing IAM instance profile: `EC2S3AccessRole`
 
 ---
 
 ## Usage
 
-### 1. Clone and navigate
+### Step 1 — Clone and navigate
+
 ```bash
-git clone https://github.com/shubhamsingh74888/devops-crm-project.git
+git clone https://github.com/<org>/devops-crm-project.git
 cd devops-crm-project/terraform
 ```
 
-### 2. Initialize
+### Step 2 — Export sensitive variables
+
+```bash
+export TF_VAR_pg_password="your-strong-db-password"
+export TF_VAR_encryption_key="your-32-character-encryption-key"
+export TF_VAR_app_secret="your-application-secret-key"
+```
+
+### Step 3 — Initialise
+
 ```bash
 terraform init
 ```
 
-### 3. Validate
+### Step 4 — Format and validate
+
 ```bash
+terraform fmt -recursive
 terraform validate
-# Expected: Success! The configuration is valid.
 ```
 
-### 4. Plan
+Expected output:
+
+Success! The configuration is valid.
+
+
+### Step 5 — Plan
+
 ```bash
-terraform plan
+terraform plan -out=tfplan
 ```
 
-### 5. Apply
+### Step 6 — Apply (when ready)
+
 ```bash
-terraform apply -auto-approve
+# Task 14 requires: do NOT run apply
+# When ready in a future task:
+terraform apply "tfplan"
 ```
 
-### 6. Access the app
-```
-http://<ec2_public_ip>:2020
-```
+### Step 7 — Access the application
 
-### 7. Destroy
+After apply, Terraform outputs:
+
 ```bash
-terraform destroy -auto-approve
+terraform output app_url        # http://<public-ip>:2020
+terraform output ssh_command    # ssh -i ~/.ssh/shubhamsingh-task07.pem ubuntu@<ip>
+terraform output ecr_docker_login_command
 ```
+
+---
+
+## Inputs (terraform.tfvars)
+
+| Variable | Value | Description |
+|---|---|---|
+| `aws_region` | `ap-south-1` | AWS region |
+| `project_name` | `shubham-singh-twenty-crm` | Used in all resource names |
+| `environment` | `dev` | Environment tag |
+| `owner` | `shubham-singh` | Owner tag |
+| `instance_type` | `t3.small` | EC2 instance type |
+| `key_pair_name` | `shubhamsingh-task07` | EC2 key pair |
+| `app_port` | `2020` | Twenty CRM port |
+| `volume_size` | `20` | EBS size in GB |
+| `twenty_image` | `twentycrm/twenty:v2.35.0` | Docker image |
+| `iam_instance_profile_name` | `EC2S3AccessRole` | Existing IAM profile |
+| `vpc_cidr` | `10.0.0.0/16` | VPC CIDR |
+| `public_subnet_1_cidr` | `10.0.1.0/24` | Subnet 1 CIDR (AZ-a) |
+| `public_subnet_2_cidr` | `10.0.2.0/24` | Subnet 2 CIDR (AZ-b) |
+
+Sensitive variables (`pg_password`, `encryption_key`, `app_secret`) are
+**never stored in tfvars** — always passed via `TF_VAR_*` environment variables.
 
 ---
 
@@ -168,84 +272,54 @@ terraform destroy -auto-approve
 
 | Output | Description |
 |---|---|
-| `ec2_public_ip` | Public IP of the EC2 instance |
 | `ec2_instance_id` | EC2 instance ID |
-| `app_url` | Direct URL to access Twenty CRM |
-| `ssh_command` | SSH command to connect to EC2 |
-| `s3_bucket_name` | S3 bucket name (with random suffix) |
+| `ec2_public_ip` | EC2 public IP address |
+| `ec2_public_dns` | EC2 public DNS hostname |
+| `app_url` | Full URL to Twenty CRM application |
+| `ssh_command` | Ready-to-use SSH command |
+| `ecr_repository_url` | ECR URL for `docker push` |
+| `ecr_docker_login_command` | Full ECR login command |
+| `s3_bucket_name` | S3 bucket name with random suffix |
 | `s3_bucket_arn` | S3 bucket ARN |
-| `vpc_id` | Default VPC ID used |
+| `vpc_id` | VPC ID |
+| `public_subnet_1_id` | Public subnet 1 ID |
+| `public_subnet_2_id` | Public subnet 2 ID |
+| `iam_instance_profile` | IAM instance profile in use |
 
 ---
 
-## Verification Commands
+## Production-Grade Practices
+
+| Practice | Implementation |
+|---|---|
+| No hardcoded secrets | `sensitive = true` + `TF_VAR_*` env vars |
+| No hardcoded AMI | `data "aws_ami"` dynamic lookup (Canonical) |
+| No hardcoded region in ECR | `data "aws_region"` in ECR module |
+| IMDSv2 enforced | `http_tokens = "required"` on EC2 |
+| Encrypted storage | EBS `encrypted = true` + S3 AES256 SSE |
+| S3 fully private | All 4 public access block settings enabled |
+| Idempotent S3 names | `random_id` suffix — safe to re-plan |
+| AMI drift protection | `lifecycle { ignore_changes = [ami] }` |
+| SG replace safety | `lifecycle { create_before_destroy = true }` |
+| ECR cost control | Lifecycle policy — expire images beyond last 10 |
+| IAM reuse | `data "aws_iam_instance_profile"` — no duplicate roles |
+| Dependency ordering | `depends_on` ensures IGW, S3, ECR ready before EC2 |
+| Common tags | `merge(local.common_tags, {...})` on every resource |
+
+---
+
+## Destroy
 
 ```bash
-# Verify EC2 is running
-aws ec2 describe-instances \
-  --region us-east-1 \
-  --filters "Name=tag:Name,Values=shubham-singh-twenty-crm-ec2" \
-  --query "Reservations[].Instances[].{ID:InstanceId,State:State.Name,IP:PublicIpAddress}" \
-  --output table
-
-# Verify S3 versioning
-aws s3api get-bucket-versioning \
-  --bucket <bucket-name>
-
-# Verify S3 encryption
-aws s3api get-bucket-encryption \
-  --bucket <bucket-name>
-
-# Verify S3 public access block
-aws s3api get-public-access-block \
-  --bucket <bucket-name>
-
-# SSH into EC2 and check Docker
-ssh -i ~/.ssh/shubhamsingh-task07.pem ubuntu@<public-ip>
-docker ps
-cat /var/log/user-data.log
+terraform destroy
 ```
 
----
-
-## How S3 and EC2 Work Together
-
-```
-User uploads file in Twenty CRM (running on EC2)
-         │
-         ▼
-Twenty CRM reads STORAGE_TYPE=s3 env var
-         │
-         ▼
-Sends file to S3 bucket using EC2S3AccessRole
-(no hardcoded credentials needed)
-         │
-         ▼
-File stored securely in S3:
-  ✅ AES256 encrypted at rest
-  ✅ Versioned (recoverable if deleted)
-  ✅ No public access
-  ✅ Survives EC2 termination
-```
-
----
-
-## Tags Applied to All Resources
-
-```hcl
-{
-  Project     = "twenty-crm"
-  Environment = "dev"
-  ManagedBy   = "terraform"
-  Owner       = "shubham-singh"
-  Task        = "task-13"
-}
-```
+> S3 bucket will be fully deleted because `force_destroy = true`.
+> Set `force_destroy = false` in `terraform.tfvars` to protect bucket contents.
 
 ---
 
 ## Author
 
-**Shubham Singh**
-MCA 2026 — Garden City University, Bangalore
-Branch: `shubham-task-13`
+**Shubham Singh** — MCA 2026 · Garden City University, Bangalore  
+Task 14 · DevOps CRM Project · Branch: `shubham-singh-task-14`

@@ -1,19 +1,30 @@
 # ============================================================
-# main.tf — Provider and Terraform configuration
-# Task 13: Twenty CRM + S3 on AWS EC2
+# providers.tf — Provider and backend configuration
 # ============================================================
 
 terraform {
   required_version = ">= 1.5.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.5"
     }
   }
 }
 
 provider "aws" {
   region = var.aws_region
-}
 
+  default_tags {
+    tags = {
+      Project   = "shubham-singh-twenty-crm"
+      ManagedBy = "terraform"
+      Task      = "task-14"
+    }
+  }
+}

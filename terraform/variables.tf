@@ -1,27 +1,51 @@
 # ============================================================
-# variables.tf — All input variables for Task 13
+# variables.tf — Root module variables
 # ============================================================
 
 variable "aws_region" {
-  description = "AWS region"
+  description = "AWS region for all resources"
   type        = string
   default     = "us-east-1"
 }
 
 variable "project_name" {
-  description = "Project name prefix — unique per student"
+  description = "Project name — used in all resource names and tags"
   type        = string
   default     = "shubham-singh-twenty-crm"
 }
 
-variable "ami_id" {
-  description = "Approved AMI ID — Ubuntu based"
+variable "environment" {
+  description = "Environment tag (dev / staging / prod)"
   type        = string
-  default     = "ami-0b6d9d3d33ba97d99"
+  default     = "dev"
+}
+
+variable "owner" {
+  description = "Owner tag for resource identification"
+  type        = string
+  default     = "shubham-singh"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_1_cidr" {
+  description = "CIDR block for public subnet 1"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_2_cidr" {
+  description = "CIDR block for public subnet 2"
+  type        = string
+  default     = "10.0.2.0/24"
 }
 
 variable "instance_type" {
-  description = "EC2 instance type — must be t3.small"
+  description = "EC2 instance type"
   type        = string
   default     = "t3.small"
 }
@@ -29,60 +53,59 @@ variable "instance_type" {
 variable "key_pair_name" {
   description = "EC2 Key Pair name for SSH access"
   type        = string
-  default     = "shubhamsingh-task07"
 }
 
 variable "allowed_ssh_cidrs" {
-  description = "CIDRs allowed for SSH"
+  description = "CIDR blocks allowed for SSH access"
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
 variable "app_port" {
-  description = "Port Twenty CRM runs on inside Docker"
+  description = "Port Twenty CRM application listens on"
   type        = number
   default     = 2020
 }
 
-variable "s3_bucket_name" {
-  description = "Base name for S3 bucket — random suffix added automatically"
-  type        = string
-  default     = "shubham-singh-twenty-crm-storage"
-}
-
-variable "common_tags" {
-  description = "Common tags applied to all resources"
-  type        = map(string)
-  default = {
-    Project     = "twenty-crm"
-    Environment = "dev"
-    ManagedBy   = "terraform"
-    Owner       = "shubham-singh"
-    Task        = "task-13"
-  }
+variable "volume_size" {
+  description = "EC2 root EBS volume size in GB"
+  type        = number
+  default     = 20
 }
 
 variable "twenty_image" {
-  description = "Twenty CRM Docker image to deploy"
+  description = "Twenty CRM Docker image tag to deploy"
   type        = string
   default     = "twentycrm/twenty:v2.35.0"
 }
 
+variable "iam_instance_profile_name" {
+  description = "Existing IAM instance profile name to attach to EC2"
+  type        = string
+  default     = "EC2S3AccessRole"
+}
+
+variable "s3_force_destroy" {
+  description = "Allow terraform destroy to delete S3 bucket even if it has files"
+  type        = bool
+  default     = true
+}
+
+# ── Sensitive — pass via: export TF_VAR_pg_password=xxx ──────────────────────
 variable "pg_password" {
-  description = "PostgreSQL password"
+  description = "PostgreSQL database password"
   type        = string
   sensitive   = true
 }
 
 variable "encryption_key" {
-  description = "Twenty CRM encryption key"
+  description = "Twenty CRM server encryption key (min 32 chars)"
   type        = string
   sensitive   = true
 }
 
 variable "app_secret" {
-  description = "Twenty CRM app secret"
+  description = "Twenty CRM application secret"
   type        = string
   sensitive   = true
 }
-
