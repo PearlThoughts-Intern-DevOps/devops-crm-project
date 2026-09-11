@@ -9,7 +9,7 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "Approved Ubuntu 24.04 AMI ID"
+  description = "EC2 AMI ID"
   type        = string
 }
 
@@ -33,17 +33,17 @@ variable "project_name" {
   type        = string
 }
 
-variable "s3_bucket_prefix" {
-  description = "Prefix for the Twenty CRM S3 bucket"
-  type        = string
-}
-
 variable "iam_instance_profile_name" {
-  description = "Existing IAM instance profile for EC2 S3 access"
+  description = "Existing IAM instance profile"
   type        = string
 }
 
-variable "ecr_repository_name" {
-  description = "ECR repository name"
+variable "s3_bucket_name" {
+  description = "S3 bucket name used by Twenty CRM"
+  type        = string
+}
+
+variable "ecr_repository_url" {
+  description = "ECR repository URL for Twenty CRM image"
   type        = string
 }
