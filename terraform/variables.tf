@@ -51,3 +51,9 @@ variable "s3_bucket_name" {
   type        = string
   default     = "netaji-twenty-crm-storage-2026"
 }
+
+variable "ecr_repository_name" {
+  description = "Name of the ECR repository"
+  type        = string
+  default     = "netaji-twenty-crm"
+}

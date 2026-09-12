@@ -10,12 +10,17 @@ output "subnet_id" {
 
 output "ec2_instance_id" {
   description = "ID of the Twenty CRM EC2 instance"
-  value       = aws_instance.twenty.id
+  value       = module.ec2.instance_id
 }
 
 output "ec2_public_ip" {
   description = "Public IP address of the Twenty CRM EC2 instance"
-  value       = aws_instance.twenty.public_ip
+  value       = module.ec2.public_ip
+}
+
+output "ec2_private_ip" {
+  description = "Private IP address of the Twenty CRM EC2 instance"
+  value       = module.ec2.private_ip
 }
 
 output "ec2_iam_instance_profile" {
@@ -25,10 +30,25 @@ output "ec2_iam_instance_profile" {
 
 output "s3_bucket_name" {
   description = "S3 bucket used as Twenty CRM storage backend"
-  value       = aws_s3_bucket.twenty_storage.bucket
+  value       = module.s3.bucket_name
 }
 
 output "s3_bucket_arn" {
   description = "ARN of the S3 storage bucket"
-  value       = aws_s3_bucket.twenty_storage.arn
+  value       = module.s3.bucket_arn
+}
+
+output "ecr_repository_name" {
+  description = "Name of the ECR repository"
+  value       = module.ecr.repository_name
+}
+
+output "ecr_repository_url" {
+  description = "URL of the ECR repository"
+  value       = module.ecr.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ARN of the ECR repository"
+  value       = module.ecr.repository_arn
 }
