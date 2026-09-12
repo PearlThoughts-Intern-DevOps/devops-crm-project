@@ -68,7 +68,3 @@ output "twenty_crm_url_2020" {
   value       = "http://${module.ec2.public_ip}:2020"
 }
 
-output "twenty_crm_url_3000" {
-  description = "URL to access Twenty CRM on port 3000"
-  value       = "http://${module.ec2.public_ip}:3000"
-}
