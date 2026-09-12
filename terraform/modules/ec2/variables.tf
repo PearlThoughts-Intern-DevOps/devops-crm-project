@@ -1,11 +1,5 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-east-1"
-}
-
 variable "ami_id" {
-  description = "Approved EC2 AMI"
+  description = "Approved AMI ID"
   type        = string
 
   validation {
@@ -31,35 +25,28 @@ variable "instance_type" {
   }
 }
 
+
 variable "key_name" {
-  description = "Existing EC2 key pair"
+  description = "Existing EC2 key pair name"
   type        = string
 }
 
 variable "iam_instance_profile" {
   description = "Existing IAM instance profile"
   type        = string
-  default     = "EC2S3AccessRole"
-}
-
-variable "subnet_id" {
-  description = "Existing default subnet"
-  type        = string
-}
-
-variable "bucket_name" {
-  description = "S3 bucket name"
-  type        = string
-}
-
-variable "ecr_repository_name" {
-  description = "ECR repository name"
-  type        = string
-  default     = "twenty-crm"
 }
 
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "twenty-crm"
+}
+
+variable "s3_bucket_name" {
+  description = "S3 bucket used by Twenty CRM"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
 }
