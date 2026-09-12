@@ -1,0 +1,28 @@
+services:
+  twenty:
+    image: "{{ docker_image }}"
+    restart: unless-stopped
+
+    ports:
+      - "{{ app_port }}:2020"
+
+    env_file:
+      - .env
+
+    volumes:
+      - "{{ postgres_volume }}:/data/postgres"
+      - "{{ storage_volume }}:/app/packages/twenty-server/.local-storage"
+
+    networks:
+      - twenty-network
+
+networks:
+  twenty-network:
+    driver: bridge
+
+volumes:
+  {{ postgres_volume }}:
+    external: true
+
+  {{ storage_volume }}:
+    external: true
