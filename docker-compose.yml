@@ -1,0 +1,80 @@
+version: "3.9"
+
+volumes:
+  twenty-data:
+    driver: local
+  twenty-storage:
+    driver: local
+
+networks:
+  twenty-net:
+    driver: bridge
+
+services:
+  twenty-server:
+    image: twentycrm/twenty-app-dev:${TWENTY_VERSION:-latest}
+    container_name: twenty-server
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-2020}:2020"   # Twenty web UI + API
+
+    environment:
+      NODE_PORT: "2020"
+      SERVER_URL: "${SERVER_URL:-http://localhost:2020}"
+      APP_SECRET: "${APP_SECRET:-twenty-app-dev-secret-not-for-production}"
+      NODE_ENV: "${NODE_ENV:-development}"
+      PG_DATABASE_URL: "postgres://twenty:twenty@localhost:5432/default"
+      REDIS_URL: "redis://localhost:6379"
+      STORAGE_TYPE: "local"
+      DISABLE_DB_MIGRATIONS: "true"          # migrations run on first start
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      IS_BILLING_ENABLED: "false"
+      SIGN_IN_PREFILLED: "true"              # pre-fills dev credentials
+      APPLICATION_LOG_DRIVER: "CONSOLE"
+
+    volumes:
+      - twenty-data:/data/postgres
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+    networks:
+      - twenty-net
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2020/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 180s  r
+
+
+  twenty-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: release
+
+    image: twenty-crm-app:${APP_VERSION:-local}
+    container_name: twenty-app
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: "${NODE_ENV:-development}"
+
+      TWENTY_API_URL: "${TWENTY_API_URL:-http://twenty-server:2020}"
+      TWENTY_API_KEY: "${TWENTY_API_KEY:-}"
+
+    volumes:
+      # Mount source code for hot-reload during development
+      - ./src:/app/src:ro
+      - ./public:/app/public:ro
+      # Persist .twenty SDK state (tokens, sync metadata) between restarts
+      - ./.twenty:/app/.twenty
+
+    networks:
+      - twenty-net
+
+    depends_on:
+      twenty-server:
+        condition: service_healthy
+
+    # Default: sync the app.  Override in .env or on the CLI.
+    command: ["yarn", "twenty", "dev"]
