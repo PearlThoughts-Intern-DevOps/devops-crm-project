@@ -53,6 +53,10 @@ done
 
 # 3. Pull Twenty CRM Docker Image
 echo "=== Step 3: Pulling Twenty CRM Image ($${IMAGE}) ==="
+if echo "$${IMAGE}" | grep -q "\.dkr\.ecr\."; then
+  echo "Authenticating with Amazon ECR..."
+  aws ecr get-login-password --region "$${REGION}" | docker login --username AWS --password-stdin "$${IMAGE%%/*}" || true
+fi
 docker pull "$${IMAGE}"
 
 # 4. Resolve Public IP via IMDSv2

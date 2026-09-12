@@ -6,5 +6,6 @@ ami_id               = "ami-0b6d9d3d33ba97d99"
 key_name             = "mohit-singh"
 iam_instance_profile = "EC2S3AccessRole"
 s3_bucket_name       = "mohit-twenty-crm-task13-storage"
+ecr_repository_name  = "mohit-twenty-crm"
 allowed_cidr_blocks  = ["0.0.0.0/0"]
 docker_image         = "twentycrm/twenty-app-dev:latest"

@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 
 variable "environment" {
-  description = "Deployment environment"
+  description = "Deployment environment (e.g., dev, staging, prod)"
   type        = string
   default     = "dev"
 }
@@ -45,7 +45,7 @@ variable "key_name" {
 }
 
 variable "iam_instance_profile" {
-  description = "Existing IAM instance profile for S3 access"
+  description = "Existing IAM instance profile for S3 and ECR access"
   type        = string
   default     = "EC2S3AccessRole"
 }
@@ -54,6 +54,12 @@ variable "s3_bucket_name" {
   description = "Name of the S3 bucket for Twenty CRM storage"
   type        = string
   default     = "mohit-twenty-crm-task13-storage"
+}
+
+variable "ecr_repository_name" {
+  description = "Name of the Amazon ECR repository"
+  type        = string
+  default     = "mohit-twenty-crm"
 }
 
 variable "allowed_cidr_blocks" {
