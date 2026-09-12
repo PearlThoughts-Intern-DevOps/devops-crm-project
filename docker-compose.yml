@@ -1,0 +1,69 @@
+services:
+  # ==========================================================
+  # Twenty CRM Backend Server & Core Services (Postgres/Redis)
+  # ==========================================================
+  twenty-server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: devops-crm-twenty-server
+    ports:
+      - "2020:2020"
+    environment:
+      - PORT=2020
+      - SERVER_URL=http://100.24.37.47:2020
+      - NODE_ENV=development
+      - STORAGE_TYPE=local
+      - APPLICATION_LOG_DRIVER=CONSOLE
+    volumes:
+      - twenty-dev-data:/data/postgres
+      - twenty-dev-storage:/app/packages/twenty-server/.local-storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:2020/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    networks:
+      - crm-network
+    restart: unless-stopped
+
+  # ==========================================================
+  # Containerized CRM Custom Application
+  # ==========================================================
+  crm-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: devops-crm-app
+    depends_on:
+      twenty-server:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TWENTY_API_URL=http://twenty-server:2020
+      - TWENTY_API_KEY=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ijg3NmM4YTc4LWJiY2YtNGZiMC1iMjRhLWQzNzNhNTI4MmIzZiJ9.eyJzdWIiOiIyMDIwMjAyMC0xYzI1LTRkMDItYmYyNS02YWVjY2Y3ZWE0MTkiLCJ0eXBlIjoiQVBJX0tFWSIsIndvcmtzcGFjZUlkIjoiMjAyMDIwMjAtMWMyNS00ZDAyLWJmMjUtNmFlY2NmN2VhNDE5IiwiaWF0IjoxNzg4NDIzMzI3LCJleHAiOjQ5NDE5MzY5MjMsImp0aSI6Ijc5OTMzZjkyLWE0NWEtNGNiZi1hYjEzLTlkM2NlMTZiYmViZCJ9.FCoxnlOpoDOEya4h5qjggKuRmGlavHh-Q9V1CYeoSZLmLp8iU11Tx8PvgF7ffUU33j5MEhf79LOJi6tqF1u-bA
+    volumes:
+      - app-build-output:/app/.twenty
+    networks:
+      - crm-network
+    restart: unless-stopped
+
+# ==========================================================
+# Network Configuration
+# ==========================================================
+networks:
+  crm-network:
+    driver: bridge
+    name: devops_crm_network
+
+# ==========================================================
+# Named Persistent Volumes
+# ==========================================================
+volumes:
+  twenty-dev-data:
+    name: devops_crm_twenty_dev_data
+  twenty-dev-storage:
+    name: devops_crm_twenty_dev_storage
+  app-build-output:
+    name: devops_crm_app_build_output
