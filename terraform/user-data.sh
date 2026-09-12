@@ -75,7 +75,6 @@ docker run -d \
   --name twenty-crm \
   --restart unless-stopped \
   -p 2020:2020 \
-  -p 3000:2020 \
   -e NODE_PORT=2020 \
   -e SERVER_URL="http://$${PUBLIC_IP}:2020" \
   -e STORAGE_TYPE=s3 \
