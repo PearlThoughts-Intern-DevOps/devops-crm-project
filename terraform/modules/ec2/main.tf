@@ -19,13 +19,6 @@ resource "aws_security_group" "this" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
-  ingress {
-    description = "Twenty CRM Alternate Port (3000)"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
-  }
 
   egress {
     description = "Allow all outbound traffic"
