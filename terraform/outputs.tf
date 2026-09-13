@@ -10,30 +10,45 @@ output "subnet_id" {
 
 output "ec2_instance_id" {
   description = "Twenty CRM EC2 instance ID"
-  value       = aws_instance.twenty_crm.id
+  value       = module.ec2.instance_id
 }
 
 output "ec2_public_ip" {
   description = "Twenty CRM EC2 public IP"
-  value       = aws_instance.twenty_crm.public_ip
+  value       = module.ec2.public_ip
+}
+
+output "ec2_public_dns" {
+  description = "Twenty CRM EC2 public DNS"
+  value       = module.ec2.public_dns
 }
 
 output "twenty_crm_url" {
   description = "Twenty CRM URL"
-  value       = "http://${aws_instance.twenty_crm.public_ip}:${var.app_port}"
+  value       = "http://${module.ec2.public_ip}:${var.app_port}"
 }
 
 output "s3_bucket_name" {
   description = "S3 bucket used by Twenty CRM"
-  value       = aws_s3_bucket.twenty_storage.bucket
+  value       = module.s3.bucket_name
 }
 
 output "s3_bucket_arn" {
   description = "S3 bucket ARN"
-  value       = aws_s3_bucket.twenty_storage.arn
+  value       = module.s3.bucket_arn
+}
+
+output "ecr_repository_url" {
+  description = "ECR repository URL"
+  value       = module.ecr.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ECR repository ARN"
+  value       = module.ecr.repository_arn
 }
 
 output "iam_role_name" {
-  description = "Existing IAM role attached to EC2"
+  description = "IAM role attached to EC2"
   value       = aws_iam_role.ec2_s3_access.name
 }

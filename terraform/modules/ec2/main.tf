@@ -1,16 +1,10 @@
 resource "aws_instance" "twenty_crm" {
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = local.default_subnet_id
-
-
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = var.security_group_ids
+  iam_instance_profile        = var.iam_instance_profile
   user_data_replace_on_change = true
-
-  vpc_security_group_ids = [
-    aws_security_group.twenty_crm.id
-  ]
-
-  iam_instance_profile = aws_iam_instance_profile.ec2_s3_access.name
 
   user_data = <<EOF_USERDATA
 #!/bin/bash
@@ -34,7 +28,7 @@ docker run -d \
   -p ${var.app_port}:2020 \
   -e NODE_PORT=2020 \
   -e STORAGE_TYPE=S_3 \
-  -e STORAGE_S3_NAME=${aws_s3_bucket.twenty_storage.bucket} \
+  -e STORAGE_S3_NAME=${var.s3_bucket_name} \
   -e STORAGE_S3_REGION=${var.aws_region} \
   -v twenty-data:/app/docker-data \
   ${var.twenty_image}
@@ -44,15 +38,8 @@ EOF_USERDATA
 
   tags = {
     Name        = var.instance_name
-    Project     = "devops-crm-project"
-    Task        = "Task-13"
-    Environment = "test"
+    Project     = var.project
+    Task        = var.task
+    Environment = var.environment
   }
-
-  depends_on = [
-    aws_s3_bucket.twenty_storage,
-    aws_s3_bucket_public_access_block.twenty_storage,
-    aws_s3_bucket_versioning.twenty_storage,
-    aws_s3_bucket_server_side_encryption_configuration.twenty_storage
-  ]
 }

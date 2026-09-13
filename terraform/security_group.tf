@@ -1,6 +1,6 @@
 resource "aws_security_group" "twenty_crm" {
-  name        = "twenty-crm-task13-sg"
-  description = "Security group for Twenty CRM Task 13"
+  name        = "twenty-crm-sg"
+  description = "Security group for Twenty CRM"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -28,6 +28,6 @@ resource "aws_security_group" "twenty_crm" {
   }
 
   tags = {
-    Name = "twenty-crm-task13-sg"
+    Name = "twenty-crm-sg"
   }
 }

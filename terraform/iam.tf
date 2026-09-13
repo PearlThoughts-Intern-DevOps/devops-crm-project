@@ -16,9 +16,9 @@ resource "aws_iam_role" "ec2_s3_access" {
 
   tags = {
     Name        = "EC2S3AccessRole"
-    Project     = "devops-crm-project"
-    Task        = "Task-13"
-    Environment = "test"
+    Project     = var.project
+    Task        = var.task
+    Environment = var.environment
   }
 }
 
@@ -28,8 +28,8 @@ resource "aws_iam_instance_profile" "ec2_s3_access" {
 
   tags = {
     Name    = "EC2S3AccessRole"
-    Project = "devops-crm-project"
-    Task    = "Task-13"
+    Project = var.project
+    Task    = var.task
   }
 }
 

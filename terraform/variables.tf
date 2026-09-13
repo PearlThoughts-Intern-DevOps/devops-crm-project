@@ -4,6 +4,24 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "project" {
+  description = "Project name"
+  type        = string
+  default     = "devops-crm-project"
+}
+
+variable "task" {
+  description = "Task name"
+  type        = string
+  default     = "Task-14"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "test"
+}
+
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -11,7 +29,7 @@ variable "instance_type" {
 
   validation {
     condition     = var.instance_type == "t3.small"
-    error_message = "Only t3.small is allowed for Task 13."
+    error_message = "Only t3.small is allowed."
   }
 }
 
@@ -51,6 +69,12 @@ variable "s3_bucket_name" {
   description = "Name of the S3 bucket used by Twenty CRM"
   type        = string
   default     = "twenty-crm-storage-task13"
+}
+
+variable "ecr_repository_name" {
+  description = "ECR repository name"
+  type        = string
+  default     = "twenty-crm"
 }
 
 variable "twenty_image" {
