@@ -1,0 +1,12 @@
+aws_region          = "us-east-1"
+project_name        = "twenty-crm"
+instance_type       = "t3.small"
+ecr_repository_name = "twenty-crm"
+
+key_name         = "ambur-task12-key-2026"
+ssh_allowed_cidr = "152.59.203.124/32"
+
+app_port = 3000
+
+image_tag      = "latest"
+container_name = "twenty-crm"
