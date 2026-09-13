@@ -1,0 +1,69 @@
+services:
+  twenty-server:
+    image: twentycrm/twenty-app-dev:latest
+    container_name: twenty-server
+
+    ports:
+      - "2020:2020"
+
+    environment:
+      NODE_PORT: 2020
+      SERVER_URL: http://localhost:2020
+      APP_VERSION: v2.35.0
+      NODE_ENV: development
+      PG_DATABASE_URL: postgres://twenty:twenty@localhost:5432/default
+      REDIS_URL: redis://localhost:6379
+      STORAGE_TYPE: local
+      APP_SECRET: twenty-app-dev-secret
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+      IS_BILLING_ENABLED: "false"
+      SIGN_IN_PREFILLED: "true"
+      APPLICATION_LOG_DRIVER: CONSOLE
+
+    volumes:
+      - twenty-storage:/app/packages/twenty-server/.local-storage
+      - twenty-data:/data/postgres
+
+    networks:
+      - twenty-network
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:2020/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  crm-app:
+    build:
+      context: .
+      target: runtime
+
+    container_name: crm-app
+
+    environment:
+      TWENTY_API_URL: ${TWENTY_API_URL}
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+      NODE_ENV: development
+
+    depends_on:
+      twenty-server:
+        condition: service_healthy
+
+    networks:
+      - twenty-network
+
+volumes:
+  twenty-storage:
+  twenty-data:
+
+networks:
+  twenty-network:
+    driver: bridge
