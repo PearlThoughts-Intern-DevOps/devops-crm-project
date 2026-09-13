@@ -33,6 +33,11 @@ variable "user_data" {
   type        = string
 }
 
+variable "eip_allocation_id" {
+  description = "Allocation ID of the Elastic IP to associate with this instance"
+  type        = string
+}
+
 variable "project_name" {
   description = "Project name used for resource naming and tags"
   type        = string

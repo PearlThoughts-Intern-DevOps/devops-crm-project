@@ -14,8 +14,8 @@ output "ec2_instance_id" {
 }
 
 output "ec2_public_ip" {
-  description = "Public IP address of the Twenty CRM EC2 instance"
-  value       = module.ec2.public_ip
+  description = "Public IP address of the Twenty CRM EC2 instance (the stable Elastic IP, not the ephemeral auto-assigned address)"
+  value       = aws_eip.twenty.public_ip
 }
 
 output "ec2_private_ip" {

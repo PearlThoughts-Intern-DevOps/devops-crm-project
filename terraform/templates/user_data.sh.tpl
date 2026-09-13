@@ -67,7 +67,7 @@ services:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      SERVER_URL: http://localhost:3000
+      SERVER_URL: ${server_url}
       PG_DATABASE_URL: postgresql://postgres:postgres@db:5432/twenty
       REDIS_URL: redis://redis:6379
       STORAGE_TYPE: S_3

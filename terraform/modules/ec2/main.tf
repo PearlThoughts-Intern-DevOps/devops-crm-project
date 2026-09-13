@@ -19,3 +19,8 @@ resource "aws_instance" "this" {
     Owner       = var.owner
   }
 }
+
+resource "aws_eip_association" "this" {
+  instance_id   = aws_instance.this.id
+  allocation_id = var.eip_allocation_id
+}
