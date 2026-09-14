@@ -1,34 +1,27 @@
-# My Twenty App
+## Continuous Integration (Task 4)
 
-Describe your app in one or two sentences.
+This project uses a GitHub Actions workflow that runs automatically on
+every Pull Request.
 
-## Features
+| File | What it is |
+|---|---|
+| [`.github/workflows/ci.yml`](./.github/workflows/ci-improvements.yml) | The CI workflow. |
+| [`ci.pdf`](./ci.pdf) | Full documentation of the workflow and the steps followed to build it. |
 
-List the top things your app does, for example:
+### What the workflow does
 
-- Feature one
-- Feature two
-- Feature three
+**Triggers on:** push to `main`, and Pull Request open/update/reopen.
 
-## Getting started
+1. Checkout the code.
+2. Spawn a live Twenty test instance (needed for integration tests).
+3. Enable Corepack and set up Node.js (version from `.nvmrc`).
+4. Install dependencies — `yarn install --immutable`.
+5. Lint — `yarn lint`.
+6. Typecheck — `yarn typecheck`.
+7. Unit tests — `yarn test:unit`.
+8. Integration tests — `yarn test`, against the live Twenty instance.
+9. Build the application — `yarn twenty dev:build`.
 
-Setup instructions live in [SETUP.md](SETUP.md).
+If any step fails, the workflow fails and the PR shows a red status check.
 
-## Publishing
-
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
-
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
-
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+See [`ci.pdf`](./ci.pdf) for full details.
