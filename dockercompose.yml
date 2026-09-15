@@ -1,0 +1,96 @@
+# docker-compose.yml for Twenty CRM (devops-crm-project)
+# This runs the whole app: the server (API + frontend), a worker for
+# background jobs, a Postgres database, and Redis.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: twenty-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${PG_DATABASE_NAME:-default}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DATABASE_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: unless-stopped
+    networks:
+      - twenty-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: .
+    container_name: twenty-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PG_DATABASE_HOST: postgres
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${PG_DATABASE_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME:-default}
+      REDIS_URL: redis://redis:6379
+      SERVER_URL: ${SERVER_URL:-http://localhost:3000}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      LOGIN_TOKEN_SECRET: ${LOGIN_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      FILE_TOKEN_SECRET: ${FILE_TOKEN_SECRET}
+      APP_SECRET: ${APP_SECRET}
+    ports:
+      - "3000:3000"
+    volumes:
+      - server-local-storage:/app/.local-storage
+    networks:
+      - twenty-network
+
+  worker:
+    build: .
+    container_name: twenty-worker
+    restart: unless-stopped
+    command: ["node", "dist/src/queue-worker/queue-worker.js"]
+    depends_on:
+      - server
+    environment:
+      PG_DATABASE_HOST: postgres
+      PG_DATABASE_PORT: 5432
+      PG_DATABASE_USER: ${PG_DATABASE_USER:-postgres}
+      PG_DATABASE_PASSWORD: ${PG_DATABASE_PASSWORD:-postgres}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME:-default}
+      REDIS_URL: redis://redis:6379
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      LOGIN_TOKEN_SECRET: ${LOGIN_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      FILE_TOKEN_SECRET: ${FILE_TOKEN_SECRET}
+      APP_SECRET: ${APP_SECRET}
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    volumes:
+      - server-local-storage:/app/.local-storage
+    networks:
+      - twenty-network
+
+volumes:
+  db-data:
+  server-local-storage:
+
+networks:
+  twenty-network:
