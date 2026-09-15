@@ -27,7 +27,7 @@ for i in 1 2 3; do
   sleep 10
 done
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io awscli openssl curl
+DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io openssl curl
 
 systemctl enable docker
 systemctl start docker
@@ -80,37 +80,10 @@ PUBLIC_IP=$(curl -sS \
 
 echo "EC2 public IP: $${PUBLIC_IP}"
 
-# --- 9. Wait for IAM role credentials (needed for S3) ---
-echo "Waiting for IAM role credentials..."
-for i in $(seq 1 20); do
-  if curl -fsS "http://169.254.169.254/latest/meta-data/iam/security-credentials/" \
-       -H "X-aws-ec2-metadata-token: $${TOKEN}" >/dev/null 2>&1; then
-    echo "IAM role credentials available"
-    break
-  fi
-  echo "IAM role not ready yet... attempt $i/20"
-  sleep 5
-done
-
-# --- 10. Verify S3 access ---
-echo "Testing S3 access to bucket ${s3_bucket_name}..."
-aws s3 ls "s3://${s3_bucket_name}/" && echo "S3 access OK" || echo "WARNING: S3 access failed"
-
-# --- 11. Login to ECR and pull Twenty image ---
-echo "Logging into ECR..."
-for i in 1 2 3 4 5; do
-  if aws ecr get-login-password --region "${aws_region}" \
-       | docker login --username AWS --password-stdin "${ecr_repository_url}"; then
-    echo "ECR login OK"
-    break
-  fi
-  echo "ECR login retry $i..."
-  sleep 15
-done
-
+# --- 9. Pull Twenty image from Docker Hub ---
 MAX_RETRIES=20
 attempt=1
-until docker pull "${ecr_repository_url}:latest"; do
+until docker pull twentycrm/twenty:latest; do
   if [ "$attempt" -ge "$MAX_RETRIES" ]; then
     echo "ERROR: image never became available"
     exit 1
@@ -120,7 +93,7 @@ until docker pull "${ecr_repository_url}:latest"; do
   attempt=$((attempt + 1))
 done
 
-# --- 12. Run Twenty CRM with S3 storage ---
+# --- 10. Run Twenty CRM ---
 docker rm -f twenty-crm 2>/dev/null || true
 
 docker run -d \
@@ -135,12 +108,9 @@ docker run -d \
   -e APP_SECRET="$${APP_SECRET}" \
   -e IS_BILLING_ENABLED=false \
   -e SIGN_IN_PREFILLED=true \
-  -e STORAGE_TYPE=s3 \
-  -e STORAGE_S3_REGION="${aws_region}" \
-  -e STORAGE_S3_NAME="${s3_bucket_name}" \
-  "${ecr_repository_url}:latest"
+  twentycrm/twenty:latest
 
-# --- 13. Wait for app ---
+# --- 11. Wait for app ---
 echo "Waiting for Twenty CRM..."
 for i in $(seq 1 60); do
   if curl -fsS "http://localhost:${app_port}" >/dev/null 2>&1; then

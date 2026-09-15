@@ -16,7 +16,6 @@ variable "environment" {
   default     = "dev"
 }
 
-# EC2
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
   type        = string
@@ -34,10 +33,7 @@ variable "key_pair_name" {
   type        = string
 }
 
-variable "iam_instance_profile" {
-  description = "IAM instance profile name"
-  type        = string
-}
+
 
 variable "root_volume_size" {
   description = "Root EBS volume size in GiB"
@@ -55,23 +51,4 @@ variable "app_port" {
   description = "Application port"
   type        = number
   default     = 2020
-}
-
-# ECR
-variable "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  type        = string
-  default     = "twenty-crm"
-}
-
-variable "ecr_image_tag_mutability" {
-  description = "ECR tag mutability"
-  type        = string
-  default     = "MUTABLE"
-}
-
-variable "ecr_scan_on_push" {
-  description = "Enable ECR scan on push"
-  type        = bool
-  default     = true
 }

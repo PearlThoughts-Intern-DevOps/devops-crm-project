@@ -23,10 +23,6 @@ variable "key_name" {
   type        = string
 }
 
-variable "iam_instance_profile" {
-  description = "IAM instance profile name"
-  type        = string
-}
 
 variable "root_volume_size" {
   description = "Root EBS volume size in GiB"
@@ -61,13 +57,19 @@ variable "environment" {
   type        = string
 }
 
-variable "tags" {
-  description = "Tags to apply to resources"
-  type        = map(string)
-  default     = {}
-}
 variable "security_group_name" {
   description = "Override for the Security Group name (defaults to project-environment-sg)"
   type        = string
   default     = null
+}
+
+variable "alb_security_group_id" {
+  description = "Security group ID of the ALB allowed to reach the app port"
+  type        = string
+}
+
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }

@@ -12,11 +12,11 @@ resource "aws_security_group" "this" {
   }
 
   ingress {
-    description = "Twenty CRM application access"
-    from_port   = var.app_port
-    to_port     = var.app_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Twenty CRM application access via ALB"
+    from_port       = var.app_port
+    to_port         = var.app_port
+    protocol        = "tcp"
+    security_groups = [var.alb_security_group_id]
   }
 
   egress {
@@ -36,7 +36,7 @@ resource "aws_instance" "this" {
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.this.id]
   key_name               = var.key_name
-  iam_instance_profile   = var.iam_instance_profile
+
 
   user_data                   = var.user_data
   user_data_replace_on_change = true

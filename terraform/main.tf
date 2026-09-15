@@ -26,31 +26,35 @@ locals {
     Project     = var.project_name
     Environment = var.environment
   }
+
+  # First two subnets from the default VPC (must span 2+ AZs for ALB)
+  alb_subnet_ids = slice(data.aws_subnets.default.ids, 0, 2)
 }
 
 # -----------------------------------------------------------------------------
-# Module: ECR
+# Security Group for the ALB
 # -----------------------------------------------------------------------------
 
-module "ecr" {
-  source = "./modules/ecr"
+resource "aws_security_group" "alb" {
+  name        = "${var.project_name}-${var.environment}-alb-sg"
+  description = "Security group for the Twenty CRM Application Load Balancer"
+  vpc_id      = data.aws_vpc.default.id
 
-  repository_name      = var.ecr_repository_name
-  image_tag_mutability = var.ecr_image_tag_mutability
-  scan_on_push         = var.ecr_scan_on_push
+  ingress {
+    description = "HTTP from internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  tags = local.common_tags
-}
-
-# -----------------------------------------------------------------------------
-# Module: S3
-# -----------------------------------------------------------------------------
-
-module "s3" {
-  source = "./modules/s3"
-
-  bucket_name_prefix = "${var.project_name}-${var.environment}-storage"
-  force_destroy      = true
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = local.common_tags
 }
@@ -62,25 +66,43 @@ module "s3" {
 module "ec2" {
   source = "./modules/ec2"
 
-  ami_id               = var.ami_id
-  instance_type        = var.instance_type
-  subnet_id            = data.aws_subnet.selected.id
-  vpc_id               = data.aws_vpc.default.id
-  key_name             = var.key_pair_name
-  iam_instance_profile = var.iam_instance_profile
-  root_volume_size     = var.root_volume_size
-  allowed_ssh_cidr     = var.allowed_ssh_cidr
-  app_port             = var.app_port
+  ami_id           = var.ami_id
+  instance_type    = var.instance_type
+  subnet_id        = data.aws_subnet.selected.id
+  vpc_id           = data.aws_vpc.default.id
+  key_name         = var.key_pair_name
+  root_volume_size = var.root_volume_size
+  allowed_ssh_cidr = var.allowed_ssh_cidr
+  app_port         = var.app_port
 
   project_name = var.project_name
   environment  = var.environment
 
+  alb_security_group_id = aws_security_group.alb.id
+
   user_data = templatefile("${path.module}/user_data.sh.tpl", {
-    aws_region         = var.aws_region
-    app_port           = var.app_port
-    ecr_repository_url = module.ecr.repository_url
-    s3_bucket_name     = module.s3.bucket_name
+    aws_region = var.aws_region
+    app_port   = var.app_port
   })
+
+  tags = local.common_tags
+}
+
+# -----------------------------------------------------------------------------
+# Module: ALB
+# -----------------------------------------------------------------------------
+
+module "alb" {
+  source = "./modules/alb"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = data.aws_vpc.default.id
+  security_group_id = aws_security_group.alb.id
+  public_subnet_ids = local.alb_subnet_ids
+  app_port          = var.app_port
+
+  instance_id = module.ec2.instance_id
 
   tags = local.common_tags
 }

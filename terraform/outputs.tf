@@ -28,27 +28,17 @@ output "security_group_id" {
   value       = module.ec2.security_group_id
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL"
-  value       = module.ecr.repository_url
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = module.alb.alb_dns_name
 }
 
-output "ecr_repository_arn" {
-  description = "ECR repository ARN"
-  value       = module.ecr.repository_arn
+output "alb_url" {
+  description = "URL to access Twenty CRM through the ALB"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
-output "s3_bucket_name" {
-  description = "S3 bucket name"
-  value       = module.s3.bucket_name
-}
-
-output "s3_bucket_arn" {
-  description = "S3 bucket ARN"
-  value       = module.s3.bucket_arn
-}
-
-output "app_url" {
-  description = "Application URL"
-  value       = "http://${module.ec2.public_ip}:${var.app_port}"
+output "target_group_arn" {
+  description = "ARN of the target group"
+  value       = module.alb.target_group_arn
 }
