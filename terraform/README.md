@@ -115,7 +115,7 @@ Path = /
 Protocol = HTTP
 Port = traffic-port (2020)
 Healthy threshold = 2
-Unhealthy threshold= 3
+Unhealthy threshold = 3
 Timeout = 10s
 Interval = 30s
 Matcher = 200-399
@@ -136,35 +136,35 @@ Matcher = 200-399
 
 ### 1. Clone and navigate
 
-```bash
+\`\`\`bash
 git clone https://github.com/shubhamsingh74888/devops-crm-project.git
 cd devops-crm-project/terraform
-```
+\`\`\`
 
 ### 2. Create terraform.tfvars
 
-```bash
+\`\`\`bash
 cp terraform.tfvars.example terraform.tfvars
 vi terraform.tfvars
-```
+\`\`\`
 
 Fill in:
 
-```hcl
+\`\`\`hcl
 key_pair_name  = "your-key-pair-name"
 encryption_key = "your-32-char-key"
 app_secret     = "your-app-secret"
 pg_password    = "YourStrongPassword"
-```
+\`\`\`
 
 ### 3. Run Terraform
 
-```bash
+\`\`\`bash
 terraform init
 terraform validate
 terraform plan -out=tfplan
 terraform apply tfplan
-```
+\`\`\`
 
 ---
 
@@ -185,20 +185,20 @@ ssh_command = "ssh -i ~/.ssh/your-key.pem ubuntu@x.x.x.x"
 
 ### Check target health via CLI
 
-```bash
+\`\`\`bash
 aws elbv2 describe-target-health \
   --target-group-arn $(terraform output -raw target_group_arn) \
   --region us-east-1 \
   --query 'TargetHealthDescriptions[0].TargetHealth'
-```
+\`\`\`
 
 Expected:
 
-```json
+\`\`\`json
 {
     "State": "healthy"
 }
-```
+\`\`\`
 
 ### Check via browser
 
@@ -206,31 +206,31 @@ Open ALB URL in browser — Twenty CRM login page should load.
 
 ### SSH into EC2
 
-```bash
+\`\`\`bash
 ssh -i ~/.ssh/your-key.pem ubuntu@<ec2_public_ip>
 sudo docker ps -a
 sudo docker logs twenty-crm --tail 20
 curl -I http://localhost:2020
-```
+\`\`\`
 
 ---
 
 ## Twenty CRM Stack
 
-| Container     | Image                      | Port | Memory |
-|---------------|----------------------------|------|--------|
-| twenty-crm    | twentycrm/twenty:v2.35.0   | 2020 | 768MB  |
-| twenty-worker | twentycrm/twenty:v2.35.0   | -    | 384MB  |
-| twenty-db     | postgres:16-alpine         | 5432 | 256MB  |
-| twenty-redis  | redis:7-alpine             | 6379 | 128MB  |
+| Container     | Image                    | Port | Memory |
+|---------------|--------------------------|------|--------|
+| twenty-crm    | twentycrm/twenty:v2.35.0 | 2020 | 768MB  |
+| twenty-worker | twentycrm/twenty:v2.35.0 | -    | 384MB  |
+| twenty-db     | postgres:16-alpine       | 5432 | 256MB  |
+| twenty-redis  | redis:7-alpine           | 6379 | 128MB  |
 
 ---
 
 ## Destroy Resources
 
-```bash
+\`\`\`bash
 terraform destroy -auto-approve
-```
+\`\`\`
 
 ---
 
