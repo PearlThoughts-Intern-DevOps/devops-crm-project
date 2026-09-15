@@ -18,7 +18,7 @@ data "aws_subnets" "default" {
 # ------------------------------------------------------------
 
 resource "aws_security_group" "alb" {
-  name        = "twenty-crm-task15-alb-sg"
+  name        = "twenty-crm-task15-vasundara-alb-sg"
   description = "Security group for Twenty CRM Application Load Balancer"
   vpc_id      = data.aws_vpc.default.id
 
@@ -39,7 +39,7 @@ resource "aws_security_group" "alb" {
   }
 
   tags = {
-    Name = "twenty-crm-task15-alb-sg"
+    Name = "twenty-crm-task15-vasundara-alb-sg"
   }
 }
 
@@ -48,7 +48,7 @@ resource "aws_security_group" "alb" {
 # ------------------------------------------------------------
 
 resource "aws_security_group" "ec2" {
-  name        = "twenty-crm-task15-ec2-sg"
+  name        = "twenty-crm-task15-vasundara-ec2-sg"
   description = "Security group for Twenty CRM EC2"
   vpc_id      = data.aws_vpc.default.id
 
@@ -77,7 +77,7 @@ resource "aws_security_group" "ec2" {
   }
 
   tags = {
-    Name = "twenty-crm-task15-ec2-sg"
+    Name = "twenty-crm-task15-vasundara-ec2-sg"
   }
 }
 
@@ -104,7 +104,7 @@ resource "aws_instance" "twenty_crm" {
 # ------------------------------------------------------------
 
 resource "aws_lb_target_group" "twenty_crm" {
-  name     = "twenty-crm-task15-tg"
+  name     = "twenty-crm-task15-vasundara-tg"
   port     = 8080
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.default.id
@@ -122,7 +122,7 @@ resource "aws_lb_target_group" "twenty_crm" {
   }
 
   tags = {
-    Name = "twenty-crm-task15-tg"
+    Name = "twenty-crm-task15-vasundara-tg"
   }
 }
 
@@ -141,14 +141,14 @@ resource "aws_lb_target_group_attachment" "twenty_crm" {
 # ------------------------------------------------------------
 
 resource "aws_lb" "twenty_crm" {
-  name               = "twenty-crm-task15-alb"
+  name               = "twenty-crm-task15-vasundara-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = data.aws_subnets.default.ids
 
   tags = {
-    Name = "twenty-crm-task15-alb"
+    Name = "twenty-crm-task15-vasundara-alb"
   }
 }
 

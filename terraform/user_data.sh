@@ -61,7 +61,7 @@ docker run -d \
   --restart unless-stopped \
   -p 8080:3000 \
   -e NODE_PORT=3000 \
-  -e SERVER_URL=http://twenty-crm-task15-alb-1662594375.us-east-1.elb.amazonaws.com \
+  -e SERVER_URL=http://localhost:8080 \
   -e NODE_ENV=production \
   -e APP_SECRET="$APP_SECRET" \
   -e ENCRYPTION_KEY="$ENCRYPTION_KEY" \
