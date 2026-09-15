@@ -7,35 +7,70 @@ Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Ter
 
 ## Architecture
 
-Internet
-↓
-ALB (port 80)
-shubham-singh-task15-alb.us-east-1.elb.amazonaws.com
-↓
-ALB Security Group (allows 0.0.0.0/0 on port 80)
-↓
-EC2 Security Group (allows only ALB SG on port 2020)
-↓
-EC2 t3.small (Ubuntu 26.04)
-↓
-Docker containers:
-├── twenty-crm (port 2020→3000)
-├── twenty-worker
-├── postgres:16-alpine
-└── redis:7-alpine
+┌─────────────────────────────────────────┐
+│ Internet │
+└─────────────────┬───────────────────────┘
+│ HTTP port 80
+▼
+┌─────────────────────────────────────────┐
+│ Application Load Balancer (ALB) │
+│ shubham-singh-task15-alb. │
+│ us-east-1.elb.amazonaws.com │
+│ │
+│ ALB Security Group │
+│ Inbound: 0.0.0.0/0 → port 80 │
+└─────────────────┬───────────────────────┘
+│ port 2020
+▼
+┌─────────────────────────────────────────┐
+│ EC2 t3.small │
+│ Ubuntu 26.04 LTS │
+│ │
+│ EC2 Security Group │
+│ Inbound: ALB SG only → port 2020 │
+│ Inbound: 0.0.0.0/0 → port 22 (SSH) │
+│ │
+│ ┌───────────────────────────────────┐ │
+│ │ Docker Network │ │
+│ │ │ │
+│ │ ┌─────────────────────────────┐ │ │
+│ │ │ twenty-crm │ │ │
+│ │ │ twentycrm/twenty:v2.35.0 │ │ │
+│ │ │ port 2020 → 3000 │ │ │
+│ │ └─────────────────────────────┘ │ │
+│ │ │ │
+│ │ ┌─────────────────────────────┐ │ │
+│ │ │ twenty-worker │ │ │
+│ │ │ twentycrm/twenty:v2.35.0 │ │ │
+│ │ │ background job processor │ │ │
+│ │ └─────────────────────────────┘ │ │
+│ │ │ │
+│ │ ┌─────────────────────────────┐ │ │
+│ │ │ twenty-db │ │ │
+│ │ │ postgres:16-alpine │ │ │
+│ │ │ port 5432 │ │ │
+│ │ └─────────────────────────────┘ │ │
+│ │ │ │
+│ │ ┌─────────────────────────────┐ │ │
+│ │ │ twenty-redis │ │ │
+│ │ │ redis:7-alpine │ │ │
+│ │ │ port 6379 │ │ │
+│ │ └─────────────────────────────┘ │ │
+│ └───────────────────────────────────┘ │
+└─────────────────────────────────────────┘
 
 
 ---
 
 ## AWS Configuration
 
-| Parameter      | Value                    |
-|---------------|--------------------------|
-| Region         | us-east-1                |
-| Instance Type  | t3.small                 |
-| AMI            | ami-0b6d9d3d33ba97d99    |
-| VPC            | Default VPC              |
-| Subnet         | Default subnets          |
+| Parameter     | Value                 |
+|---------------|-----------------------|
+| Region        | us-east-1             |
+| Instance Type | t3.small              |
+| AMI           | ami-0b6d9d3d33ba97d99 |
+| VPC           | Default VPC           |
+| Subnet        | Default subnets       |
 
 ---
 
@@ -62,29 +97,29 @@ terraform/
 ---
 
 ## What Terraform Creates
-aws_security_group.alb — allows port 80 from internet
-aws_security_group.ec2 — allows port 2020 from ALB only + SSH
+aws_security_group.alb → allows port 80 from internet
+aws_security_group.ec2 → allows port 2020 from ALB only + SSH
 module.ec2
-└── aws_instance — EC2 with Twenty CRM via user_data
-└── aws_security_group — EC2 own SG
+├── aws_instance → EC2 with Twenty CRM via user_data
+└── aws_security_group → EC2 own SG
 module.alb
-└── aws_lb — Application Load Balancer
-└── aws_lb_target_group — TG on port 2020 with health check
-└── aws_lb_target_group_attachment — registers EC2 into TG
-└── aws_lb_listener — port 80 → forward to TG
+├── aws_lb → Application Load Balancer
+├── aws_lb_target_group → TG on port 2020 with health check
+├── aws_lb_target_group_attachment → registers EC2 into TG
+└── aws_lb_listener → port 80 → forward to TG
 
 ---
 
 ## Security Group Design
 
-ALB SG
-Inbound → port 80 from 0.0.0.0/0
-Outbound → all
+ALB Security Group
+Inbound → port 80 from 0.0.0.0/0 (internet → ALB)
+Outbound → all traffic allowed
 
-EC2 SG
-Inbound → port 2020 from ALB SG only (not internet directly)
-Inbound → port 22 from 0.0.0.0/0 (SSH)
-Outbound → all
+EC2 Security Group
+Inbound → port 2020 from ALB SG only (ALB → EC2, not direct)
+Inbound → port 22 from 0.0.0.0/0 (SSH access)
+Outbound → all traffic allowed
 
 
 ---
@@ -163,6 +198,7 @@ ssh_command = "ssh -i ~/.ssh/your-key.pem ubuntu@x.x.x.x"
 ## Verify Deployment
 
 ### Check target health via CLI
+
 ```bash
 aws elbv2 describe-target-health \
   --target-group-arn $(terraform output -raw target_group_arn) \
@@ -183,6 +219,7 @@ http://<alb_dns_name>
 
 
 ### SSH into EC2
+
 ```bash
 ssh -i ~/.ssh/your-key.pem ubuntu@<ec2_public_ip>
 sudo docker ps -a
@@ -195,7 +232,7 @@ curl -I http://localhost:2020
 ## Twenty CRM Stack
 
 Container Image Port Memory
-────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────
 twenty-crm twentycrm/twenty:v2.35.0 2020 768MB
 twenty-worker twentycrm/twenty:v2.35.0 - 384MB
 twenty-db postgres:16-alpine 5432 256MB
@@ -217,7 +254,7 @@ terraform destroy -auto-approve
 - EC2 bootstrap takes 10-12 minutes (Docker pull + 182 DB migrations)
 - 3GB swap added to prevent OOM on t3.small
 - NODE_OPTIONS=--max-old-space-size=640 set for Node.js heap
-- SERVER_URL set to ALB DNS so redirects stay on ALB
+- SERVER_URL set to ALB DNS so all redirects stay on ALB
 - Direct EC2 IP access blocked by security group design
 - terraform.tfvars is gitignored — never commit secrets
 
