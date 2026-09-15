@@ -17,3 +17,8 @@ output "security_group_id" {
   description = "Security group ID"
   value       = aws_security_group.crm_sg.id
 }
+
+output "instance_id" {
+  description = "ID of the EC2 instance"
+  value       = aws_instance.crm_server.id
+}

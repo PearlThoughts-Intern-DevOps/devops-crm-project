@@ -44,11 +44,6 @@ variable "project_name" {
   default     = "twenty-crm-harish"
 }
 
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile"
-  type        = string
-  default     = "EC2S3AccessRole"
-}
 
 variable "repo_url" {
   description = "PearlThoughts DevOps CRM repository"
@@ -68,11 +63,6 @@ variable "app_port" {
   default     = 3000
 }
 
-variable "ecr_repository_name" {
-  description = "ECR repository name"
-  type        = string
-  default     = "twenty-crm"
-}
 
 variable "tags" {
   description = "Common tags for AWS resources"
@@ -80,7 +70,7 @@ variable "tags" {
 
   default = {
     Project     = "Twenty CRM"
-    Task        = "Task 14"
+    Task        = "Task 15"
     Owner       = "Harish"
     ManagedBy   = "Terraform"
     Environment = "Internship"

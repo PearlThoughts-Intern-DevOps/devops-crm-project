@@ -18,10 +18,6 @@ variable "project_name" {
   type        = string
 }
 
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile"
-  type        = string
-}
 
 variable "repo_url" {
   description = "CRM repository URL"
@@ -38,10 +34,6 @@ variable "app_port" {
   type        = number
 }
 
-variable "bucket_name" {
-  description = "S3 bucket name used by Twenty CRM"
-  type        = string
-}
 
 variable "vpc_id" {
   description = "VPC ID for the security group"
@@ -56,4 +48,9 @@ variable "subnet_id" {
 variable "tags" {
   description = "Tags for EC2 resources"
   type        = map(string)
+}
+
+variable "alb_security_group_id" {
+  description = "Security group ID of the Application Load Balancer"
+  type        = string
 }

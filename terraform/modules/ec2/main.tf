@@ -32,12 +32,13 @@ resource "aws_security_group" "crm_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+
   ingress {
-    description = "Twenty CRM"
-    from_port   = var.app_port
-    to_port     = var.app_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "Twenty CRM from ALB"
+    from_port       = var.app_port
+    to_port         = var.app_port
+    protocol        = "tcp"
+    security_groups = [var.alb_security_group_id]
   }
 
   egress {
@@ -65,8 +66,6 @@ resource "aws_instance" "crm_server" {
 
   associate_public_ip_address = true
 
-  iam_instance_profile = var.iam_instance_profile
-
   key_name = aws_key_pair.crm_key.key_name
 
   root_block_device {
@@ -79,12 +78,15 @@ resource "aws_instance" "crm_server" {
     aws_region   = var.aws_region
     repo_url     = var.repo_url
     repo_branch  = var.repo_branch
-    bucket_name  = var.bucket_name
     app_port     = var.app_port
     project_name = var.project_name
   })
 
-  user_data_replace_on_change = true
+  lifecycle {
+    ignore_changes = [
+      user_data
+    ]
+  }
 
   tags = merge(var.tags, {
     Name = "${var.project_name}-ec2"

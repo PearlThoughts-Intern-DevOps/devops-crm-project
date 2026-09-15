@@ -28,38 +28,24 @@ data "aws_subnet" "selected" {
 }
 
 
-# ============================================================
-# EXISTING IAM INSTANCE PROFILE
-# ============================================================
 
-data "aws_iam_instance_profile" "ec2_s3" {
-  name = var.iam_instance_profile
-}
+# LOAD BALANCER MODULE
 
-
-# ============================================================
-# S3 MODULE
-# ============================================================
-
-module "s3" {
-  source = "./modules/s3"
-
+module "alb" {
+  source       = "./modules/alb"
   project_name = var.project_name
-  tags         = var.tags
+  vpc_id       = data.aws_vpc.default.id
+
+  subnet_ids = slice(
+    data.aws_subnets.default.ids,
+    0,
+    2
+  )
+
+  instance_id = module.ec2.instance_id
+  app_port    = var.app_port
+  tags        = var.tags
 }
-
-
-# ============================================================
-# ECR MODULE
-# ============================================================
-
-module "ecr" {
-  source = "./modules/ecr"
-
-  repository_name = var.ecr_repository_name
-  tags            = var.tags
-}
-
 
 # ============================================================
 # EC2 MODULE
@@ -68,46 +54,23 @@ module "ecr" {
 module "ec2" {
   source = "./modules/ec2"
 
-  aws_region           = var.aws_region
-  ami_id               = var.ami_id
-  instance_type        = var.instance_type
-  project_name         = var.project_name
-  iam_instance_profile = data.aws_iam_instance_profile.ec2_s3.name
-  repo_url             = var.repo_url
-  repo_branch          = var.repo_branch
-  app_port             = var.app_port
-  bucket_name          = module.s3.bucket_name
-  vpc_id               = data.aws_vpc.default.id
-  subnet_id            = data.aws_subnet.selected.id
-  tags                 = var.tags
+  aws_region    = var.aws_region
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
+  project_name  = var.project_name
 
-  depends_on = [module.s3]
+  repo_url    = var.repo_url
+  repo_branch = var.repo_branch
+  app_port    = var.app_port
+
+  vpc_id    = data.aws_vpc.default.id
+  subnet_id = data.aws_subnet.selected.id
+  tags      = var.tags
+
+  alb_security_group_id = module.alb.alb_security_group_id
+
 }
 
-moved {
-  from = random_id.bucket_suffix
-  to   = module.s3.random_id.bucket_suffix
-}
-
-moved {
-  from = aws_s3_bucket.crm_storage
-  to   = module.s3.aws_s3_bucket.crm_storage
-}
-
-moved {
-  from = aws_s3_bucket_versioning.crm_storage
-  to   = module.s3.aws_s3_bucket_versioning.crm_storage
-}
-
-moved {
-  from = aws_s3_bucket_server_side_encryption_configuration.crm_storage
-  to   = module.s3.aws_s3_bucket_server_side_encryption_configuration.crm_storage
-}
-
-moved {
-  from = aws_s3_bucket_public_access_block.crm_storage
-  to   = module.s3.aws_s3_bucket_public_access_block.crm_storage
-}
 
 moved {
   from = tls_private_key.crm_key

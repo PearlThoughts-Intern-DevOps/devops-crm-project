@@ -8,31 +8,6 @@ output "ec2_public_dns" {
   value       = module.ec2.public_dns
 }
 
-output "s3_bucket_name" {
-  description = "Name of the provisioned S3 bucket"
-  value       = module.s3.bucket_name
-}
-
-output "s3_bucket_arn" {
-  description = "ARN of the provisioned S3 bucket"
-  value       = module.s3.bucket_arn
-}
-
-output "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  value       = module.ecr.repository_name
-}
-
-output "ecr_repository_url" {
-  description = "URL of the ECR repository"
-  value       = module.ecr.repository_url
-}
-
-output "ecr_repository_arn" {
-  description = "ARN of the ECR repository"
-  value       = module.ecr.repository_arn
-}
-
 output "vpc_id" {
   description = "ID of the existing default VPC"
   value       = data.aws_vpc.default.id
@@ -51,4 +26,23 @@ output "ssh_command" {
 output "crm_url" {
   description = "Twenty CRM URL"
   value       = "http://${module.ec2.public_ip}:${var.app_port}"
+}
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = module.alb.alb_dns_name
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = module.alb.alb_arn
+}
+
+output "alb_security_group_id" {
+  description = "Security group ID of the ALB"
+  value       = module.alb.alb_security_group_id
+}
+
+output "target_group_arn" {
+  description = "ARN of the Twenty CRM target group"
+  value       = module.alb.target_group_arn
 }
