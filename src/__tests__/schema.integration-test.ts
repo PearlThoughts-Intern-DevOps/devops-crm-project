@@ -34,6 +34,12 @@ describe('CoreApiClient', () => {
         id: true,
       },
     });
+    expect(created.createNote).toBeDefined();
+
+    if (!created.createNote) {
+      throw new Error('Failed to create integration test note');
+    }
+
     expect(created.createNote.id).toBeDefined();
 
     await client.mutation({

@@ -1,0 +1,9 @@
+aws_region       = "us-east-1"
+project_name     = "twenty-crm"
+environment      = "dev"
+instance_type    = "t3.small"
+ami_id           = "ami-0b6d9d3d33ba97d99"
+key_name         = "bkkrish007-task15"
+allowed_ssh_cidr = "157.51.49.180/32"
+backend_port     = 2020
+root_volume_size = 20
