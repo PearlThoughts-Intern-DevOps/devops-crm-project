@@ -1,0 +1,7 @@
+FROM twentycrm/twenty-app-dev:latest
+
+LABEL org.opencontainers.image.title="twenty-crm" \
+      org.opencontainers.image.description="Twenty CRM standalone application for AWS EC2" \
+      org.opencontainers.image.maintainer="Mohit Singh"
+
+EXPOSE 2020
