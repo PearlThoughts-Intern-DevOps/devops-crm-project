@@ -1,0 +1,78 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: twenty
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d twenty"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-network
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - twenty-network
+
+  server:
+    image: twentycrm/twenty:v2.35.0
+    environment:
+      NODE_PORT: 3000
+      SERVER_URL: http://localhost:2020
+      PG_DATABASE_URL: postgres://postgres:postgres@db:5432/twenty
+      REDIS_URL: redis://redis:6379
+      STORAGE_TYPE: local
+      APP_SECRET: ${APP_SECRET}
+    ports:
+      - "2020:3000"
+    volumes:
+      - server-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - twenty-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: twenty-app-image
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - twenty-network
+
+volumes:
+  db-data:
+  redis-data:
+  server-data:
+
+networks:
+  twenty-network:
+    driver: bridge
