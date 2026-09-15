@@ -2,12 +2,13 @@
 
 set -e
 
+# Update system
 dnf update -y
 
 # Install Docker
 dnf install -y docker
 
-# Start Docker
+# Start and enable Docker
 systemctl enable docker
 systemctl start docker
 
@@ -23,13 +24,15 @@ curl -SL \
 
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-# Verify Compose
+# Verify Docker and Compose
+docker --version
 docker compose version
 
-# Create Twenty directory
+# Create Twenty CRM directory
 mkdir -p /opt/twenty
 cd /opt/twenty
 
+# Create Docker Compose configuration
 cat > docker-compose.yml <<EOF
 services:
 
@@ -37,12 +40,15 @@ services:
     image: postgres:16-alpine
     container_name: twenty-postgres
     restart: unless-stopped
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: twenty-postgres-password
       POSTGRES_DB: twenty
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d twenty"]
       interval: 5s
@@ -53,20 +59,23 @@ services:
     image: twentycrm/twenty:latest
     container_name: twenty
     restart: unless-stopped
+
     depends_on:
       postgres:
         condition: service_healthy
+
     ports:
       - "3000:3000"
+
     environment:
       PG_DATABASE_URL: postgresql://postgres:twenty-postgres-password@postgres:5432/twenty
-      STORAGE_TYPE: s3
-      STORAGE_S3_BUCKET: ${s3_bucket}
-      STORAGE_S3_REGION: ${aws_region}
-      AWS_REGION: ${aws_region}
 
 volumes:
   postgres_data:
 EOF
 
+# Start Twenty CRM
 docker compose up -d
+
+# Show running containers
+docker compose ps
