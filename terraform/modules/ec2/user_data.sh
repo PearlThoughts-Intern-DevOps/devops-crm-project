@@ -38,7 +38,7 @@ services:
     ports:
       - "2020:3000"
     environment:
-      SERVER_URL: http://localhost:2020
+      SERVER_URL: http://mujtaba-task-15-alb-1976302738.us-east-1.elb.amazonaws.com
       PG_DATABASE_URL: postgres://twenty:twenty@postgres:5432/default
       REDIS_URL: redis://redis:6379
       STORAGE_TYPE: local
