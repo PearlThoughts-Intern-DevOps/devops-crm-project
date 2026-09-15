@@ -32,18 +32,3 @@ variable "project_name" {
   description = "Project name"
   type        = string
 }
-
-variable "iam_instance_profile_name" {
-  description = "Existing IAM instance profile"
-  type        = string
-}
-
-variable "s3_bucket_name" {
-  description = "S3 bucket name used by Twenty CRM"
-  type        = string
-}
-
-variable "ecr_repository_url" {
-  description = "ECR repository URL for Twenty CRM image"
-  type        = string
-}

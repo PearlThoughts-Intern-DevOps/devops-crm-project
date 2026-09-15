@@ -33,17 +33,12 @@ variable "project_name" {
   type        = string
 }
 
-variable "s3_bucket_prefix" {
-  description = "Prefix for the Twenty CRM S3 bucket"
+variable "alb_name" {
+  description = "Application Load Balancer name"
   type        = string
 }
 
-variable "iam_instance_profile_name" {
-  description = "Existing IAM instance profile for EC2 S3 access"
-  type        = string
-}
-
-variable "ecr_repository_name" {
-  description = "ECR repository name"
+variable "target_group_name" {
+  description = "Target group name"
   type        = string
 }

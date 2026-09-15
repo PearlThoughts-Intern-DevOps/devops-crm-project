@@ -9,31 +9,26 @@ output "ec2_instance_id" {
 }
 
 output "ec2_public_ip" {
-  description = "Twenty CRM EC2 public IP"
+  description = "EC2 public IP"
   value       = module.ec2.public_ip
 }
 
-output "twenty_crm_url" {
-  description = "Twenty CRM application URL"
+output "twenty_crm_ec2_url" {
+  description = "Twenty CRM direct EC2 URL"
   value       = module.ec2.application_url
 }
 
-output "s3_bucket_name" {
-  description = "Twenty CRM S3 bucket name"
-  value       = module.s3.bucket_name
+output "alb_dns_name" {
+  description = "Application Load Balancer DNS name"
+  value       = module.alb.alb_dns_name
 }
 
-output "s3_bucket_arn" {
-  description = "Twenty CRM S3 bucket ARN"
-  value       = module.s3.bucket_arn
+output "twenty_crm_alb_url" {
+  description = "Twenty CRM URL through ALB"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL"
-  value       = module.ecr.repository_url
-}
-
-output "ecr_repository_arn" {
-  description = "ECR repository ARN"
-  value       = module.ecr.repository_arn
+output "target_group_arn" {
+  description = "Twenty CRM target group ARN"
+  value       = module.alb.target_group_arn
 }
