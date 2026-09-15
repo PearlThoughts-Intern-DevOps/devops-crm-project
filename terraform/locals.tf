@@ -1,14 +1,14 @@
-data "aws_caller_identity" "current" {}
+
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
-  bucket_name = "${local.name_prefix}-${data.aws_caller_identity.current.account_id}-twenty-storage"
+
 
   common_tags = {
     Project     = var.project_name
     Environment = var.environment
     ManagedBy   = "Terraform"
-    Task        = "14"
+    Task        = "15"
   }
 
   docker_compose_version = "v5.5.1"

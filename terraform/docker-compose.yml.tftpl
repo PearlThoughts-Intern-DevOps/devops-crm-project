@@ -11,9 +11,6 @@ services:
       SERVER_URL: "$${SERVER_URL}"
       REDIS_URL: "redis://redis:6379"
       IS_CONFIG_VARIABLES_IN_DB_ENABLED: "false"
-      STORAGE_TYPE: "S_3"
-      STORAGE_S3_REGION: "${aws_region}"
-      STORAGE_S3_NAME: "${bucket_name}"
       ENCRYPTION_KEY: "$${ENCRYPTION_KEY}"
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
@@ -40,9 +37,6 @@ services:
       DISABLE_DB_MIGRATIONS: "true"
       DISABLE_CRON_JOBS_REGISTRATION: "true"
       IS_CONFIG_VARIABLES_IN_DB_ENABLED: "false"
-      STORAGE_TYPE: "S_3"
-      STORAGE_S3_REGION: "${aws_region}"
-      STORAGE_S3_NAME: "${bucket_name}"
       ENCRYPTION_KEY: "$${ENCRYPTION_KEY}"
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage

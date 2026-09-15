@@ -1,11 +1,11 @@
 variable "aws_region" {
-  description = "AWS region for the infrastructure. Task 13 requires us-east-1."
+  description = "AWS region for the infrastructure. Task 15 requires us-east-1."
   type        = string
   default     = "us-east-1"
 
   validation {
     condition     = var.aws_region == "us-east-1"
-    error_message = "Task 13 requires aws_region to be exactly us-east-1."
+    error_message = "Task 15 requires aws_region to be exactly us-east-1."
   }
 }
 
@@ -40,18 +40,18 @@ variable "environment" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type for Twenty CRM. Task 13 requires t3.small."
+  description = "EC2 instance type for Twenty CRM. Task 15 requires t3.small."
   type        = string
   default     = "t3.small"
 
   validation {
     condition     = var.instance_type == "t3.small"
-    error_message = "Task 13 requires instance_type to be exactly t3.small."
+    error_message = "Task 15 requires instance_type to be exactly t3.small."
   }
 }
 
 variable "ami_id" {
-  description = "Approved x86_64 Linux AMI ID for Task 13 in us-east-1."
+  description = "Approved x86_64 Linux AMI ID for Task 15 in us-east-1."
   type        = string
   default     = "ami-081b0a6eac00b4f53"
 
@@ -60,7 +60,7 @@ variable "ami_id" {
       "ami-081b0a6eac00b4f53",
       "ami-0b6d9d3d33ba97d99",
     ], var.ami_id)
-    error_message = "AMI must be one of the two IDs approved for Task 13."
+    error_message = "AMI must be one of the two IDs approved for Task 15."
   }
 }
 
@@ -117,18 +117,10 @@ variable "ssh_allowed_cidr" {
   }
 }
 
-variable "application_allowed_cidr" {
-  description = "IPv4 CIDR permitted to access Twenty CRM."
-  type        = string
 
-  validation {
-    condition     = can(cidrnetmask(var.application_allowed_cidr))
-    error_message = "Provide a valid IPv4 CIDR."
-  }
-}
 
 variable "key_name" {
-  description = "Name of an existing EC2 key pair in us-east-1."
+  description = "Name of the EC2 key pair created by Terraform in us-east-1."
   type        = string
 
   validation {
@@ -137,15 +129,7 @@ variable "key_name" {
   }
 }
 
-variable "iam_instance_profile_name" {
-  description = "Exact name of the existing instance profile that contains EC2S3AccessRole. Terraform does not manage it."
-  type        = string
 
-  validation {
-    condition     = length(trimspace(var.iam_instance_profile_name)) > 0
-    error_message = "Provide the existing instance-profile name containing EC2S3AccessRole."
-  }
-}
 
 variable "twenty_version" {
   description = "Pinned Twenty CRM release tag used by the server and worker containers."
@@ -164,50 +148,12 @@ variable "associate_public_ip_address" {
   default     = true
 }
 
-variable "ecr_repository_name" {
-  description = "Name of the ECR repository."
+variable "ssh_public_key_path" {
+  description = "Local path to the public SSH key imported into AWS."
   type        = string
-  default     = "twenty-crm"
-}
 
-variable "ecr_image_tag_mutability" {
-  description = "Whether ECR image tags can be overwritten."
-  type        = string
-  default     = "IMMUTABLE"
-}
-
-variable "ecr_scan_on_push" {
-  description = "Whether ECR scans images when they are pushed."
-  type        = bool
-  default     = true
-}
-
-variable "ecr_encryption_type" {
-  description = "Encryption type used by the ECR repository."
-  type        = string
-  default     = "AES256"
-}
-
-variable "ecr_force_delete" {
-  description = "Whether Terraform may delete an ECR repository containing images."
-  type        = bool
-  default     = false
-}
-
-variable "s3_force_destroy" {
-  description = "Whether Terraform may delete the S3 bucket when it contains objects."
-  type        = bool
-  default     = true
-}
-
-variable "s3_versioning_status" {
-  description = "Versioning status for the S3 bucket."
-  type        = string
-  default     = "Enabled"
-}
-
-variable "s3_sse_algorithm" {
-  description = "Server-side encryption algorithm used by the S3 bucket."
-  type        = string
-  default     = "AES256"
+  validation {
+    condition     = endswith(var.ssh_public_key_path, ".pub")
+    error_message = "The SSH public key path must point to a .pub file."
+  }
 }

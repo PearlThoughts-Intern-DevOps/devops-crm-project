@@ -1,30 +1,3 @@
-module "s3" {
-  source = "./modules/s3"
-
-  bucket_name       = local.bucket_name
-  force_destroy     = var.s3_force_destroy
-  versioning_status = var.s3_versioning_status
-  sse_algorithm     = var.s3_sse_algorithm
-
-  tags = merge(local.common_tags, {
-    Name    = local.bucket_name
-    Purpose = "Twenty CRM file storage"
-  })
-}
-
-module "ecr" {
-  source = "./modules/ecr"
-
-  repository_name      = var.ecr_repository_name
-  image_tag_mutability = var.ecr_image_tag_mutability
-  scan_on_push         = var.ecr_scan_on_push
-  encryption_type      = var.ecr_encryption_type
-  force_delete         = var.ecr_force_delete
-
-  tags = merge(local.common_tags, {
-    Name = var.ecr_repository_name
-  })
-}
 
 module "ec2" {
   source = "./modules/ec2"
@@ -34,21 +7,19 @@ module "ec2" {
   subnet_id                   = data.aws_subnet.selected.id
   security_group_ids          = [aws_security_group.twenty.id]
   associate_public_ip_address = var.associate_public_ip_address
-  iam_instance_profile_name   = var.iam_instance_profile_name
-  key_name                    = var.key_name
+  key_name                    = aws_key_pair.task15.key_name
   root_volume_size            = var.root_volume_size
 
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
-    application_port       = var.application_port
-    aws_region             = var.aws_region
-    bucket_name            = module.s3.bucket_name
+    application_port = var.application_port
+
     docker_compose_sha256  = local.docker_compose_sha256
     docker_compose_version = local.docker_compose_version
+    server_url             = "http://${module.alb.dns_name}"
     docker_compose = templatefile("${path.module}/docker-compose.yml.tftpl", {
       application_port = var.application_port
-      aws_region       = var.aws_region
-      bucket_name      = module.s3.bucket_name
-      twenty_version   = var.twenty_version
+
+      twenty_version = var.twenty_version
     })
   })
 
@@ -56,5 +27,22 @@ module "ec2" {
     Name = "${local.name_prefix}-ec2"
   })
 
-  depends_on = [module.s3]
+
+}
+
+
+module "alb" {
+  source = "./modules/alb"
+
+  name_prefix        = local.name_prefix
+  vpc_id             = data.aws_vpc.default.id
+  subnet_ids         = sort(data.aws_subnets.default.ids)
+  security_group_ids = [aws_security_group.alb.id]
+  target_port        = var.application_port
+  target_id          = module.ec2.instance_id
+  health_check_path  = "/healthz"
+
+  tags = merge(local.common_tags, {
+    Purpose = "Twenty CRM public entry point"
+  })
 }

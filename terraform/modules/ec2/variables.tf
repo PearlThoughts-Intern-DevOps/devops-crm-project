@@ -25,8 +25,9 @@ variable "associate_public_ip_address" {
 }
 
 variable "iam_instance_profile_name" {
-  description = "Name of the IAM instance profile attached to EC2."
+  description = "Optional IAM instance profile attached to EC2."
   type        = string
+  default     = null
 }
 
 variable "key_name" {
