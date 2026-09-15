@@ -23,11 +23,6 @@ variable "security_group_id" {
   type        = string
 }
 
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile"
-  type        = string
-}
-
 variable "project_name" {
   description = "Project name used for tagging"
   type        = string
@@ -38,7 +33,7 @@ variable "aws_region" {
   type        = string
 }
 
-variable "s3_bucket_name" {
-  description = "S3 bucket used by Twenty CRM"
+variable "server_url" {
+  description = "Public URL used by Twenty CRM"
   type        = string
 }

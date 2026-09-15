@@ -23,11 +23,6 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "s3_bucket_name" {
-  description = "S3 bucket name"
-  type        = string
-}
-
 variable "ami_id" {
   description = "AMI ID for the EC2 instance"
   type        = string
@@ -38,17 +33,17 @@ variable "key_name" {
   type        = string
 }
 
-variable "security_group_id" {
-  description = "Existing security group ID"
-  type        = string
-}
-
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile"
-  type        = string
-}
-
 variable "ecr_repository_name" {
   description = "ECR repository name"
   type        = string
+}
+
+variable "alb_subnet_ids" {
+  description = "Subnets for the Application Load Balancer"
+  type        = list(string)
+
+  validation {
+    condition     = length(var.alb_subnet_ids) >= 2
+    error_message = "At least two subnets are required for the ALB."
+  }
 }

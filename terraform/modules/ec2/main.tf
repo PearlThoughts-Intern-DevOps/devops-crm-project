@@ -20,7 +20,6 @@ resource "aws_instance" "twenty_crm" {
     volume_type = "gp3"
   }
 
-  iam_instance_profile        = var.iam_instance_profile
   user_data_replace_on_change = true
 
   user_data = <<-EOF
@@ -85,12 +84,8 @@ docker run -d \
   -e NODE_PORT=3000 \
   -e PG_DATABASE_URL="postgresql://twenty:twenty@twenty-postgres:5432/default" \
   -e REDIS_URL="redis://twenty-redis:6379" \
-  -e SERVER_URL="http://$${PUBLIC_IP}:3000" \
+  -e SERVER_URL="${var.server_url}" \
   -e DISABLE_CRON_JOBS_REGISTRATION="true" \
-  -e STORAGE_TYPE=s3 \
-  -e STORAGE_S3_REGION="${var.aws_region}" \
-  -e STORAGE_S3_NAME="${var.s3_bucket_name}" \
-  -e STORAGE_S3_ENDPOINT="https://s3.${var.aws_region}.amazonaws.com" \
   -e ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e FALLBACK_ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e APP_SECRET="twenty-ec2-app-secret-change-me" \
@@ -105,12 +100,8 @@ docker run -d \
   -e NODE_ENV=production \
   -e PG_DATABASE_URL="postgresql://twenty:twenty@twenty-postgres:5432/default" \
   -e REDIS_URL="redis://twenty-redis:6379" \
-  -e SERVER_URL="http://$${PUBLIC_IP}:3000" \
+  -e SERVER_URL="${var.server_url}" \
   -e DISABLE_CRON_JOBS_REGISTRATION="true" \
-  -e STORAGE_TYPE=s3 \
-  -e STORAGE_S3_REGION="${var.aws_region}" \
-  -e STORAGE_S3_NAME="${var.s3_bucket_name}" \
-  -e STORAGE_S3_ENDPOINT="https://s3.${var.aws_region}.amazonaws.com" \
   -e ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e FALLBACK_ENCRYPTION_KEY="twenty-ec2-encryption-key-change-me" \
   -e APP_SECRET="twenty-ec2-app-secret-change-me" \
