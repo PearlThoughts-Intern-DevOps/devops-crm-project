@@ -1,31 +1,10 @@
 # ============================================================
-# modules/ec2/main.tf
-# Reusable EC2 module — Ubuntu 22.04, IMDSv2, encrypted EBS
+# modules/ec2/main.tf — Task 15
 # ============================================================
-
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  filter {
-    name   = "state"
-    values = ["available"]
-  }
-}
 
 resource "aws_security_group" "this" {
   name_prefix = "${var.project_name}-sg-"
-  description = "Security group for ${var.project_name} EC2 instance"
+  description = "Security group for ${var.project_name} EC2"
   vpc_id      = var.vpc_id
 
   dynamic "ingress" {
@@ -40,7 +19,7 @@ resource "aws_security_group" "this" {
   }
 
   egress {
-    description = "Allow all outbound traffic"
+    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -57,15 +36,19 @@ resource "aws_security_group" "this" {
 }
 
 resource "aws_instance" "this" {
-  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
-  instance_type               = var.instance_type
-  key_name                    = var.key_pair_name
-  subnet_id                   = var.subnet_id
-  vpc_security_group_ids      = [aws_security_group.this.id]
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_pair_name
+  subnet_id     = var.subnet_id
+
+  vpc_security_group_ids = concat(
+    [aws_security_group.this.id],
+    var.extra_sg_ids
+  )
+
   iam_instance_profile        = var.iam_instance_profile
   associate_public_ip_address = true
-
-  user_data = var.user_data
+  user_data                   = var.user_data
 
   root_block_device {
     volume_size           = var.volume_size
@@ -78,10 +61,6 @@ resource "aws_instance" "this" {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
-  }
-
-  lifecycle {
-    ignore_changes = [ami]
   }
 
   tags = merge(var.tags, {

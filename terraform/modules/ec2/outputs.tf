@@ -1,5 +1,5 @@
 # ============================================================
-# modules/ec2/outputs.tf
+# modules/ec2/outputs.tf — Task 15
 # ============================================================
 
 output "instance_id" {
@@ -8,26 +8,21 @@ output "instance_id" {
 }
 
 output "public_ip" {
-  description = "EC2 public IP address"
+  description = "EC2 public IP"
   value       = aws_instance.this.public_ip
 }
 
 output "public_dns" {
-  description = "EC2 public DNS hostname"
+  description = "EC2 public DNS"
   value       = aws_instance.this.public_dns
 }
 
 output "private_ip" {
-  description = "EC2 private IP address"
+  description = "EC2 private IP"
   value       = aws_instance.this.private_ip
 }
 
 output "security_group_id" {
-  description = "Security Group ID attached to EC2"
+  description = "EC2 own Security Group ID"
   value       = aws_security_group.this.id
-}
-
-output "ami_id_used" {
-  description = "Actual AMI ID used for this instance"
-  value       = aws_instance.this.ami
 }

@@ -1,5 +1,5 @@
 # ============================================================
-# outputs.tf — Root module outputs
+# outputs.tf — Task 15
 # ============================================================
 
 output "ec2_instance_id" {
@@ -8,61 +8,31 @@ output "ec2_instance_id" {
 }
 
 output "ec2_public_ip" {
-  description = "EC2 public IP address"
+  description = "EC2 public IP"
   value       = module.ec2.public_ip
 }
 
-output "ec2_public_dns" {
-  description = "EC2 public DNS hostname"
-  value       = module.ec2.public_dns
+output "alb_dns_name" {
+  description = "ALB DNS name"
+  value       = module.alb.alb_dns_name
 }
 
-output "app_url" {
-  description = "Twenty CRM application URL"
-  value       = "http://${module.ec2.public_ip}:${var.app_port}"
+output "alb_url" {
+  description = "Access Twenty CRM via ALB"
+  value       = module.alb.alb_url
+}
+
+output "target_group_arn" {
+  description = "Target Group ARN"
+  value       = module.alb.target_group_arn
+}
+
+output "default_vpc_id" {
+  description = "Default VPC ID used"
+  value       = data.aws_vpc.default.id
 }
 
 output "ssh_command" {
-  description = "SSH command to connect to the EC2 instance"
+  description = "SSH into EC2"
   value       = "ssh -i ~/.ssh/${var.key_pair_name}.pem ubuntu@${module.ec2.public_ip}"
-}
-
-output "ecr_repository_url" {
-  description = "ECR repository URL for docker push"
-  value       = module.ecr.repository_url
-}
-
-output "ecr_docker_login_command" {
-  description = "Command to authenticate Docker with ECR"
-  value       = module.ecr.docker_login_command
-}
-
-output "s3_bucket_name" {
-  description = "S3 bucket name including random suffix"
-  value       = module.s3.bucket_name
-}
-
-output "s3_bucket_arn" {
-  description = "S3 bucket ARN"
-  value       = module.s3.bucket_arn
-}
-
-output "vpc_id" {
-  description = "VPC ID created for this deployment"
-  value       = aws_vpc.main.id
-}
-
-output "public_subnet_1_id" {
-  description = "Public subnet 1 ID"
-  value       = aws_subnet.public_1.id
-}
-
-output "public_subnet_2_id" {
-  description = "Public subnet 2 ID"
-  value       = aws_subnet.public_2.id
-}
-
-output "iam_instance_profile" {
-  description = "Existing IAM instance profile used by EC2"
-  value       = data.aws_iam_instance_profile.ec2_profile.name
 }
