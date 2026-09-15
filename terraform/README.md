@@ -1,251 +1,285 @@
-# Task 15 — AWS Application Load Balancer (ALB) with Twenty CRM
+# DevOps CRM Project — Terraform Infrastructure
 
-## Overview
-Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Terraform with a modular architecture.
-
----
-
-## Architecture
-
-Internet (HTTP port 80)
-|
-v
-+----------------------------------+
-| Application Load Balancer (ALB) |
-| ALB Security Group |
-| Inbound: 0.0.0.0/0 -> port 80 |
-+----------------------------------+
-|
-| port 2020
-v
-+----------------------------------+
-| EC2 Instance (t3.small) |
-| Ubuntu 22.04 LTS |
-| EC2 Security Group |
-| Inbound: ALB SG -> port 2020 |
-| Inbound: 0.0.0.0/0 -> port 22 |
-| |
-| +------------------------------+ |
-| | Docker Network | |
-| | | |
-| | twenty-crm | |
-| | port 2020 -> 3000 | |
-| | | |
-| | twenty-worker | |
-| | background jobs | |
-| | | |
-| | postgres:16-alpine | |
-| | port 5432 | |
-| | | |
-| | redis:7-alpine | |
-| | port 6379 | |
-| +------------------------------+ |
-+----------------------------------+
-
-
----
-
-## AWS Configuration
-
-| Parameter     | Value                 |
-|---------------|-----------------------|
-| Region        | us-east-1             |
-| Instance Type | t3.small              |
-| AMI           | ami-0b6d9d3d33ba97d99 |
-| VPC           | Default VPC           |
-| Subnet        | Default subnets       |
+A fully automated AWS infrastructure deployment for the Twenty CRM application using Terraform, Docker, and ECR.
 
 ---
 
 ## Project Structure
 
+```
 terraform/
-├── main.tf # Root module - VPC, SGs, EC2, ALB
-├── variables.tf # All input variables
-├── outputs.tf # ALB URL, EC2 IP, TG ARN
-├── providers.tf # AWS provider configuration
-├── terraform.tfvars.example # Example vars (copy to terraform.tfvars)
-├── user_data.sh.tpl # EC2 bootstrap script
+├── main.tf                  # Root — VPC, subnets, IGW, route tables, module calls
+├── variables.tf             # All input variables (sensitive vars via env)
+├── outputs.tf               # All root outputs
+├── providers.tf             # AWS + random providers, version constraints
+├── terraform.tfvars         # Non-sensitive variable values
+├── user_data.sh.tpl         # EC2 bootstrap script (Terraform templatefile)
 └── modules/
-├── ec2/ # EC2 instance module
-│ ├── main.tf
-│ ├── variables.tf
-│ └── outputs.tf
-└── alb/ # ALB + Target Group + Listener module
-├── main.tf
-├── variables.tf
-└── outputs.tf
-
-
----
-
-## What Terraform Creates
-
-aws_security_group.alb - allows port 80 from internet
-aws_security_group.ec2 - allows port 2020 from ALB only
-module.ec2
-aws_instance - EC2 with Twenty CRM via user_data
-aws_security_group - EC2 own SG
-module.alb
-aws_lb - Application Load Balancer
-aws_lb_target_group - TG on port 2020 with health check
-aws_lb_target_group_attachment - registers EC2 into TG
-aws_lb_listener - port 80 forward to TG
-
+    ├── ec2/
+    │   ├── main.tf          # Security group + EC2 instance (dynamic AMI lookup)
+    │   ├── variables.tf     # All EC2 module inputs
+    │   └── outputs.tf       # instance_id, public_ip, public_dns, sg_id, ami_id
+    ├── ecr/
+    │   ├── main.tf          # ECR repository + lifecycle policy
+    │   ├── variables.tf     # repository_name, scan_on_push, max_image_count
+    │   └── outputs.tf       # repository_url, repository_arn, docker_login_command
+    └── s3/
+        ├── main.tf          # S3 bucket + versioning + SSE + public access block + lifecycle
+        ├── variables.tf     # bucket_name, versioning, sse_algorithm, lifecycle config
+        └── outputs.tf       # bucket_name, bucket_arn, bucket_id, domain_name
+```
 
 ---
 
-## Security Group Design
+## Architecture Overview
 
-ALB Security Group
-Inbound - port 80 from 0.0.0.0/0 (internet to ALB)
-Outbound - all traffic allowed
-
-EC2 Security Group
-Inbound - port 2020 from ALB SG only (ALB to EC2 only)
-Inbound - port 22 from 0.0.0.0/0 (SSH access)
-Outbound - all traffic allowed
-
-
----
-
-## Health Check Configuration
-
-Path = /
-Protocol = HTTP
-Port = traffic-port (2020)
-Healthy threshold = 2
-Unhealthy threshold = 3
-Timeout = 10s
-Interval = 30s
-Matcher = 200-399
-
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      AWS ap-south-1                          │
+│                                                              │
+│  ┌───────────────────── VPC 10.0.0.0/16 ─────────────────┐  │
+│  │                                                         │  │
+│  │  ┌──────────────────────────────────────────────────┐  │  │
+│  │  │            Public Subnet 1 — 10.0.1.0/24 (AZ-a)  │  │  │
+│  │  │                                                    │  │  │
+│  │  │   ┌─────────────────────────────────────────┐     │  │  │
+│  │  │   │         EC2 t3.small                     │     │  │  │
+│  │  │   │         Ubuntu 22.04 LTS                 │     │  │  │
+│  │  │   │         Twenty CRM :2020                 │     │  │  │
+│  │  │   └─────────────────────────────────────────┘     │  │  │
+│  │  └──────────────────────────────────────────────────┘  │  │
+│  │                                                         │  │
+│  │  ┌──────────────────────────────────────────────────┐  │  │
+│  │  │            Public Subnet 2 — 10.0.2.0/24 (AZ-b)  │  │  │
+│  │  └──────────────────────────────────────────────────┘  │  │
+│  │                                                         │  │
+│  └─────────────────────────────────────┬───────────────────┘  │
+│                                        │ IGW                   │
+│  ┌──────────────────┐   ┌──────────────────────────────────┐  │
+│  │       ECR        │   │         S3                        │  │
+│  │  Private container│  │   Storage + Backups               │  │
+│  │  registry        │   │                                   │  │
+│  └──────────────────┘   └──────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Prerequisites
 
-- AWS CLI configured with valid credentials
-- Terraform >= 1.7.0
-- EC2 Key Pair created in us-east-1
-- IAM user with EC2 + ALB + VPC permissions
+- [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.0
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) configured
+- [Docker](https://docs.docker.com/get-docker/) installed
+- AWS account with appropriate permissions
+- An EC2 Key Pair created in `ap-south-1`
 
 ---
 
-## Setup
+## Quick Start
 
-### 1. Clone and navigate
+### 1. Clone and configure
 
-\`\`\`bash
-git clone https://github.com/shubhamsingh74888/devops-crm-project.git
-cd devops-crm-project/terraform
-\`\`\`
-
-### 2. Create terraform.tfvars
-
-\`\`\`bash
+```bash
+cd terraform
 cp terraform.tfvars.example terraform.tfvars
-vi terraform.tfvars
-\`\`\`
+```
 
-Fill in:
+Edit `terraform.tfvars`:
 
-\`\`\`hcl
-key_pair_name  = "your-key-pair-name"
-encryption_key = "your-32-char-key"
-app_secret     = "your-app-secret"
-pg_password    = "YourStrongPassword"
-\`\`\`
+```hcl
+aws_region          = "ap-south-1"
+project_name        = "shubham-singh-twenty-crm"
+instance_type       = "t3.small"
+key_pair_name       = "instance1-key"        # No .pem extension
+app_port            = 2020
+vpc_cidr            = "10.0.0.0/16"
+public_subnet_1_cidr = "10.0.1.0/24"
+public_subnet_2_cidr = "10.0.2.0/24"
+```
 
-### 3. Run Terraform
+### 2. Initialize Terraform
 
-\`\`\`bash
+```bash
 terraform init
-terraform validate
-terraform plan -out=tfplan
-terraform apply tfplan
-\`\`\`
+```
+
+### 3. Preview changes
+
+```bash
+terraform plan
+```
+
+### 4. Deploy infrastructure
+
+```bash
+terraform apply -auto-approve
+```
+
+### 5. Destroy infrastructure
+
+```bash
+terraform destroy -auto-approve
+```
+
+---
+
+## Terraform Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `terraform init` | Initialize providers and modules |
+| `terraform plan` | Preview changes before applying |
+| `terraform apply` | Create or update infrastructure |
+| `terraform apply -auto-approve` | Apply without confirmation prompt |
+| `terraform destroy` | Destroy all managed resources |
+| `terraform destroy -auto-approve` | Destroy without confirmation |
+| `terraform show` | Show current state |
+| `terraform state list` | List all resources in state |
+| `terraform state show <resource>` | Show specific resource details |
+| `terraform output` | Show all output values |
+| `terraform validate` | Validate configuration files |
+| `terraform fmt` | Format configuration files |
+| `terraform refresh` | Sync state with real infrastructure |
+| `terraform taint <resource>` | Force resource recreation on next apply |
+
+---
+
+## AWS Resources Created
+
+| Resource | Details |
+|----------|---------|
+| VPC | 10.0.0.0/16 |
+| Public Subnet 1 | 10.0.1.0/24 — ap-south-1a |
+| Public Subnet 2 | 10.0.2.0/24 — ap-south-1b |
+| Internet Gateway | Attached to VPC |
+| Route Table | Public routes via IGW |
+| Security Group | Ports 22, 80, 443, 2020 open |
+| EC2 Instance | t3.small, Ubuntu 22.04 LTS |
+| ECR Repository | Private container registry |
+| S3 Bucket | Versioning + SSE-S3 encryption |
+| IAM Role | EC2 instance profile for ECR access |
 
 ---
 
 ## Outputs
 
-alb_dns_name = "shubham-singh-task15-alb-xxxx.us-east-1.elb.amazonaws.com"
-alb_url = "http://shubham-singh-task15-alb-xxxx.us-east-1.elb.amazonaws.com"
-ec2_public_ip = "x.x.x.x"
-ec2_instance_id = "i-xxxxxxxxxxxxxxxxx"
-target_group_arn = "arn:aws:elasticloadbalancing:..."
-default_vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
-ssh_command = "ssh -i ~/.ssh/your-key.pem ubuntu@x.x.x.x"
+After `terraform apply`, you will see:
 
-
----
-
-## Verify Deployment
-
-### Check target health via CLI
-
-\`\`\`bash
-aws elbv2 describe-target-health \
-  --target-group-arn $(terraform output -raw target_group_arn) \
-  --region us-east-1 \
-  --query 'TargetHealthDescriptions[0].TargetHealth'
-\`\`\`
-
-Expected:
-
-\`\`\`json
-{
-    "State": "healthy"
-}
-\`\`\`
-
-### Check via browser
-
-Open ALB URL in browser — Twenty CRM login page should load.
-
-### SSH into EC2
-
-\`\`\`bash
-ssh -i ~/.ssh/your-key.pem ubuntu@<ec2_public_ip>
-sudo docker ps -a
-sudo docker logs twenty-crm --tail 20
-curl -I http://localhost:2020
-\`\`\`
+```
+app_url              = "http://<EC2_PUBLIC_IP>:2020"
+ec2_public_ip        = "<EC2_PUBLIC_IP>"
+ec2_instance_id      = "i-xxxxxxxxxxxxxxxxx"
+ecr_repository_url   = "<ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/shubham-singh-twenty-crm"
+docker_login_command = "aws ecr get-login-password --region ap-south-1 | docker login ..."
+docker_tag_command   = "docker tag shubham-singh-twenty-crm:latest <ECR_URL>:latest"
+docker_push_command  = "docker push <ECR_URL>:latest"
+ssh_command          = "ssh -i ~/.ssh/instance1-key.pem ubuntu@<EC2_PUBLIC_IP>"
+vpc_id               = "vpc-xxxxxxxxxxxxxxxxx"
+public_subnet_1_id   = "subnet-xxxxxxxxxxxxxxxxx"
+public_subnet_2_id   = "subnet-xxxxxxxxxxxxxxxxx"
+```
 
 ---
 
-## Twenty CRM Stack
+## Docker Workflow
 
-| Container     | Image                    | Port | Memory |
-|---------------|--------------------------|------|--------|
-| twenty-crm    | twentycrm/twenty:v2.35.0 | 2020 | 768MB  |
-| twenty-worker | twentycrm/twenty:v2.35.0 | -    | 384MB  |
-| twenty-db     | postgres:16-alpine       | 5432 | 256MB  |
-| twenty-redis  | redis:7-alpine           | 6379 | 128MB  |
+### Login to ECR
+
+```bash
+aws ecr get-login-password --region ap-south-1 \
+  | docker login --username AWS --password-stdin \
+  <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
+```
+
+### Build, Tag and Push
+
+```bash
+# Build
+docker build -t shubham-singh-twenty-crm:latest .
+
+# Tag
+docker tag shubham-singh-twenty-crm:latest \
+  <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/shubham-singh-twenty-crm:latest
+
+# Push
+docker push \
+  <ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com/shubham-singh-twenty-crm:latest
+```
+
+### SSH to EC2
+
+```bash
+ssh -i ~/.ssh/instance1-key.pem ubuntu@<EC2_PUBLIC_IP>
+```
 
 ---
 
-## Destroy Resources
+## Application Deployment
 
-\`\`\`bash
-terraform destroy -auto-approve
-\`\`\`
+After infrastructure is up, SSH into EC2 and run:
+
+```bash
+# Copy files to EC2
+scp -i ~/.ssh/instance1-key.pem \
+  docker-compose.yml .env \
+  ubuntu@<EC2_PUBLIC_IP>:~/
+
+# SSH in
+ssh -i ~/.ssh/instance1-key.pem ubuntu@<EC2_PUBLIC_IP>
+
+# Start the full stack
+cd ~
+docker compose up db redis server worker -d
+
+# Check status
+docker compose ps
+docker compose logs -f server
+```
+
+Access the app at: `http://<EC2_PUBLIC_IP>:2020`
+
+Default login credentials:
+- **Email:** `tim@apple.dev`
+- **Password:** `tim@apple.dev`
 
 ---
 
-## Notes
+## Environment Variables
 
-- EC2 bootstrap takes 10-12 minutes (Docker pull + 182 DB migrations)
-- 3GB swap added to prevent OOM on t3.small
-- NODE_OPTIONS=--max-old-space-size=640 set for Node.js heap
-- SERVER_URL set to ALB DNS so all redirects stay on ALB
-- Direct EC2 IP access blocked by security group design
-- terraform.tfvars is gitignored — never commit secrets
+Copy `.secrets.example` to `.secrets` and fill in values:
+
+```bash
+cp .secrets.example .secrets
+```
+
+| Variable | Description |
+|----------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
+| `TF_VAR_key_pair_name` | EC2 key pair name (without .pem) |
+
+---
+
+## Common Issues
+
+### Key pair error
+```
+InvalidKeyPair.NotFound: The key pair 'instance1-key.pem' does not exist
+```
+**Fix:** Remove `.pem` from `key_pair_name` in `terraform.tfvars`
+
+### SSH permission denied
+```
+Warning: Identity file instance1-key.pem not accessible
+```
+**Fix:** Always use full path: `ssh -i ~/.ssh/instance1-key.pem ubuntu@<IP>`
+
+### Port 2020 not accessible
+**Fix:** Verify security group allows inbound traffic on port 2020
 
 ---
 
 ## Author
 
-**Shubham Singh**
-Cloud Support Engineer | MCA 2026 | Garden City University, Bangalore
+**Shubham Singh** — DevOps Internship Task  
+Project: Twenty CRM Infrastructure on AWS
