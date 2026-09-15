@@ -7,57 +7,40 @@ Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Ter
 
 ## Architecture
 
-┌─────────────────────────────────────────┐
-│ Internet │
-└─────────────────┬───────────────────────┘
-│ HTTP port 80
-▼
-┌─────────────────────────────────────────┐
-│ Application Load Balancer (ALB) │
-│ shubham-singh-task15-alb. │
-│ us-east-1.elb.amazonaws.com │
-│ │
-│ ALB Security Group │
-│ Inbound: 0.0.0.0/0 → port 80 │
-└─────────────────┬───────────────────────┘
-│ port 2020
-▼
-┌─────────────────────────────────────────┐
-│ EC2 t3.small │
-│ Ubuntu 26.04 LTS │
-│ │
-│ EC2 Security Group │
-│ Inbound: ALB SG only → port 2020 │
-│ Inbound: 0.0.0.0/0 → port 22 (SSH) │
-│ │
-│ ┌───────────────────────────────────┐ │
-│ │ Docker Network │ │
-│ │ │ │
-│ │ ┌─────────────────────────────┐ │ │
-│ │ │ twenty-crm │ │ │
-│ │ │ twentycrm/twenty:v2.35.0 │ │ │
-│ │ │ port 2020 → 3000 │ │ │
-│ │ └─────────────────────────────┘ │ │
-│ │ │ │
-│ │ ┌─────────────────────────────┐ │ │
-│ │ │ twenty-worker │ │ │
-│ │ │ twentycrm/twenty:v2.35.0 │ │ │
-│ │ │ background job processor │ │ │
-│ │ └─────────────────────────────┘ │ │
-│ │ │ │
-│ │ ┌─────────────────────────────┐ │ │
-│ │ │ twenty-db │ │ │
-│ │ │ postgres:16-alpine │ │ │
-│ │ │ port 5432 │ │ │
-│ │ └─────────────────────────────┘ │ │
-│ │ │ │
-│ │ ┌─────────────────────────────┐ │ │
-│ │ │ twenty-redis │ │ │
-│ │ │ redis:7-alpine │ │ │
-│ │ │ port 6379 │ │ │
-│ │ └─────────────────────────────┘ │ │
-│ └───────────────────────────────────┘ │
-└─────────────────────────────────────────┘
+Internet (HTTP port 80)
+|
+v
++----------------------------------+
+| Application Load Balancer (ALB) |
+| ALB Security Group |
+| Inbound: 0.0.0.0/0 -> port 80 |
++----------------------------------+
+|
+| port 2020
+v
++----------------------------------+
+| EC2 Instance (t3.small) |
+| Ubuntu 26.04 LTS |
+| EC2 Security Group |
+| Inbound: ALB SG -> port 2020 |
+| Inbound: 0.0.0.0/0 -> port 22 |
+| |
+| +----------------------------+ |
+| | Docker Network | |
+| | | |
+| | twenty-crm | |
+| | port 2020 -> 3000 | |
+| | | |
+| | twenty-worker | |
+| | background jobs | |
+| | | |
+| | postgres:16-alpine | |
+| | port 5432 | |
+| | | |
+| | redis:7-alpine | |
+| | port 6379 | |
+| +----------------------------+ |
++----------------------------------+
 
 
 ---
@@ -77,7 +60,7 @@ Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Ter
 ## Project Structure
 
 terraform/
-├── main.tf # Root module — VPC, SGs, EC2, ALB
+├── main.tf # Root module - VPC, SGs, EC2, ALB
 ├── variables.tf # All input variables
 ├── outputs.tf # ALB URL, EC2 IP, TG ARN
 ├── providers.tf # AWS provider configuration
@@ -97,29 +80,29 @@ terraform/
 ---
 
 ## What Terraform Creates
-aws_security_group.alb → allows port 80 from internet
-aws_security_group.ec2 → allows port 2020 from ALB only + SSH
+aws_security_group.alb - allows port 80 from internet
+aws_security_group.ec2 - allows port 2020 from ALB only
 module.ec2
-├── aws_instance → EC2 with Twenty CRM via user_data
-└── aws_security_group → EC2 own SG
+aws_instance - EC2 with Twenty CRM via user_data
+aws_security_group - EC2 own SG
 module.alb
-├── aws_lb → Application Load Balancer
-├── aws_lb_target_group → TG on port 2020 with health check
-├── aws_lb_target_group_attachment → registers EC2 into TG
-└── aws_lb_listener → port 80 → forward to TG
+aws_lb - Application Load Balancer
+aws_lb_target_group - TG on port 2020 with health check
+aws_lb_target_group_attachment - registers EC2 into TG
+aws_lb_listener - port 80 forward to TG
 
 ---
 
 ## Security Group Design
 
 ALB Security Group
-Inbound → port 80 from 0.0.0.0/0 (internet → ALB)
-Outbound → all traffic allowed
+Inbound - port 80 from 0.0.0.0/0 (internet to ALB)
+Outbound - all traffic allowed
 
 EC2 Security Group
-Inbound → port 2020 from ALB SG only (ALB → EC2, not direct)
-Inbound → port 22 from 0.0.0.0/0 (SSH access)
-Outbound → all traffic allowed
+Inbound - port 2020 from ALB SG only (ALB to EC2 only)
+Inbound - port 22 from 0.0.0.0/0 (SSH access)
+Outbound - all traffic allowed
 
 
 ---
@@ -215,8 +198,7 @@ Expected:
 
 ### Check via browser
 
-http://<alb_dns_name>
-
+Open ALB URL in browser - Twenty CRM login page should load.
 
 ### SSH into EC2
 
@@ -230,9 +212,8 @@ curl -I http://localhost:2020
 ---
 
 ## Twenty CRM Stack
-
 Container Image Port Memory
-──────────────────────────────────────────────────────────
+
 twenty-crm twentycrm/twenty:v2.35.0 2020 768MB
 twenty-worker twentycrm/twenty:v2.35.0 - 384MB
 twenty-db postgres:16-alpine 5432 256MB
@@ -256,7 +237,7 @@ terraform destroy -auto-approve
 - NODE_OPTIONS=--max-old-space-size=640 set for Node.js heap
 - SERVER_URL set to ALB DNS so all redirects stay on ALB
 - Direct EC2 IP access blocked by security group design
-- terraform.tfvars is gitignored — never commit secrets
+- terraform.tfvars is gitignored - never commit secrets
 
 ---
 
