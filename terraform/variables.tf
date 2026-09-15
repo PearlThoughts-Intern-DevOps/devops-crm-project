@@ -1,6 +1,7 @@
 variable "aws_region" {
   description = "AWS region"
   type        = string
+  default     = "us-east-1"
 }
 
 variable "ami_id" {
@@ -11,15 +12,11 @@ variable "ami_id" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
+  default     = "t3.small"
 }
 
 variable "subnet_id" {
-  description = "Existing default subnet ID"
-  type        = string
-}
-
-variable "security_group_id" {
-  description = "Existing security group ID"
+  description = "Default VPC subnet ID for EC2"
   type        = string
 }
 
@@ -28,19 +25,3 @@ variable "key_name" {
   type        = string
 }
 
-variable "iam_instance_profile" {
-  description = "Existing IAM instance profile for S3 access"
-  type        = string
-  default     = "EC2S3AccessRole"
-}
-
-variable "s3_bucket_name" {
-  description = "Unique S3 bucket name"
-  type        = string
-}
-
-variable "ecr_repository_name" {
-  description = "ECR repository name"
-  type        = string
-  default     = "twenty-crm"
-}
