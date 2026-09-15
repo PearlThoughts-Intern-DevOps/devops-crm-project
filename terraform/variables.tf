@@ -41,25 +41,13 @@ variable "ami_id" {
 variable "key_name" {
   description = "EC2 Key Pair name"
   type        = string
-  default     = "mohit-singh"
+  default     = "mohit-task15-key"
 }
 
 variable "iam_instance_profile" {
-  description = "Existing IAM instance profile for S3 and ECR access"
+  description = "IAM instance profile to attach to the EC2 instance"
   type        = string
-  default     = "EC2S3AccessRole"
-}
-
-variable "s3_bucket_name" {
-  description = "Name of the S3 bucket for Twenty CRM storage"
-  type        = string
-  default     = "mohit-twenty-crm-task13-storage"
-}
-
-variable "ecr_repository_name" {
-  description = "Name of the Amazon ECR repository"
-  type        = string
-  default     = "mohit-twenty-crm"
+  default     = null
 }
 
 variable "allowed_cidr_blocks" {
@@ -68,8 +56,14 @@ variable "allowed_cidr_blocks" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "docker_image" {
-  description = "Docker image for Twenty CRM"
+variable "app_port" {
+  description = "Port on which Twenty CRM listens on the EC2 host"
+  type        = number
+  default     = 8080
+}
+
+variable "health_check_path" {
+  description = "Health check path for Twenty CRM on the ALB Target Group"
   type        = string
-  default     = "twentycrm/twenty-app-dev:latest"
+  default     = "/"
 }

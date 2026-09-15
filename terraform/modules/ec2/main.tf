@@ -11,12 +11,26 @@ resource "aws_security_group" "this" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
-  ingress {
-    description = "Twenty CRM Web UI and API (2020)"
-    from_port   = 2020
-    to_port     = 2020
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
+  dynamic "ingress" {
+    for_each = var.alb_security_group_id != null ? [var.alb_security_group_id] : []
+    content {
+      description     = "Twenty CRM HTTP from ALB"
+      from_port       = var.app_port
+      to_port         = var.app_port
+      protocol        = "tcp"
+      security_groups = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.alb_security_group_id == null ? [1] : []
+    content {
+      description = "Twenty CRM HTTP"
+      from_port   = var.app_port
+      to_port     = var.app_port
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidr_blocks
+    }
   }
 
   egress {

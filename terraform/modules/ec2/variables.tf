@@ -84,3 +84,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "alb_security_group_id" {
+  description = "Security group ID of the ALB to allow ingress traffic from"
+  type        = string
+  default     = null
+}
+
+variable "app_port" {
+  description = "Application port for Twenty CRM"
+  type        = number
+  default     = 8080
+}
