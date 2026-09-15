@@ -7,41 +7,42 @@ Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Ter
 
 ## Architecture
 
-Internet (HTTP port 80)
-|
-v
-+----------------------------------+
-| Application Load Balancer (ALB) |
-| ALB Security Group |
-| Inbound: 0.0.0.0/0 -> port 80 |
-+----------------------------------+
-|
-| port 2020
-v
-+----------------------------------+
-| EC2 Instance (t3.small) |
-| Ubuntu 26.04 LTS |
-| EC2 Security Group |
-| Inbound: ALB SG -> port 2020 |
-| Inbound: 0.0.0.0/0 -> port 22 |
-| |
-| +----------------------------+ |
-| | Docker Network | |
-| | | |
-| | twenty-crm | |
-| | port 2020 -> 3000 | |
-| | | |
-| | twenty-worker | |
-| | background jobs | |
-| | | |
-| | postgres:16-alpine | |
-| | port 5432 | |
-| | | |
-| | redis:7-alpine | |
-| | port 6379 | |
-| +----------------------------+ |
-+----------------------------------+
+## Architecture
 
+Internet (HTTP port 80)
+         |
+         v
++----------------------------------+
+| Application Load Balancer (ALB)  |
+| ALB Security Group               |
+| Inbound: 0.0.0.0/0 -> port 80   |
++----------------------------------+
+         |
+         | port 2020
+         v
++----------------------------------+
+| EC2 Instance (t3.small)          |
+| Ubuntu 22.04 LTS                 |
+| EC2 Security Group               |
+| Inbound: ALB SG -> port 2020     |
+| Inbound: 0.0.0.0/0 -> port 22   |
+|                                  |
+| +------------------------------+ |
+| |       Docker Network         | |
+| |                              | |
+| |  twenty-crm                  | |
+| |  port 2020 -> 3000           | |
+| |                              | |
+| |  twenty-worker               | |
+| |  background jobs             | |
+| |                              | |
+| |  postgres:16-alpine          | |
+| |  port 5432                   | |
+| |                              | |
+| |  redis:7-alpine              | |
+| |  port 6379                   | |
+| +------------------------------+ |
++----------------------------------+
 
 ---
 
