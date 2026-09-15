@@ -1,0 +1,1846 @@
++ cd /var/log
++ nohup python3 -m http.server 8080
++ echo '=== DISK SPACE AT START ==='
+=== DISK SPACE AT START ===
++ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       6.7G  2.1G  4.6G  31% /
++ apt-get update -y
+Hit:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute InRelease
+Get:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates InRelease [137 kB]
+Get:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports InRelease [137 kB]
+Get:4 http://security.ubuntu.com/ubuntu resolute-security InRelease [137 kB]
+Get:5 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/universe amd64v3 Packages [16.3 MB]
+Get:6 http://security.ubuntu.com/ubuntu resolute-security/main amd64v3 Packages [474 kB]
+Get:7 http://security.ubuntu.com/ubuntu resolute-security/main Translation-en [111 kB]
+Get:8 http://security.ubuntu.com/ubuntu resolute-security/main amd64 Components [46.6 kB]
+Get:9 http://security.ubuntu.com/ubuntu resolute-security/main amd64 c-n-f Metadata [4616 B]
+Get:10 http://security.ubuntu.com/ubuntu resolute-security/universe amd64v3 Packages [173 kB]
+Get:11 http://security.ubuntu.com/ubuntu resolute-security/universe Translation-en [54.4 kB]
+Get:12 http://security.ubuntu.com/ubuntu resolute-security/universe amd64 Components [43.4 kB]
+Get:13 http://security.ubuntu.com/ubuntu resolute-security/universe amd64 c-n-f Metadata [3552 B]
+Get:14 http://security.ubuntu.com/ubuntu resolute-security/restricted amd64v3 Packages [399 kB]
+Get:15 http://security.ubuntu.com/ubuntu resolute-security/restricted Translation-en [77.7 kB]
+Get:16 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64v3 Packages [10.9 kB]
+Get:17 http://security.ubuntu.com/ubuntu resolute-security/multiverse Translation-en [2844 B]
+Get:18 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64 Components [212 B]
+Get:19 http://security.ubuntu.com/ubuntu resolute-security/multiverse amd64 c-n-f Metadata [120 B]
+Get:20 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/universe Translation-en [6329 kB]
+Get:21 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/universe amd64 Components [4556 kB]
+Get:22 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/universe amd64 c-n-f Metadata [313 kB]
+Get:23 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/multiverse amd64v3 Packages [291 kB]
+Get:24 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/multiverse Translation-en [127 kB]
+Get:25 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/multiverse amd64 Components [50.0 kB]
+Get:26 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute/multiverse amd64 c-n-f Metadata [8276 B]
+Get:27 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 Packages [610 kB]
+Get:28 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main Translation-en [145 kB]
+Get:29 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64 Components [97.8 kB]
+Get:30 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64 c-n-f Metadata [5756 B]
+Get:31 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/universe amd64v3 Packages [293 kB]
+Get:32 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/universe Translation-en [93.2 kB]
+Get:33 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/universe amd64 Components [188 kB]
+Get:34 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/universe amd64 c-n-f Metadata [4704 B]
+Get:35 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/restricted amd64v3 Packages [409 kB]
+Get:36 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/restricted Translation-en [79.5 kB]
+Get:37 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64v3 Packages [11.6 kB]
+Get:38 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/multiverse Translation-en [3036 B]
+Get:39 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64 Components [216 B]
+Get:40 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/multiverse amd64 c-n-f Metadata [256 B]
+Get:41 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/main amd64 Components [212 B]
+Get:42 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/main amd64 c-n-f Metadata [112 B]
+Get:43 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/universe amd64v3 Packages [3148 B]
+Get:44 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/universe Translation-en [7988 B]
+Get:45 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/universe amd64 Components [1056 B]
+Get:46 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/universe amd64 c-n-f Metadata [116 B]
+Get:47 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/restricted amd64 Components [216 B]
+Get:48 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/restricted amd64 c-n-f Metadata [120 B]
+Get:49 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/multiverse amd64 Components [216 B]
+Get:50 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports/multiverse amd64 c-n-f Metadata [120 B]
+Fetched 31.7 MB in 4s (7681 kB/s)
+Reading package lists...
++ apt-get install -y --no-install-recommends ca-certificates curl gnupg
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Solving dependencies...
+The following additional packages will be installed:
+  dirmngr gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client gpgconf gpgsm
+  libcurl3t64-gnutls libcurl4t64
+The following packages will be upgraded:
+  ca-certificates curl dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent
+  gpg-wks-client gpgconf gpgsm libcurl3t64-gnutls libcurl4t64
+13 upgraded, 0 newly installed, 0 to remove and 156 not upgraded.
+Need to get 3383 kB of archives.
+After this operation, 76.8 kB disk space will be freed.
+Get:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 ca-certificates all 20260601~26.04.1 [139 kB]
+Get:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 curl amd64 8.18.0-1ubuntu2.5 [273 kB]
+Get:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 libcurl4t64 amd64 8.18.0-1ubuntu2.5 [427 kB]
+Get:4 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gnupg-utils amd64 2.4.8-4ubuntu3.1 [128 kB]
+Get:5 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gpg-wks-client amd64 2.4.8-4ubuntu3.1 [72.2 kB]
+Get:6 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 dirmngr amd64 2.4.8-4ubuntu3.1 [328 kB]
+Get:7 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gpg-agent amd64 2.4.8-4ubuntu3.1 [236 kB]
+Get:8 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gpg amd64 2.4.8-4ubuntu3.1 [638 kB]
+Get:9 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gpgconf amd64 2.4.8-4ubuntu3.1 [107 kB]
+Get:10 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gnupg all 2.4.8-4ubuntu3.1 [311 kB]
+Get:11 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gpgsm amd64 2.4.8-4ubuntu3.1 [239 kB]
+Get:12 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 gnupg-l10n all 2.4.8-4ubuntu3.1 [68.8 kB]
+Get:13 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 libcurl3t64-gnutls amd64 8.18.0-1ubuntu2.5 [418 kB]
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+Preconfiguring packages ...
+Fetched 3383 kB in 0s (40.9 MB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 85303 files and directories currently installed.)
+Preparing to unpack .../00-ca-certificates_20260601~26.04.1_all.deb ...
+Unpacking ca-certificates (20260601~26.04.1) over (20260223) ...
+Preparing to unpack .../01-curl_8.18.0-1ubuntu2.5_amd64v3.deb ...
+Unpacking curl (8.18.0-1ubuntu2.5) over (8.18.0-1ubuntu2.1) ...
+Preparing to unpack .../02-libcurl4t64_8.18.0-1ubuntu2.5_amd64v3.deb ...
+Unpacking libcurl4t64:amd64 (8.18.0-1ubuntu2.5) over (8.18.0-1ubuntu2.1) ...
+Preparing to unpack .../03-gnupg-utils_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gnupg-utils (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../04-gpg-wks-client_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gpg-wks-client (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../05-dirmngr_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking dirmngr (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../06-gpg-agent_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gpg-agent (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../07-gpg_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gpg (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../08-gpgconf_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gpgconf (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../09-gnupg_2.4.8-4ubuntu3.1_all.deb ...
+Unpacking gnupg (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../10-gpgsm_2.4.8-4ubuntu3.1_amd64v3.deb ...
+Unpacking gpgsm (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../11-gnupg-l10n_2.4.8-4ubuntu3.1_all.deb ...
+Unpacking gnupg-l10n (2.4.8-4ubuntu3.1) over (2.4.8-4ubuntu3) ...
+Preparing to unpack .../12-libcurl3t64-gnutls_8.18.0-1ubuntu2.5_amd64v3.deb ...
+Unpacking libcurl3t64-gnutls:amd64 (8.18.0-1ubuntu2.5) over (8.18.0-1ubuntu2.1) ...
+Setting up libcurl4t64:amd64 (8.18.0-1ubuntu2.5) ...
+Setting up libcurl3t64-gnutls:amd64 (8.18.0-1ubuntu2.5) ...
+Setting up ca-certificates (20260601~26.04.1) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+Updating certificates in /etc/ssl/certs...
+rehash: warning: skipping ca-certificates.crt, it does not contain exactly one certificate or CRL
+2 added, 25 removed; done.
+Setting up gnupg-l10n (2.4.8-4ubuntu3.1) ...
+Setting up gpgconf (2.4.8-4ubuntu3.1) ...
+Setting up curl (8.18.0-1ubuntu2.5) ...
+Setting up gpg (2.4.8-4ubuntu3.1) ...
+Setting up gnupg-utils (2.4.8-4ubuntu3.1) ...
+Setting up gpg-agent (2.4.8-4ubuntu3.1) ...
+Setting up gpgsm (2.4.8-4ubuntu3.1) ...
+Setting up dirmngr (2.4.8-4ubuntu3.1) ...
+Setting up gnupg (2.4.8-4ubuntu3.1) ...
+Setting up gpg-wks-client (2.4.8-4ubuntu3.1) ...
+Processing triggers for man-db (2.13.1-1build1) ...
+Processing triggers for install-info (7.2-5ubuntu2) ...
+Processing triggers for libc-bin (2.43-2ubuntu2) ...
+Processing triggers for ca-certificates (20260601~26.04.1) ...
+Updating certificates in /etc/ssl/certs...
+0 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+done.
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+
+Running kernel seems to be up-to-date.
+
+Restarting services...
+ systemctl restart packagekit.service
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
++ install -m 0755 -d /etc/apt/keyrings
++ curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
++ chmod a+r /etc/apt/keyrings/docker.asc
++ tee /etc/apt/sources.list.d/docker.list
+++ dpkg --print-architecture
+++ . /etc/os-release
++++ PRETTY_NAME='Ubuntu 26.04 LTS'
++++ NAME=Ubuntu
++++ VERSION_ID=26.04
++++ VERSION='26.04 LTS (Resolute Raccoon)'
++++ VERSION_CODENAME=resolute
++++ ID=ubuntu
++++ ID_LIKE=debian
++++ HOME_URL=https://www.ubuntu.com/
++++ SUPPORT_URL=https://help.ubuntu.com/
++++ BUG_REPORT_URL=https://bugs.launchpad.net/ubuntu/
++++ PRIVACY_POLICY_URL=https://www.ubuntu.com/legal/terms-and-policies/privacy-policy
++++ UBUNTU_CODENAME=resolute
++++ LOGO=ubuntu-logo
+++ echo resolute
++ echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu   resolute stable'
++ apt-get update -y
+Hit:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute InRelease
+Hit:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-updates InRelease
+Hit:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu resolute-backports InRelease
+Get:4 https://download.docker.com/linux/ubuntu resolute InRelease [32.5 kB]
+Hit:5 http://security.ubuntu.com/ubuntu resolute-security InRelease
+Get:6 https://download.docker.com/linux/ubuntu resolute/stable amd64 Packages [25.5 kB]
+Fetched 58.0 kB in 0s (184 kB/s)
+Reading package lists...
++ apt-get install -y --no-install-recommends docker-ce docker-ce-cli containerd.io docker-compose-plugin
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Solving dependencies...
+Suggested packages:
+  cgroupfs-mount | cgroup-lite docker-model-plugin
+Recommended packages:
+  docker-ce-rootless-extras pigz docker-buildx-plugin
+The following NEW packages will be installed:
+  containerd.io docker-ce docker-ce-cli docker-compose-plugin
+0 upgraded, 4 newly installed, 0 to remove and 156 not upgraded.
+Need to get 72.3 MB of archives.
+After this operation, 283 MB of additional disk space will be used.
+Get:1 https://download.docker.com/linux/ubuntu resolute/stable amd64 containerd.io amd64 2.3.5-1~ubuntu.26.04~resolute [22.4 MB]
+Get:2 https://download.docker.com/linux/ubuntu resolute/stable amd64 docker-ce-cli amd64 5:29.8.0-1~ubuntu.26.04~resolute [17.6 MB]
+Get:3 https://download.docker.com/linux/ubuntu resolute/stable amd64 docker-ce amd64 5:29.8.0-1~ubuntu.26.04~resolute [24.3 MB]
+Get:4 https://download.docker.com/linux/ubuntu resolute/stable amd64 docker-compose-plugin amd64 5.5.1-1~ubuntu.26.04~resolute [8013 kB]
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+Fetched 72.3 MB in 1s (85.5 MB/s)
+Selecting previously unselected package containerd.io.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 85280 files and directories currently installed.)
+Preparing to unpack .../containerd.io_2.3.5-1~ubuntu.26.04~resolute_amd64.deb ...
+Unpacking containerd.io (2.3.5-1~ubuntu.26.04~resolute) ...
+Selecting previously unselected package docker-ce-cli.
+Preparing to unpack .../docker-ce-cli_5%3a29.8.0-1~ubuntu.26.04~resolute_amd64.deb ...
+Unpacking docker-ce-cli (5:29.8.0-1~ubuntu.26.04~resolute) ...
+Selecting previously unselected package docker-ce.
+Preparing to unpack .../docker-ce_5%3a29.8.0-1~ubuntu.26.04~resolute_amd64.deb ...
+Unpacking docker-ce (5:29.8.0-1~ubuntu.26.04~resolute) ...
+Selecting previously unselected package docker-compose-plugin.
+Preparing to unpack .../docker-compose-plugin_5.5.1-1~ubuntu.26.04~resolute_amd64.deb ...
+Unpacking docker-compose-plugin (5.5.1-1~ubuntu.26.04~resolute) ...
+Setting up containerd.io (2.3.5-1~ubuntu.26.04~resolute) ...
+Created symlink '/etc/systemd/system/multi-user.target.wants/containerd.service' → '/usr/lib/systemd/system/containerd.service'.
+Setting up docker-compose-plugin (5.5.1-1~ubuntu.26.04~resolute) ...
+Setting up docker-ce-cli (5:29.8.0-1~ubuntu.26.04~resolute) ...
+Setting up docker-ce (5:29.8.0-1~ubuntu.26.04~resolute) ...
+Created symlink '/etc/systemd/system/multi-user.target.wants/docker.service' → '/usr/lib/systemd/system/docker.service'.
+Created symlink '/etc/systemd/system/sockets.target.wants/docker.socket' → '/usr/lib/systemd/system/docker.socket'.
+Processing triggers for man-db (2.13.1-1build1) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
++ apt-get clean
++ rm -rf /var/lib/apt/lists/auxfiles /var/lib/apt/lists/download.docker.com_linux_ubuntu_dists_resolute_InRelease /var/lib/apt/lists/download.docker.com_linux_ubuntu_dists_resolute_stable_binary-amd64_Packages /var/lib/apt/lists/lock /var/lib/apt/lists/partial /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_InRelease /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_main_binary-amd64v3_Packages /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_main_cnf_Commands-amd64 /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_main_dep11_Components-amd64.yml.gz /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_main_i18n_Translation-en /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_multiverse_binary-amd64v3_Packages /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_multiverse_cnf_Commands-amd64 /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_multiverse_dep11_Components-amd64.yml.gz /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_multiverse_i18n_Translation-en /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_restricted_binary-amd64v3_Packages /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_restricted_cnf_Commands-amd64 /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_restricted_dep11_Components-amd64.yml.gz /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_restricted_i18n_Translation-en /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_universe_binary-amd64v3_Packages /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_universe_cnf_Commands-amd64 /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_universe_dep11_Components-amd64.yml.gz /var/lib/apt/lists/security.ubuntu.com_ubuntu_dists_resolute-security_universe_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_InRelease /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_main_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_main_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_multiverse_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_multiverse_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_restricted_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_restricted_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_universe_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_universe_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_universe_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-backports_universe_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_InRelease /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_main_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_main_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_main_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_main_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_multiverse_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_multiverse_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_multiverse_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_multiverse_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_restricted_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_restricted_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_restricted_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_restricted_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_universe_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_universe_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_universe_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute-updates_universe_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_InRelease /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_main_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_main_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_main_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_main_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_multiverse_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_multiverse_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_multiverse_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_multiverse_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_restricted_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_restricted_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_restricted_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_restricted_i18n_Translation-en /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_universe_binary-amd64v3_Packages /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_universe_cnf_Commands-amd64 /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_universe_dep11_Components-amd64.yml.gz /var/lib/apt/lists/us-east-1.ec2.archive.ubuntu.com_ubuntu_dists_resolute_universe_i18n_Translation-en
++ systemctl enable docker
+Synchronizing state of docker.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+Executing: /usr/lib/systemd/systemd-sysv-install enable docker
++ systemctl start docker
++ echo '=== DOCKER INSTALLED, DISK SPACE NOW: ==='
+=== DOCKER INSTALLED, DISK SPACE NOW: ===
++ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       6.7G  2.3G  4.4G  35% /
++ echo '=== STARTING TWENTY CRM INSTALL ==='
+=== STARTING TWENTY CRM INSTALL ===
++ mkdir -p /opt/twenty
++ cd /opt/twenty
++ curl -sLo docker-compose.yml https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/docker-compose.yml
++ curl -sLo .env https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/.env.example
++ sed -i 's|^SERVER_URL=.*|SERVER_URL=http://twenty-crm-task15-alb-675317651.us-east-1.elb.amazonaws.com|' .env
+++ openssl rand -base64 32
++ echo ENCRYPTION_KEY=GOAJdn+l2HBRN2XEdVU2wLeOV/Jxep0bkWYaUyxI1K0=
+++ openssl rand -hex 32
++ echo PG_DATABASE_PASSWORD=7dc4a051f15741656862b18daea0556056ecd406c90d9207fefa3b2778cdb1f8
++ docker compose up -d
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"DISABLE_DB_MIGRATIONS\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"DISABLE_CRON_JOBS_REGISTRATION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:49:27Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+ Image twentycrm/twenty:latest Pulling 
+ Image redis Pulling 
+ Image postgres:16 Pulling 
+ Image twentycrm/twenty:latest Pulling 
+ 4d710b756578 Pulling fs layer 0B
+ 9d1e9c1e61f4 Pulling fs layer 0B
+ 48dd761b6bfe Pulling fs layer 0B
+ 6310eb16bf42 Pulling fs layer 0B
+ 00034b17b963 Pulling fs layer 0B
+ af7708f26521 Pulling fs layer 0B
+ 8a082189cfe1 Pulling fs layer 0B
+ 5322d81b9b21 Pulling fs layer 0B
+ 988d57697ad2 Pulling fs layer 0B
+ 9f809ec5ff35 Pulling fs layer 0B
+ 3fa541d8cac9 Pulling fs layer 0B
+ b3ffe1fd6e79 Pulling fs layer 0B
+ f122bc3261fc Pulling fs layer 0B
+ 9bd242f25e75 Pulling fs layer 0B
+ db0606565b61 Pulling fs layer 0B
+ b1de9b9d5a81 Pulling fs layer 0B
+ 87650244ec3e Pulling fs layer 0B
+ 5b7942a2dab1 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 6310eb16bf42 Pulling fs layer 0B
+ 9b30195f536d Pulling fs layer 0B
+ 9d1e9c1e61f4 Download complete 0B
+ 988d57697ad2 Download complete 0B
+ b3ffe1fd6e79 Downloading 1.049MB
+ 9f809ec5ff35 Download complete 0B
+ 3fa541d8cac9 Downloading 1.049MB
+ f122bc3261fc Downloading 1.049MB
+ 6310eb16bf42 Downloading 3.146MB
+ b3ffe1fd6e79 Download complete 0B
+ 6310eb16bf42 Downloading 3.146MB
+ 3fa541d8cac9 Downloading 6.291MB
+ f122bc3261fc Downloading 4.194MB
+ 6310eb16bf42 Downloading 8.389MB
+ 6310eb16bf42 Downloading 8.389MB
+ 8a082189cfe1 Download complete 0B
+ 3fa541d8cac9 Download complete 0B
+ f122bc3261fc Download complete 0B
+ 4d710b756578 Download complete 0B
+ 48dd761b6bfe Downloading 2.097MB
+ 6310eb16bf42 Downloading 14.68MB
+ 48dd761b6bfe Downloading 8.389MB
+ 00034b17b963 Download complete 0B
+ af7708f26521 Download complete 0B
+ 6310eb16bf42 Downloading 14.68MB
+ 6310eb16bf42 Downloading 20.97MB
+ 5322d81b9b21 Download complete 0B
+ 48dd761b6bfe Downloading 15.73MB
+ 9bd242f25e75 Download complete 0B
+ 6310eb16bf42 Downloading 20.97MB
+ 48dd761b6bfe Downloading 22.02MB
+ 6310eb16bf42 Downloading 27.26MB
+ 6310eb16bf42 Downloading 27.26MB
+ 88a993a11593 Pulling fs layer 0B
+ 5f05fbb94ac9 Pulling fs layer 0B
+ da9ab2bdc6c4 Pulling fs layer 0B
+ dbd229483e61 Pulling fs layer 0B
+ 612c52e6047c Pulling fs layer 0B
+ f4e2bfbd8bcd Pulling fs layer 0B
+ 7c93c8b560b7 Pulling fs layer 0B
+ 29c35cff402a Pulling fs layer 0B
+ 24b6e6ca1947 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ e1558434eda5 Pulling fs layer 0B
+ 55a2851d0c00 Pulling fs layer 0B
+ 0903c67e72cd Pulling fs layer 0B
+ 6876fd4ddc2e Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 490b1d94f870 Pulling fs layer 0B
+ 53093718206b Pulling fs layer 0B
+ f786f8d90e6c Pulling fs layer 0B
+ e6f31ffc071e Pulling fs layer 0B
+ 0fba6b4f6472 Pulling fs layer 0B
+ c608c7a02b00 Pulling fs layer 0B
+ 00826a891da4 Pulling fs layer 0B
+ 1e809f942fb6 Pulling fs layer 0B
+ 29689263569e Pulling fs layer 0B
+ a226af7085ed Pulling fs layer 0B
+ 35664b5dc00c Pulling fs layer 0B
+ 6310eb16bf42 Downloading 29.79MB
+ 87650244ec3e Downloading 1.049MB
+ 48dd761b6bfe Downloading 26.21MB
+ 6310eb16bf42 Downloading 29.79MB
+ 6310eb16bf42 Downloading 29.79MB
+ 87650244ec3e Downloading 5.243MB
+ 48dd761b6bfe Downloading 31.46MB
+ 9b30195f536d Downloading 1.105kB
+ b1de9b9d5a81 Downloading 2.11kB
+ 5b7942a2dab1 Downloading 97B
+ 6310eb16bf42 Downloading 29.79MB
+ 88a993a11593 Pulling fs layer 0B
+ e6f31ffc071e Pulling fs layer 0B
+ 5f05fbb94ac9 Pulling fs layer 0B
+ dbd229483e61 Pulling fs layer 0B
+ e1558434eda5 Pulling fs layer 0B
+ 0903c67e72cd Pulling fs layer 0B
+ 24b6e6ca1947 Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 53093718206b Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ 1e809f942fb6 Pulling fs layer 0B
+ 55a2851d0c00 Pulling fs layer 0B
+ c608c7a02b00 Pulling fs layer 0B
+ 6876fd4ddc2e Pulling fs layer 0B
+ 00826a891da4 Pulling fs layer 0B
+ 490b1d94f870 Pulling fs layer 0B
+ a226af7085ed Pulling fs layer 0B
+ da9ab2bdc6c4 Pulling fs layer 0B
+ f786f8d90e6c Pulling fs layer 0B
+ 612c52e6047c Pulling fs layer 0B
+ 0fba6b4f6472 Pulling fs layer 0B
+ 7c93c8b560b7 Pulling fs layer 0B
+ f4e2bfbd8bcd Pulling fs layer 0B
+ 29689263569e Pulling fs layer 0B
+ 35664b5dc00c Pulling fs layer 0B
+ 29c35cff402a Pulling fs layer 0B
+ 4f4fb700ef54 Downloading 32B
+ b1de9b9d5a81 Downloading 2.11kB
+ 5b7942a2dab1 Downloading 97B
+ 4f4fb700ef54 Downloading 32B
+ 6310eb16bf42 Downloading 29.79MB
+ db0606565b61 Downloading 826B
+ 87650244ec3e Downloading 7.34MB
+ 9b30195f536d Downloading 1.105kB
+ 4f4fb700ef54 Downloading 32B
+ 4f4fb700ef54 Downloading 32B
+ 6310eb16bf42 Download complete 0B
+ 266e5ab4e0e8 Downloading 53.9kB
+ 48dd761b6bfe Downloading 35.65MB
+ 87650244ec3e Downloading 10.49MB
+ 9b30195f536d Download complete 0B
+ 4f4fb700ef54 Download complete 0B
+ 44136fa355b3 Download complete 0B
+ b1de9b9d5a81 Download complete 0B
+ 44136fa355b3 Download complete 0B
+ 4f4fb700ef54 Download complete 0B
+ 5b7942a2dab1 Download complete 0B
+ 4f4fb700ef54 Download complete 0B
+ 6310eb16bf42 Extracting 1B
+ 6310eb16bf42 Download complete 0B
+ db0606565b61 Download complete 0B
+ 266e5ab4e0e8 Download complete 0B
+ 344d251825bb Downloading 4.194MB
+ 48dd761b6bfe Downloading 39.85MB
+ 6310eb16bf42 Extracting 1B
+ bc63621f6444 Downloading 29.93kB
+ 87650244ec3e Downloading 14.68MB
+ 6310eb16bf42 Extracting 1B
+ 6310eb16bf42 Extracting 1B
+ 48dd761b6bfe Downloading 46.14MB
+ bc63621f6444 Download complete 0B
+ fce2fbb27b14 Downloading 1.98MB
+ 87650244ec3e Downloading 16.78MB
+ 344d251825bb Download complete 0B
+ 6876fd4ddc2e Downloading 2.17kB
+ 0903c67e72cd Downloading 26.29kB
+ 0903c67e72cd Downloading 26.29kB
+ 35664b5dc00c Download complete 0B
+ 35664b5dc00c Download complete 0B
+ 6876fd4ddc2e Downloading 2.17kB
+ 6310eb16bf42 Extracting 1B
+ 0903c67e72cd Download complete 0B
+ fce2fbb27b14 Download complete 0B
+ 87650244ec3e Downloading 20.97MB
+ 0903c67e72cd Download complete 0B
+ 490b1d94f870 Downloading 1.049MB
+ 6876fd4ddc2e Download complete 0B
+ 6876fd4ddc2e Download complete 0B
+ 6310eb16bf42 Extracting 1B
+ 6310eb16bf42 Extracting 1B
+ 48dd761b6bfe Downloading 52.43MB
+ 87650244ec3e Downloading 23.07MB
+ 490b1d94f870 Download complete 0B
+ 490b1d94f870 Download complete 0B
+ 6310eb16bf42 Extracting 1B
+ 87650244ec3e Downloading 25.64MB
+ 88a993a11593 Downloading 2.097MB
+ 88a993a11593 Downloading 2.097MB
+ 6310eb16bf42 Extracting 2B
+ 7c93c8b560b7 Downloading 2.097MB
+ 88a993a11593 Downloading 4.194MB
+ 6310eb16bf42 Extracting 2B
+ 87650244ec3e Download complete 0B
+ 48dd761b6bfe Downloading 58.72MB
+ 7c93c8b560b7 Downloading 4.194MB
+ 88a993a11593 Downloading 5.243MB
+ 6310eb16bf42 Extracting 2B
+ 7c93c8b560b7 Downloading 5.243MB
+ 88a993a11593 Downloading 6.291MB
+ 88a993a11593 Downloading 7.34MB
+ 7c93c8b560b7 Downloading 6.291MB
+ 7c93c8b560b7 Downloading 7.34MB
+ 88a993a11593 Downloading 8.389MB
+ 6310eb16bf42 Extracting 2B
+ 6310eb16bf42 Extracting 2B
+ 48dd761b6bfe Downloading 63.96MB
+ 7c93c8b560b7 Downloading 8.389MB
+ 88a993a11593 Downloading 9.437MB
+ 7c93c8b560b7 Downloading 9.437MB
+ 88a993a11593 Downloading 10.49MB
+ 6310eb16bf42 Extracting 2B
+ 88a993a11593 Downloading 10.49MB
+ 7c93c8b560b7 Downloading 10.49MB
+ 7c93c8b560b7 Downloading 11.53MB
+ 88a993a11593 Downloading 10.49MB
+ 6310eb16bf42 Extracting 3B
+ 7c93c8b560b7 Downloading 13.63MB
+ 88a993a11593 Downloading 12.58MB
+ 48dd761b6bfe Downloading 69.21MB
+ 6310eb16bf42 Extracting 3B
+ 7c93c8b560b7 Downloading 13.63MB
+ 88a993a11593 Downloading 12.58MB
+ 7c93c8b560b7 Downloading 14.68MB
+ 88a993a11593 Downloading 13.63MB
+ 88a993a11593 Downloading 14.68MB
+ 7c93c8b560b7 Downloading 15.73MB
+ 6310eb16bf42 Extracting 3B
+ 88a993a11593 Downloading 15.73MB
+ 7c93c8b560b7 Downloading 17.35MB
+ 6310eb16bf42 Extracting 3B
+ 88a993a11593 Downloading 16.78MB
+ 7c93c8b560b7 Downloading 17.35MB
+ 48dd761b6bfe Downloading 75.5MB
+ 6310eb16bf42 Extracting 3B
+ 88a993a11593 Downloading 16.78MB
+ 7c93c8b560b7 Download complete 0B
+ 7c93c8b560b7 Download complete 0B
+ 88a993a11593 Downloading 16.78MB
+ 6310eb16bf42 Extracting 3B
+ e6f31ffc071e Downloading 2.097MB
+ f786f8d90e6c Download complete 0B
+ 88a993a11593 Downloading 18.87MB
+ 6310eb16bf42 Pull complete 0B
+ 53093718206b Download complete 0B
+ 88a993a11593 Downloading 18.87MB
+ f786f8d90e6c Download complete 0B
+ e6f31ffc071e Downloading 2.097MB
+ 53093718206b Download complete 0B
+ 48dd761b6bfe Downloading 79.69MB
+ 6310eb16bf42 Extracting 3B
+ 4d710b756578 Pull complete 0B
+ 0fba6b4f6472 Downloading 502B
+ 88a993a11593 Downloading 20.65MB
+ e6f31ffc071e Downloading 3.844MB
+ 48dd761b6bfe Downloading 81.79MB
+ 88a993a11593 Downloading 20.65MB
+ 0fba6b4f6472 Downloading 502B
+ 6310eb16bf42 Extracting 3B
+ e6f31ffc071e Download complete 0B
+ 3fa541d8cac9 Extracting 1B
+ e6f31ffc071e Extracting 1B
+ 88a993a11593 Download complete 0B
+ 1e809f942fb6 Downloading 413.3kB
+ c608c7a02b00 Download complete 0B
+ 6310eb16bf42 Extracting 4B
+ 48dd761b6bfe Downloading 85.98MB
+ 00826a891da4 Download complete 0B
+ e6f31ffc071e Download complete 0B
+ 88a993a11593 Download complete 0B
+ 00826a891da4 Download complete 0B
+ 0fba6b4f6472 Download complete 0B
+ a226af7085ed Download complete 0B
+ 1e809f942fb6 Download complete 0B
+ 0fba6b4f6472 Download complete 0B
+ a226af7085ed Download complete 0B
+ da9ab2bdc6c4 Downloading 1.049MB
+ 29689263569e Downloading 1.049MB
+ c608c7a02b00 Download complete 0B
+ 3fa541d8cac9 Extracting 1B
+ 6310eb16bf42 Extracting 4B
+ 48dd761b6bfe Downloading 90.18MB
+ 6310eb16bf42 Extracting 4B
+ e6f31ffc071e Extracting 1B
+ e6f31ffc071e Extracting 1B
+ 3fa541d8cac9 Extracting 1B
+ da9ab2bdc6c4 Downloading 7.34MB
+ 5f05fbb94ac9 Downloading 5.243MB
+ 1e809f942fb6 Download complete 0B
+ da9ab2bdc6c4 Downloading 7.34MB
+ 5f05fbb94ac9 Downloading 5.243MB
+ 29689263569e Download complete 0B
+ 29689263569e Download complete 0B
+ 6310eb16bf42 Extracting 4B
+ 48dd761b6bfe Downloading 93.32MB
+ 3fa541d8cac9 Pull complete 0B
+ e6f31ffc071e Pull complete 0B
+ e6f31ffc071e Pull complete 0B
+ 5f05fbb94ac9 Downloading 8.389MB
+ 48dd761b6bfe Downloading 97.52MB
+ da9ab2bdc6c4 Downloading 12.58MB
+ da9ab2bdc6c4 Downloading 12.58MB
+ 5f05fbb94ac9 Downloading 9.437MB
+ 9b30195f536d Pull complete 0B
+ b3ffe1fd6e79 Pull complete 0B
+ f122bc3261fc Extracting 1B
+ db0606565b61 Pull complete 0B
+ 87650244ec3e Extracting 1B
+ 48dd761b6bfe Downloading 100.7MB
+ 87650244ec3e Extracting 1B
+ 5f05fbb94ac9 Downloading 13.63MB
+ da9ab2bdc6c4 Downloading 17.83MB
+ f122bc3261fc Extracting 1B
+ da9ab2bdc6c4 Downloading 17.83MB
+ 5f05fbb94ac9 Downloading 14.68MB
+ 48dd761b6bfe Downloading 103.8MB
+ 87650244ec3e Extracting 1B
+ f122bc3261fc Pull complete 0B
+ 87650244ec3e Extracting 1B
+ 5322d81b9b21 Extracting 1B
+ 48dd761b6bfe Downloading 107MB
+ da9ab2bdc6c4 Downloading 22.02MB
+ 5f05fbb94ac9 Downloading 17.83MB
+ 5f05fbb94ac9 Downloading 17.83MB
+ da9ab2bdc6c4 Downloading 23.07MB
+ 87650244ec3e Extracting 1B
+ 5322d81b9b21 Extracting 1B
+ 87650244ec3e Extracting 1B
+ 48dd761b6bfe Downloading 110.1MB
+ 87650244ec3e Extracting 1B
+ 48dd761b6bfe Downloading 111.1MB
+ da9ab2bdc6c4 Downloading 26.21MB
+ 5f05fbb94ac9 Downloading 20.97MB
+ 87650244ec3e Extracting 1B
+ 5f05fbb94ac9 Downloading 22.02MB
+ da9ab2bdc6c4 Downloading 27.26MB
+ 5322d81b9b21 Pull complete 0B
+ 9bd242f25e75 Pull complete 0B
+ 87650244ec3e Extracting 2B
+ 48dd761b6bfe Download complete 0B
+ 9d1e9c1e61f4 Pull complete 0B
+ 87650244ec3e Extracting 2B
+ 48dd761b6bfe Extracting 1B
+ 24b6e6ca1947 Downloading 1.049MB
+ 612c52e6047c Download complete 0B
+ 5f05fbb94ac9 Downloading 29.36MB
+ f4e2bfbd8bcd Download complete 0B
+ 87650244ec3e Extracting 2B
+ f4e2bfbd8bcd Download complete 0B
+ 24b6e6ca1947 Downloading 2.097MB
+ da9ab2bdc6c4 Downloading 36.7MB
+ dbd229483e61 Download complete 0B
+ da9ab2bdc6c4 Downloading 35.65MB
+ 5f05fbb94ac9 Downloading 28.31MB
+ 612c52e6047c Download complete 0B
+ 48dd761b6bfe Extracting 1B
+ dbd229483e61 Download complete 0B
+ 87650244ec3e Extracting 2B
+ 48dd761b6bfe Extracting 1B
+ 87650244ec3e Extracting 2B
+ da9ab2bdc6c4 Downloading 38.8MB
+ 5f05fbb94ac9 Downloading 32.51MB
+ 24b6e6ca1947 Downloading 4.194MB
+ 5f05fbb94ac9 Downloading 32.51MB
+ 24b6e6ca1947 Downloading 4.194MB
+ da9ab2bdc6c4 Downloading 38.8MB
+ da9ab2bdc6c4 Downloading 39.85MB
+ 5f05fbb94ac9 Downloading 33.55MB
+ 24b6e6ca1947 Downloading 5.243MB
+ 5f05fbb94ac9 Downloading 33.55MB
+ 24b6e6ca1947 Downloading 5.243MB
+ da9ab2bdc6c4 Downloading 39.85MB
+ 87650244ec3e Pull complete 0B
+ 48dd761b6bfe Extracting 1B
+ 5b7942a2dab1 Pull complete 0B
+ 4f4fb700ef54 Extracting 1B
+ 4f4fb700ef54 Pull complete 0B
+ 48dd761b6bfe Extracting 1B
+ b1de9b9d5a81 Pull complete 0B
+ 29c35cff402a Download complete 0B
+ e1558434eda5 Download complete 0B
+ da9ab2bdc6c4 Downloading 49.28MB
+ 5f05fbb94ac9 Downloading 41.94MB
+ 24b6e6ca1947 Download complete 0B
+ e1558434eda5 Download complete 0B
+ 5f05fbb94ac9 Downloading 42.99MB
+ 55a2851d0c00 Download complete 0B
+ a96aebd7e23a Download complete 0B
+ 48dd761b6bfe Extracting 1B
+ 29c35cff402a Download complete 0B
+ 55a2851d0c00 Download complete 0B
+ 24b6e6ca1947 Download complete 0B
+ da9ab2bdc6c4 Downloading 50.33MB
+ a96aebd7e23a Download complete 0B
+ 48dd761b6bfe Extracting 1B
+ 48dd761b6bfe Extracting 1B
+ 48dd761b6bfe Extracting 2B
+ 5f05fbb94ac9 Downloading 53.1MB
+ da9ab2bdc6c4 Downloading 62.91MB
+ da9ab2bdc6c4 Downloading 63.96MB
+ 5f05fbb94ac9 Downloading 53.1MB
+ 48dd761b6bfe Extracting 2B
+ 48dd761b6bfe Extracting 2B
+ Image redis Pulled 
+ 48dd761b6bfe Extracting 2B
+ 5f05fbb94ac9 Download complete 0B
+ da9ab2bdc6c4 Downloading 79.69MB
+ da9ab2bdc6c4 Downloading 81.79MB
+ 5f05fbb94ac9 Download complete 0B
+ 48dd761b6bfe Extracting 3B
+ 48dd761b6bfe Extracting 3B
+ 48dd761b6bfe Extracting 4B
+ 5f05fbb94ac9 Extracting 1B
+ da9ab2bdc6c4 Downloading 100.7MB
+ 5f05fbb94ac9 Extracting 1B
+ da9ab2bdc6c4 Downloading 102.8MB
+ 48dd761b6bfe Extracting 4B
+ 48dd761b6bfe Extracting 5B
+ 48dd761b6bfe Extracting 5B
+ 5f05fbb94ac9 Extracting 2B
+ da9ab2bdc6c4 Downloading 120.6MB
+ 48dd761b6bfe Extracting 5B
+ 5f05fbb94ac9 Extracting 2B
+ da9ab2bdc6c4 Downloading 122.7MB
+ 48dd761b6bfe Extracting 6B
+ 48dd761b6bfe Extracting 6B
+ 48dd761b6bfe Extracting 7B
+ 5f05fbb94ac9 Extracting 3B
+ da9ab2bdc6c4 Downloading 135.3MB
+ 5f05fbb94ac9 Extracting 3B
+ da9ab2bdc6c4 Downloading 138.4MB
+ 48dd761b6bfe Extracting 7B
+ 48dd761b6bfe Extracting 7B
+ dbd229483e61 Pull complete 0B
+ 48dd761b6bfe Extracting 7B
+ 5f05fbb94ac9 Pull complete 0B
+ dbd229483e61 Pull complete 0B
+ da9ab2bdc6c4 Downloading 148.5MB
+ 48dd761b6bfe Extracting 7B
+ 5f05fbb94ac9 Pull complete 0B
+ da9ab2bdc6c4 Download complete 0B
+ 48dd761b6bfe Extracting 8B
+ f4e2bfbd8bcd Pull complete 0B
+ 48dd761b6bfe Extracting 8B
+ 24b6e6ca1947 Pull complete 0B
+ da9ab2bdc6c4 Download complete 0B
+ f4e2bfbd8bcd Pull complete 0B
+ 48dd761b6bfe Extracting 8B
+ 29c35cff402a Pull complete 0B
+ 24b6e6ca1947 Pull complete 0B
+ 4f4fb700ef54 Pull complete 0B
+ 48dd761b6bfe Extracting 8B
+ 48dd761b6bfe Extracting 8B
+ 55a2851d0c00 Pull complete 0B
+ 29c35cff402a Pull complete 0B
+ c608c7a02b00 Pull complete 0B
+ 55a2851d0c00 Pull complete 0B
+ 48dd761b6bfe Extracting 9B
+ 6876fd4ddc2e Pull complete 0B
+ 490b1d94f870 Extracting 1B
+ 6876fd4ddc2e Pull complete 0B
+ 48dd761b6bfe Extracting 9B
+ 490b1d94f870 Extracting 1B
+ c608c7a02b00 Pull complete 0B
+ 48dd761b6bfe Extracting 9B
+ 48dd761b6bfe Extracting 9B
+ 490b1d94f870 Pull complete 0B
+ 490b1d94f870 Pull complete 0B
+ 48dd761b6bfe Extracting 9B
+ da9ab2bdc6c4 Extracting 1B
+ da9ab2bdc6c4 Extracting 1B
+ 48dd761b6bfe Extracting 9B
+ 48dd761b6bfe Extracting 10B
+ da9ab2bdc6c4 Extracting 1B
+ 48dd761b6bfe Extracting 10B
+ da9ab2bdc6c4 Extracting 1B
+ 48dd761b6bfe Extracting 10B
+ 48dd761b6bfe Extracting 10B
+ da9ab2bdc6c4 Extracting 1B
+ da9ab2bdc6c4 Extracting 2B
+ 48dd761b6bfe Extracting 10B
+ 48dd761b6bfe Extracting 11B
+ da9ab2bdc6c4 Extracting 2B
+ da9ab2bdc6c4 Extracting 2B
+ 48dd761b6bfe Extracting 11B
+ da9ab2bdc6c4 Extracting 2B
+ 00034b17b963 Extracting 1B
+ 48dd761b6bfe Pull complete 0B
+ da9ab2bdc6c4 Extracting 2B
+ 00034b17b963 Pull complete 0B
+ da9ab2bdc6c4 Extracting 2B
+ da9ab2bdc6c4 Extracting 2B
+ da9ab2bdc6c4 Extracting 2B
+ da9ab2bdc6c4 Extracting 2B
+ 988d57697ad2 Extracting 1B
+ 8a082189cfe1 Pull complete 0B
+ da9ab2bdc6c4 Extracting 2B
+ 988d57697ad2 Pull complete 0B
+ 9f809ec5ff35 Extracting 1B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ 9f809ec5ff35 Pull complete 0B
+ af7708f26521 Pull complete 0B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ Image postgres:16 Pulled 
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 3B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 4B
+ da9ab2bdc6c4 Extracting 5B
+ da9ab2bdc6c4 Extracting 5B
+ da9ab2bdc6c4 Extracting 5B
+ da9ab2bdc6c4 Extracting 5B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 6B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 7B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 8B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 9B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 10B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 11B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 12B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 13B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 14B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 15B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 16B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 17B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 18B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 19B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 20B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 21B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 22B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 23B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 24B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 25B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 26B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 27B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 28B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 29B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 30B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 31B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 32B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 33B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 34B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 35B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 36B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 37B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 38B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 39B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 40B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 41B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ da9ab2bdc6c4 Extracting 42B
+ 612c52e6047c Extracting 1B
+ 612c52e6047c Extracting 1B
+ da9ab2bdc6c4 Pull complete 0B
+ da9ab2bdc6c4 Pull complete 0B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 612c52e6047c Pull complete 0B
+ 612c52e6047c Pull complete 0B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 1B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 2B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 3B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 4B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 5B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 6B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 7B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Extracting 8B
+ 7c93c8b560b7 Pull complete 0B
+ 7c93c8b560b7 Pull complete 0B
+ e1558434eda5 Extracting 1B
+ e1558434eda5 Extracting 1B
+ e1558434eda5 Pull complete 0B
+ e1558434eda5 Pull complete 0B
+ 4f4fb700ef54 Pull complete 0B
+ 0903c67e72cd Pull complete 0B
+ 53093718206b Extracting 1B
+ 0903c67e72cd Pull complete 0B
+ 53093718206b Extracting 1B
+ 53093718206b Pull complete 0B
+ 53093718206b Pull complete 0B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Extracting 1B
+ 1e809f942fb6 Pull complete 0B
+ 00826a891da4 Extracting 1B
+ 1e809f942fb6 Pull complete 0B
+ 00826a891da4 Pull complete 0B
+ 00826a891da4 Pull complete 0B
+ 29689263569e Extracting 1B
+ 29689263569e Extracting 1B
+ 29689263569e Extracting 1B
+ 29689263569e Extracting 1B
+ f786f8d90e6c Extracting 1B
+ a226af7085ed Pull complete 0B
+ f786f8d90e6c Extracting 1B
+ 29689263569e Pull complete 0B
+ a226af7085ed Pull complete 0B
+ 29689263569e Pull complete 0B
+ f786f8d90e6c Extracting 1B
+ f786f8d90e6c Extracting 1B
+ 35664b5dc00c Pull complete 0B
+ f786f8d90e6c Pull complete 0B
+ 0fba6b4f6472 Pull complete 0B
+ 35664b5dc00c Pull complete 0B
+ f786f8d90e6c Pull complete 0B
+ 88a993a11593 Extracting 1B
+ 0fba6b4f6472 Pull complete 0B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 1B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 2B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Extracting 3B
+ 88a993a11593 Pull complete 0B
+ Image twentycrm/twenty:latest Pulled 
+ 88a993a11593 Pull complete 0B
+ Image twentycrm/twenty:latest Pulled 
+ Network twenty_default Creating 
+ Volume twenty_db-data Creating 
+ Volume twenty_db-data Creating 
+ Network twenty_default Creating 
+ Volume twenty_server-local-data Creating 
+ Volume twenty_server-local-data Creating 
+ Volume twenty_db-data Created 
+ Volume twenty_db-data Created 
+ Volume twenty_server-local-data Created 
+ Volume twenty_server-local-data Created 
+ Network twenty_default Created 
+ Network twenty_default Created 
+ Container twenty-redis-1 Creating 
+ Container twenty-db-1 Creating 
+ Container twenty-redis-1 Created 
+ Container twenty-db-1 Created 
+ Container twenty-server-1 Creating 
+ Container twenty-server-1 Created 
+ Container twenty-worker-1 Creating 
+ Container twenty-worker-1 Created 
+ Container twenty-redis-1 Starting 
+ Container twenty-db-1 Starting 
+ Container twenty-redis-1 Started 
+ Container twenty-db-1 Started 
+ Container twenty-db-1 Waiting 
+ Container twenty-redis-1 Waiting 
+ Container twenty-redis-1 Healthy 
+ Container twenty-db-1 Healthy 
+ Container twenty-server-1 Starting 
+ Container twenty-server-1 Started 
+ Container twenty-db-1 Waiting 
+ Container twenty-server-1 Waiting 
+ Container twenty-db-1 Healthy 
+ Container twenty-server-1 Error dependency server failed to start
+dependency failed to start: container twenty-server-1 is unhealthy
++ true
++ echo '=== DOCKER COMPOSE PS ==='
+=== DOCKER COMPOSE PS ===
++ docker compose ps
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"DISABLE_DB_MIGRATIONS\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"DISABLE_CRON_JOBS_REGISTRATION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:39Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+NAME              IMAGE                     COMMAND                  SERVICE   CREATED         STATUS                          PORTS
+twenty-db-1       postgres:16               "docker-entrypoint.s…"   db        2 minutes ago   Up About a minute (healthy)     5432/tcp
+twenty-redis-1    redis                     "docker-entrypoint.s…"   redis     2 minutes ago   Up 2 minutes (healthy)          6379/tcp
+twenty-server-1   twentycrm/twenty:latest   "/app/entrypoint.sh …"   server    2 minutes ago   Up About a minute (unhealthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
++ echo '=== SERVER CONTAINER LOGS ==='
+=== SERVER CONTAINER LOGS ===
++ docker compose logs server --no-color
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"DISABLE_DB_MIGRATIONS\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"DISABLE_CRON_JOBS_REGISTRATION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+server-1  | Running database setup and migrations...
+server-1  | Database appears to be empty, running migrations.
+server-1  | Performed 'create schema "public"' successfully
+server-1  | Performed 'create schema "core"' successfully
+server-1  | Performed 'create extension "uuid-ossp"' successfully
+server-1  | Performed 'create extension "unaccent"' successfully
+server-1  | Performed 'create extension "citext"' successfully
+server-1  | Performed 'create immutable unaccent wrapper function' successfully
++ echo '=== DB CONTAINER LOGS ==='
+=== DB CONTAINER LOGS ===
++ docker compose logs db --no-color
+time="2026-09-15T10:52:40Z" level=warning msg="The \"DISABLE_DB_MIGRATIONS\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"DISABLE_CRON_JOBS_REGISTRATION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:40Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+db-1  | The files belonging to this database system will be owned by user "postgres".
+db-1  | This user must also own the server process.
+db-1  | 
+db-1  | The database cluster will be initialized with locale "en_US.utf8".
+db-1  | The default database encoding has accordingly been set to "UTF8".
+db-1  | The default text search configuration will be set to "english".
+db-1  | 
+db-1  | Data page checksums are disabled.
+db-1  | 
+db-1  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+db-1  | creating subdirectories ... ok
+db-1  | selecting dynamic shared memory implementation ... posix
+db-1  | selecting default max_connections ... 100
+db-1  | selecting default shared_buffers ... 128MB
+db-1  | selecting default time zone ... Etc/UTC
+db-1  | creating configuration files ... ok
+db-1  | running bootstrap script ... ok
+db-1  | performing post-bootstrap initialization ... ok
+db-1  | syncing data to disk ... ok
+db-1  | 
+db-1  | 
+db-1  | Success. You can now start the database server using:
+db-1  | 
+db-1  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+db-1  | 
+db-1  | initdb: warning: enabling "trust" authentication for local connections
+db-1  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+db-1  | waiting for server to start....2026-09-15 10:50:49.518 UTC [54] LOG:  starting PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2026-09-15 10:50:49.519 UTC [54] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2026-09-15 10:50:49.526 UTC [57] LOG:  database system was shut down at 2026-09-15 10:50:49 UTC
+db-1  | 2026-09-15 10:50:49.532 UTC [54] LOG:  database system is ready to accept connections
+db-1  |  done
+db-1  | server started
+db-1  | CREATE DATABASE
+db-1  | 
+db-1  | 
+db-1  | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+db-1  | 
+db-1  | waiting for server to shut down...2026-09-15 10:50:49.877 UTC [54] LOG:  received fast shutdown request
+db-1  | .2026-09-15 10:50:49.879 UTC [54] LOG:  aborting any active transactions
+db-1  | 2026-09-15 10:50:49.884 UTC [54] LOG:  background worker "logical replication launcher" (PID 60) exited with exit code 1
+db-1  | 2026-09-15 10:50:49.884 UTC [55] LOG:  shutting down
+db-1  | 2026-09-15 10:50:49.886 UTC [55] LOG:  checkpoint starting: shutdown immediate
+db-1  | 2026-09-15 10:50:49.949 UTC [55] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.048 s, sync=0.008 s, total=0.065 s; sync files=301, longest=0.003 s, average=0.001 s; distance=4273 kB, estimate=4273 kB; lsn=0/191F0E8, redo lsn=0/191F0E8
+db-1  | 2026-09-15 10:50:49.955 UTC [54] LOG:  database system is shut down
+db-1  |  done
+db-1  | server stopped
+db-1  | 
+db-1  | PostgreSQL init process complete; ready for start up.
+db-1  | 
+db-1  | 2026-09-15 10:50:50.079 UTC [1] LOG:  starting PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2026-09-15 10:50:50.079 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1  | 2026-09-15 10:50:50.079 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1  | 2026-09-15 10:50:50.085 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2026-09-15 10:50:50.095 UTC [70] LOG:  database system was shut down at 2026-09-15 10:50:49 UTC
+db-1  | 2026-09-15 10:50:50.103 UTC [1] LOG:  database system is ready to accept connections
++ echo '=== USER DATA SCRIPT FINISHED ==='
+=== USER DATA SCRIPT FINISHED ===
++ sleep 10
++ docker compose ps
+time="2026-09-15T10:52:51Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"DISABLE_DB_MIGRATIONS\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"DISABLE_CRON_JOBS_REGISTRATION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_REGION\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_NAME\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"STORAGE_S3_ENDPOINT\" variable is not set. Defaulting to a blank string."
+time="2026-09-15T10:52:51Z" level=warning msg="The \"FALLBACK_ENCRYPTION_KEY\" variable is not set. Defaulting to a blank string."
+NAME              IMAGE                     COMMAND                  SERVICE   CREATED         STATUS                          PORTS
+twenty-db-1       postgres:16               "docker-entrypoint.s…"   db        2 minutes ago   Up 2 minutes (healthy)          5432/tcp
+twenty-redis-1    redis                     "docker-entrypoint.s…"   redis     2 minutes ago   Up 2 minutes (healthy)          6379/tcp
+twenty-server-1   twentycrm/twenty:latest   "/app/entrypoint.sh …"   server    2 minutes ago   Up About a minute (unhealthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
++ echo '=== FINAL DISK SPACE ==='
+=== FINAL DISK SPACE ===
++ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       6.7G  4.7G  2.0G  72% /
