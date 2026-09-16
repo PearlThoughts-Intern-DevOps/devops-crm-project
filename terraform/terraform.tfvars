@@ -1,0 +1,12 @@
+aws_region          = "us-east-1"
+project             = "devops-crm-project"
+task                = "Task-15"
+environment         = "test"
+instance_type       = "t3.small"
+instance_name       = "twenty-crm-server"
+ami_id              = "ami-081b0a6eac00b4f53"
+allowed_ssh_cidr    = "0.0.0.0/0"
+app_port            = 2020
+s3_bucket_name      = "twenty-crm-storage-task13"
+ecr_repository_name = "twenty-crm"
+twenty_image        = "twentycrm/twenty-app-dev:v2.35"
