@@ -1,47 +1,27 @@
-variable "aws_region" {
-  description = "AWS region"
+variable "availability_zone" {
+  description = "Availability zone for the default subnet"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-1a"
 }
-
 
 variable "ami_id" {
-  description = "Approved EC2 AMI"
+  description = "Amazon Linux 2023 AMI ID"
   type        = string
-
-  validation {
-    condition = contains(
-      [
-        "ami-081b0a6eac00b4f53",
-        "ami-0b6d9d3d33ba97d99"
-      ],
-      var.ami_id
-    )
-
-    error_message = "AMI must be one of the approved AMIs."
-  }
+  default     = "ami-0b6d9d3d33ba97d99"
 }
-
 
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.small"
-
-  validation {
-    condition     = var.instance_type == "t3.small"
-    error_message = "Only t3.small is allowed."
-  }
 }
-
 
 variable "key_name" {
-  description = "Existing EC2 key pair"
+  description = "Existing EC2 key pair name"
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name used for naming AWS resources"
+variable "ssh_cidr" {
+  description = "IP allowed to SSH"
   type        = string
-  default     = "ak-twenty-crm"
 }
