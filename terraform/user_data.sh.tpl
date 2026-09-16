@@ -68,9 +68,14 @@ echo "[6/7] Starting Twenty CRM..."
 docker run -d \
   --name twenty-crm \
   --network twenty-network \
-  --restart on-failure:5 \
+  --restart unless-stopped \
   --memory 768m \
   --memory-swap 2048m \
+  --health-cmd="curl -f http://localhost:3000/healthz || exit 1" \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  --health-start-period=90s \
   -p "${app_port}:3000" \
   -e NODE_PORT=3000 \
   -e NODE_ENV=production \
@@ -90,9 +95,14 @@ echo "[7/7] Starting Twenty Worker..."
 docker run -d \
   --name twenty-worker \
   --network twenty-network \
-  --restart on-failure:5 \
+  --restart unless-stopped \
   --memory 384m \
   --memory-swap 768m \
+  --health-cmd="ps aux | grep 'worker:prod' | grep -v grep || exit 1" \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  --health-start-period=60s \
   -e NODE_ENV=production \
   -e NODE_OPTIONS="--max-old-space-size=320" \
   -e SERVER_URL="$SERVER_URL" \

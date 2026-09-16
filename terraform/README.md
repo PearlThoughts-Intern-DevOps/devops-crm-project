@@ -1,251 +1,134 @@
-# Task 15 — AWS Application Load Balancer (ALB) with Twenty CRM
+# Task 16: Twenty CRM Failure & Recovery
 
 ## Overview
-Deploy Twenty CRM on EC2 behind an AWS Application Load Balancer (ALB) using Terraform with a modular architecture.
+This document covers the failure recovery configuration for Twenty CRM running on EC2 using Docker.
 
 ---
 
-## Architecture
-
-Internet (HTTP port 80)
-|
-v
-+----------------------------------+
-| Application Load Balancer (ALB) |
-| ALB Security Group |
-| Inbound: 0.0.0.0/0 -> port 80 |
-+----------------------------------+
-|
-| port 2020
-v
-+----------------------------------+
-| EC2 Instance (t3.small) |
-| Ubuntu 22.04 LTS |
-| EC2 Security Group |
-| Inbound: ALB SG -> port 2020 |
-| Inbound: 0.0.0.0/0 -> port 22 |
-| |
-| +------------------------------+ |
-| | Docker Network | |
-| | | |
-| | twenty-crm | |
-| | port 2020 -> 3000 | |
-| | | |
-| | twenty-worker | |
-| | background jobs | |
-| | | |
-| | postgres:16-alpine | |
-| | port 5432 | |
-| | | |
-| | redis:7-alpine | |
-| | port 6379 | |
-| +------------------------------+ |
-+----------------------------------+
-
+## Infrastructure
+- **EC2 Instance:** t3.small, Ubuntu 26.04
+- **IP:** 18.207.106.119
+- **App Port:** 2020
+- **Docker Image:** twentycrm/twenty:v2.35.0
 
 ---
 
-## AWS Configuration
+## 1. Containers Running via user_data
 
-| Parameter     | Value                 |
-|---------------|-----------------------|
-| Region        | us-east-1             |
-| Instance Type | t3.small              |
-| AMI           | ami-0b6d9d3d33ba97d99 |
-| VPC           | Default VPC           |
-| Subnet        | Default subnets       |
+All containers are started automatically on EC2 boot via `user_data.sh.tpl`:
 
----
-
-## Project Structure
-
-terraform/
-├── main.tf # Root module - VPC, SGs, EC2, ALB
-├── variables.tf # All input variables
-├── outputs.tf # ALB URL, EC2 IP, TG ARN
-├── providers.tf # AWS provider configuration
-├── terraform.tfvars.example # Example vars (copy to terraform.tfvars)
-├── user_data.sh.tpl # EC2 bootstrap script
-└── modules/
-├── ec2/ # EC2 instance module
-│ ├── main.tf
-│ ├── variables.tf
-│ └── outputs.tf
-└── alb/ # ALB + Target Group + Listener module
-├── main.tf
-├── variables.tf
-└── outputs.tf
-
+| Container | Image | Restart Policy |
+|---|---|---|
+| twenty-db | postgres:16-alpine | unless-stopped |
+| twenty-redis | redis:7-alpine | unless-stopped |
+| twenty-crm | twentycrm/twenty:v2.35.0 | unless-stopped |
+| twenty-worker | twentycrm/twenty:v2.35.0 | unless-stopped |
 
 ---
 
-## What Terraform Creates
+## 2. Restart Policy Configuration
 
-aws_security_group.alb - allows port 80 from internet
-aws_security_group.ec2 - allows port 2020 from ALB only
-module.ec2
-aws_instance - EC2 with Twenty CRM via user_data
-aws_security_group - EC2 own SG
-module.alb
-aws_lb - Application Load Balancer
-aws_lb_target_group - TG on port 2020 with health check
-aws_lb_target_group_attachment - registers EC2 into TG
-aws_lb_listener - port 80 forward to TG
-
+All containers use `--restart unless-stopped` which means:
+- Container restarts automatically if it crashes or the process dies
+- Container restarts automatically after EC2 reboot
+- Container does NOT restart only if manually stopped with `docker stop`
 
 ---
 
-## Security Group Design
+## 3. Health Check Configuration
 
-ALB Security Group
-Inbound - port 80 from 0.0.0.0/0 (internet to ALB)
-Outbound - all traffic allowed
+Added to `twenty-crm`:
+```bash
+--health-cmd="curl -f http://localhost:3000/healthz || exit 1"
+--health-interval=30s
+--health-timeout=10s
+--health-retries=3
+--health-start-period=90s
+```
 
-EC2 Security Group
-Inbound - port 2020 from ALB SG only (ALB to EC2 only)
-Inbound - port 22 from 0.0.0.0/0 (SSH access)
-Outbound - all traffic allowed
-
-
----
-
-## Health Check Configuration
-
-Path = /
-Protocol = HTTP
-Port = traffic-port (2020)
-Healthy threshold = 2
-Unhealthy threshold = 3
-Timeout = 10s
-Interval = 30s
-Matcher = 200-399
-
+Added to `twenty-worker` (process-based since no HTTP port):
+```bash
+--health-cmd="ps aux | grep 'worker:prod' | grep -v grep || exit 1"
+--health-interval=30s
+--health-timeout=10s
+--health-retries=3
+--health-start-period=60s
+```
 
 ---
 
-## Prerequisites
+## 4. Failure Recovery Test — Container Crash
 
-- AWS CLI configured with valid credentials
-- Terraform >= 1.7.0
-- EC2 Key Pair created in us-east-1
-- IAM user with EC2 + ALB + VPC permissions
+### Step 1 — Verified containers healthy
 
----
+docker ps -a
 
-## Setup
+twenty-crm: Up 5 minutes (healthy)
 
-### 1. Clone and navigate
+### Step 2 — Killed the process inside the container
+```bash
+docker exec twenty-crm kill -9 1
+```
 
-\`\`\`bash
-git clone https://github.com/shubhamsingh74888/devops-crm-project.git
-cd devops-crm-project/terraform
-\`\`\`
+### Step 3 — Verified auto-restart
+```bash
+sleep 10 && docker ps -a
+# twenty-crm: Up 10 seconds (healthy) ← restarted automatically
+```
 
-### 2. Create terraform.tfvars
-
-\`\`\`bash
-cp terraform.tfvars.example terraform.tfvars
-vi terraform.tfvars
-\`\`\`
-
-Fill in:
-
-\`\`\`hcl
-key_pair_name  = "your-key-pair-name"
-encryption_key = "your-32-char-key"
-app_secret     = "your-app-secret"
-pg_password    = "YourStrongPassword"
-\`\`\`
-
-### 3. Run Terraform
-
-\`\`\`bash
-terraform init
-terraform validate
-terraform plan -out=tfplan
-terraform apply tfplan
-\`\`\`
+**Result:** Docker detected the crash and restarted the container within seconds.
 
 ---
 
-## Outputs
+## 5. Failure Recovery Test — EC2 Reboot
 
-alb_dns_name = "shubham-singh-task15-alb-xxxx.us-east-1.elb.amazonaws.com"
-alb_url = "http://shubham-singh-task15-alb-xxxx.us-east-1.elb.amazonaws.com"
-ec2_public_ip = "x.x.x.x"
-ec2_instance_id = "i-xxxxxxxxxxxxxxxxx"
-target_group_arn = "arn:aws:elasticloadbalancing:..."
-default_vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
-ssh_command = "ssh -i ~/.ssh/your-key.pem ubuntu@x.x.x.x"
+### Step 1 — Rebooted EC2
+```bash
+sudo reboot
+```
 
+### Step 2 — SSH back in after 3 minutes
+```bash
+ssh -i ~/.ssh/shubhamsingh-task16.pem ubuntu@18.207.106.119
+```
 
----
+### Step 3 — Verified all containers auto-started
+```bash
+docker ps -a
+# twenty-db:     Up 3 minutes
+# twenty-redis:  Up 3 minutes
+# twenty-crm:    Up 3 minutes (unhealthy → healthy after boot)
+# twenty-worker: Up 1 second (health: starting)
+```
 
-## Verify Deployment
+**Result:** All 4 containers restarted automatically after EC2 reboot with zero manual intervention.
 
-### Check target health via CLI
-
-\`\`\`bash
-aws elbv2 describe-target-health \
-  --target-group-arn $(terraform output -raw target_group_arn) \
-  --region us-east-1 \
-  --query 'TargetHealthDescriptions[0].TargetHealth'
-\`\`\`
-
-Expected:
-
-\`\`\`json
-{
-    "State": "healthy"
-}
-\`\`\`
-
-### Check via browser
-
-Open ALB URL in browser — Twenty CRM login page should load.
-
-### SSH into EC2
-
-\`\`\`bash
-ssh -i ~/.ssh/your-key.pem ubuntu@<ec2_public_ip>
-sudo docker ps -a
-sudo docker logs twenty-crm --tail 20
-curl -I http://localhost:2020
-\`\`\`
+**Why it works:**
+- `systemctl enable docker` in user_data ensures Docker starts on boot
+- `--restart unless-stopped` ensures containers start with Docker
 
 ---
 
-## Twenty CRM Stack
+## 6. Logs Verification
 
-| Container     | Image                    | Port | Memory |
-|---------------|--------------------------|------|--------|
-| twenty-crm    | twentycrm/twenty:v2.35.0 | 2020 | 768MB  |
-| twenty-worker | twentycrm/twenty:v2.35.0 | -    | 384MB  |
-| twenty-db     | postgres:16-alpine       | 5432 | 256MB  |
-| twenty-redis  | redis:7-alpine           | 6379 | 128MB  |
+```bash
+# container logs
+docker logs twenty-crm --tail 20
 
----
+# bootstrap log
+tail -20 /var/log/user-data.log
 
-## Destroy Resources
-
-\`\`\`bash
-terraform destroy -auto-approve
-\`\`\`
+# health check status
+docker inspect twenty-crm --format='Health Status: {{.State.Health.Status}}'
+```
 
 ---
 
-## Notes
+## 7. Key Takeaways
 
-- EC2 bootstrap takes 10-12 minutes (Docker pull + 182 DB migrations)
-- 3GB swap added to prevent OOM on t3.small
-- NODE_OPTIONS=--max-old-space-size=640 set for Node.js heap
-- SERVER_URL set to ALB DNS so all redirects stay on ALB
-- Direct EC2 IP access blocked by security group design
-- terraform.tfvars is gitignored — never commit secrets
+| Scenario | Mechanism | Result |
+|---|---|---|
+| App process crashes | `--restart unless-stopped` | Auto-restart in seconds |
+| EC2 reboots | `systemctl enable docker` + restart policy | All containers auto-start |
+| Health check fails | `--health-*` flags | Docker marks container unhealthy |
 
----
-
-## Author
-
-**Shubham Singh**
-Cloud Support Engineer | MCA 2026 | Garden City University, Bangalore

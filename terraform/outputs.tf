@@ -1,5 +1,5 @@
 # ============================================================
-# outputs.tf — Task 15
+# outputs.tf — Task 16
 # ============================================================
 
 output "ec2_instance_id" {
@@ -12,24 +12,9 @@ output "ec2_public_ip" {
   value       = module.ec2.public_ip
 }
 
-output "alb_dns_name" {
-  description = "ALB DNS name"
-  value       = module.alb.alb_dns_name
-}
-
-output "alb_url" {
-  description = "Access Twenty CRM via ALB"
-  value       = module.alb.alb_url
-}
-
-output "target_group_arn" {
-  description = "Target Group ARN"
-  value       = module.alb.target_group_arn
-}
-
-output "default_vpc_id" {
-  description = "Default VPC ID used"
-  value       = data.aws_vpc.default.id
+output "app_url" {
+  description = "Access Twenty CRM directly"
+  value       = "http://${module.ec2.public_ip}:${var.app_port}"
 }
 
 output "ssh_command" {
