@@ -1,9 +1,9 @@
 #!/bin/bash
-set -uo pipefail
+set -euo pipefail
 
 exec > >(tee /var/log/user-data.log) 2>&1
 
-echo "===== Twenty CRM setup started ====="
+echo "===== Task 16: Twenty CRM setup started ====="
 
 dnf update -y
 dnf install -y docker openssl
@@ -24,11 +24,14 @@ ENCRYPTION_KEY=$(openssl rand -hex 32)
 
 cat > /opt/twenty-crm/.env <<ENV_EOF
 ENCRYPTION_KEY=$${ENCRYPTION_KEY}
-SERVER_URL=${server_url}
+SERVER_URL=http://PUBLIC_IP_PLACEHOLDER:3000
 PG_DATABASE_URL=postgresql://postgres:postgres@db:5432/twenty
 REDIS_URL=redis://redis:6379
 NODE_PORT=3000
 ENV_EOF
+
+PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+sed -i "s|PUBLIC_IP_PLACEHOLDER|$${PUBLIC_IP}|" /opt/twenty-crm/.env
 
 cat > /opt/twenty-crm/docker-compose.yml <<'COMPOSE_EOF'
 services:
@@ -39,12 +42,14 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      NODE_PORT: 3000
-      SERVER_URL: $${SERVER_URL}
-      PG_DATABASE_URL: $${PG_DATABASE_URL}
-      REDIS_URL: $${REDIS_URL}
-      ENCRYPTION_KEY: $${ENCRYPTION_KEY}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     depends_on:
       - db
       - redis
@@ -54,12 +59,8 @@ services:
     container_name: twenty-worker
     restart: unless-stopped
     command: ["yarn", "worker:prod"]
-    environment:
-      NODE_PORT: 3000
-      SERVER_URL: $${SERVER_URL}
-      PG_DATABASE_URL: $${PG_DATABASE_URL}
-      REDIS_URL: $${REDIS_URL}
-      ENCRYPTION_KEY: $${ENCRYPTION_KEY}
+    env_file:
+      - .env
     depends_on:
       - db
       - redis
@@ -84,6 +85,5 @@ volumes:
   twenty-postgres-data:
 COMPOSE_EOF
 
-/usr/local/bin/docker-compose up -d
 
-echo "===== Twenty CRM setup completed ====="
+echo "===== Task 16: Twenty CRM setup completed ====="

@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "ami_id" {
+  description = "Amazon Linux 2023 AMI"
+  type        = string
+  default     = "ami-081b0a6eac00b4f53"
+}
+
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -11,15 +17,8 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "EC2 SSH key pair name"
+  description = "SSH key pair name"
   type        = string
-  default     = null
-}
-
-variable "environment" {
-  description = "Deployment environment"
-  type        = string
-  default     = "dev"
 }
 
 variable "project_name" {
@@ -34,8 +33,8 @@ variable "owner" {
   default     = "netaji"
 }
 
-variable "ami_id" {
-  description = "Approved Amazon Linux 2023 AMI"
+variable "environment" {
+  description = "Environment name"
   type        = string
-  default     = "ami-081b0a6eac00b4f53"
+  default     = "task16"
 }
