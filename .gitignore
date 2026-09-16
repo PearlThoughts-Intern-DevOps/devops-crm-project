@@ -37,7 +37,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
+.env
 # typescript
 *.tsbuildinfo
 *.d.ts
+
+*.swp
+*.swo
