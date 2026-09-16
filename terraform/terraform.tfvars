@@ -1,0 +1,11 @@
+aws_region       = "us-east-1"
+project          = "devops-crm-project"
+task             = "Task-16"
+environment      = "test"
+instance_type    = "t3.small"
+instance_name    = "twenty-crm-server"
+ami_id           = "ami-081b0a6eac00b4f53"
+key_name         = "kaushal-task16-key"
+allowed_ssh_cidr = "0.0.0.0/0"
+app_port         = 2020
+twenty_image     = "twentycrm/twenty-app-dev:v2.35"
