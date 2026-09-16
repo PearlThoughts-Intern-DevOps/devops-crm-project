@@ -24,7 +24,7 @@ services:
       start_period: 180s
     networks:
       - crm-network
-    restart: unless-stopped
+    restart: always
 
   # ==========================================================
   # Containerized CRM Custom Application
@@ -47,7 +47,7 @@ services:
       - app-build-output:/app/.twenty
     networks:
       - crm-network
-    restart: unless-stopped
+    restart: always
 
 # ==========================================================
 # Network Configuration
