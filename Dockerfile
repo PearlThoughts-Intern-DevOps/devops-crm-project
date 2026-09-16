@@ -19,7 +19,9 @@ ENV COREPACK_HOME=/opt/corepack
 RUN mkdir -p "$COREPACK_HOME" \
 	&& corepack enable && corepack prepare yarn@4.13.0 --activate \
 	&& addgroup -S appgroup \
-	&& adduser -S appuser -G appgroup
+	&& adduser -S appuser -G appgroup \
+	&& mkdir -p /app/.yarn \
+	&& chown appuser:appgroup /app /app/.yarn
 
 # Create a dedicated non-root user/group instead of running as root
 COPY --from=dependencies --chown=appuser:appgroup /app/node_modules ./node_modules
