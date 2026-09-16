@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for the Terraform deployment"
+  description = "AWS region"
   type        = string
   default     = "us-east-1"
 }
@@ -11,7 +11,7 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Existing EC2 key pair name"
+  description = "EC2 SSH key pair name"
   type        = string
   default     = null
 }
@@ -23,37 +23,19 @@ variable "environment" {
 }
 
 variable "project_name" {
-  description = "Project name used for resource naming and tags"
+  description = "Project name"
   type        = string
   default     = "twenty-crm"
 }
 
 variable "owner" {
-  description = "Owner tag used to identify resources"
+  description = "Resource owner"
   type        = string
   default     = "netaji"
 }
 
 variable "ami_id" {
-  description = "Mentor-approved Amazon Linux 2023 AMI for us-east-1"
+  description = "Approved Amazon Linux 2023 AMI"
   type        = string
   default     = "ami-081b0a6eac00b4f53"
-}
-
-variable "iam_instance_profile_name" {
-  description = "Pre-existing IAM instance profile granting EC2 access to S3"
-  type        = string
-  default     = "EC2S3AccessRole"
-}
-
-variable "s3_bucket_name" {
-  description = "Globally unique S3 bucket name for Twenty CRM storage"
-  type        = string
-  default     = "netaji-twenty-crm-storage-2026"
-}
-
-variable "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  type        = string
-  default     = "netaji-twenty-crm"
 }

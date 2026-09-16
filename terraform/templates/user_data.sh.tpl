@@ -1,78 +1,49 @@
 #!/bin/bash
-
 set -uo pipefail
+
 exec > >(tee /var/log/user-data.log) 2>&1
 
-echo "=== Twenty CRM S3 bootstrap started at $(date) ==="
+echo "===== Twenty CRM setup started ====="
 
-echo "=== Installing Docker ==="
 dnf update -y
 dnf install -y docker openssl
 
-systemctl enable docker
-systemctl start docker
+systemctl enable --now docker
 
-usermod -aG docker ec2-user || true
+usermod -aG docker ec2-user
 
-echo "=== Adding 2GB swap ==="
-# Running 4 separate containers (Twenty server, Twenty worker, Postgres,
-# Redis) simultaneously on a t3.small's 2GB RAM caused severe memory
-# pressure without this -- SSH itself became unresponsive during the
-# migration-heavy startup phase. This exact swap setup resolved the
-# identical symptom in an earlier task on the same instance type.
-fallocate -l 2G /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
-
-echo "=== Installing Docker Compose v2 ==="
-mkdir -p /usr/local/lib/docker/cli-plugins
-
-curl -SL \
-  https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-  -o /usr/local/lib/docker/cli-plugins/docker-compose
-
-chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-
-echo "=== Verifying Docker Compose ==="
-docker compose version
-
-echo "=== Preparing Twenty CRM directory ==="
 mkdir -p /opt/twenty-crm
 cd /opt/twenty-crm
 
-echo "=== Generating Twenty encryption key ==="
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o /usr/local/bin/docker-compose
+
+chmod +x /usr/local/bin/docker-compose
+
 ENCRYPTION_KEY=$(openssl rand -hex 32)
 
 cat > /opt/twenty-crm/.env <<ENV_EOF
 ENCRYPTION_KEY=$${ENCRYPTION_KEY}
-STORAGE_TYPE=S_3
-STORAGE_S3_REGION=${aws_region}
-STORAGE_S3_NAME=${bucket_name}
+SERVER_URL=${server_url}
+PG_DATABASE_URL=postgresql://postgres:postgres@db:5432/twenty
+REDIS_URL=redis://redis:6379
+NODE_PORT=3000
 ENV_EOF
 
-chmod 600 /opt/twenty-crm/.env
-
-echo "=== Creating Docker Compose configuration ==="
-
-cat > /opt/twenty-crm/docker-compose.yml <<COMPOSE_EOF
+cat > /opt/twenty-crm/docker-compose.yml <<'COMPOSE_EOF'
 services:
 
   server:
     image: twentycrm/twenty:latest
-    container_name: twenty-crm-server
+    container_name: twenty-server
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      SERVER_URL: ${server_url}
-      PG_DATABASE_URL: postgresql://postgres:postgres@db:5432/twenty
-      REDIS_URL: redis://redis:6379
-      STORAGE_TYPE: S_3
-      STORAGE_S3_REGION: ${aws_region}
-      STORAGE_S3_NAME: ${bucket_name}
+      SERVER_URL: $${SERVER_URL}
+      PG_DATABASE_URL: $${PG_DATABASE_URL}
+      REDIS_URL: $${REDIS_URL}
       ENCRYPTION_KEY: $${ENCRYPTION_KEY}
     depends_on:
       - db
@@ -80,16 +51,14 @@ services:
 
   worker:
     image: twentycrm/twenty:latest
-    container_name: twenty-crm-worker
+    container_name: twenty-worker
     restart: unless-stopped
     command: ["yarn", "worker:prod"]
     environment:
       NODE_PORT: 3000
-      PG_DATABASE_URL: postgresql://postgres:postgres@db:5432/twenty
-      REDIS_URL: redis://redis:6379
-      STORAGE_TYPE: S_3
-      STORAGE_S3_REGION: ${aws_region}
-      STORAGE_S3_NAME: ${bucket_name}
+      SERVER_URL: $${SERVER_URL}
+      PG_DATABASE_URL: $${PG_DATABASE_URL}
+      REDIS_URL: $${REDIS_URL}
       ENCRYPTION_KEY: $${ENCRYPTION_KEY}
     depends_on:
       - db
@@ -97,36 +66,24 @@ services:
 
   db:
     image: postgres:16
-    container_name: twenty-crm-db
+    container_name: twenty-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: twenty
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: twenty
     volumes:
-      - twenty-db-data:/var/lib/postgresql/data
+      - twenty-postgres-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
-    container_name: twenty-crm-redis
+    container_name: twenty-redis
     restart: unless-stopped
-    volumes:
-      - twenty-redis-data:/data
 
 volumes:
-  twenty-db-data:
-  twenty-redis-data:
+  twenty-postgres-data:
 COMPOSE_EOF
 
-echo "=== Validating Docker Compose configuration ==="
-docker compose -f /opt/twenty-crm/docker-compose.yml config >/dev/null
+/usr/local/bin/docker-compose up -d
 
-echo "=== Starting Twenty CRM ==="
-cd /opt/twenty-crm
-docker compose up -d
-
-echo "=== Docker containers ==="
-docker compose ps
-
-echo "=== Twenty CRM S3 bootstrap completed at $(date) ==="
-echo "=== S3 bucket: ${bucket_name} ==="
+echo "===== Twenty CRM setup completed ====="
