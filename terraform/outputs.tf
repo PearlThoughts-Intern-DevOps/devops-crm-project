@@ -52,3 +52,19 @@ output "iam_role_name" {
   description = "IAM role attached to EC2"
   value       = aws_iam_role.ec2_s3_access.name
 }
+
+
+output "alb_dns_name" {
+  description = "DNS name of the Twenty CRM Application Load Balancer"
+  value       = aws_lb.twenty_crm.dns_name
+}
+
+output "alb_url" {
+  description = "URL to access Twenty CRM through the ALB"
+  value       = "http://${aws_lb.twenty_crm.dns_name}"
+}
+
+output "target_group_arn" {
+  description = "ARN of the Twenty CRM target group"
+  value       = aws_lb_target_group.twenty_crm.arn
+}

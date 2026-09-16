@@ -1,6 +1,6 @@
 aws_region          = "us-east-1"
 project             = "devops-crm-project"
-task                = "Task-14"
+task                = "Task-15"
 environment         = "test"
 instance_type       = "t3.small"
 instance_name       = "twenty-crm-server"
