@@ -29,8 +29,8 @@ output "ec2_public_dns" {
 }
 
 output "twenty_url" {
-  description = "Public HTTP URL for Twenty CRM through the ALB."
-  value       = "http://${module.alb.dns_name}"
+  description = "Public URL for Twenty CRM."
+  value       = "http://${module.ec2.public_ip}:${var.application_port}"
 }
 
 output "security_group_id" {
@@ -40,30 +40,5 @@ output "security_group_id" {
 
 output "key_pair_name" {
   description = "Name of the Terraform-managed EC2 key pair."
-  value       = aws_key_pair.task15.key_name
-}
-
-output "alb_dns_name" {
-  description = "Public DNS name of the Application Load Balancer."
-  value       = module.alb.dns_name
-}
-
-output "alb_arn" {
-  description = "ARN of the Application Load Balancer."
-  value       = module.alb.load_balancer_arn
-}
-
-output "alb_target_group_arn" {
-  description = "ARN of the Twenty CRM target group."
-  value       = module.alb.target_group_arn
-}
-
-output "alb_security_group_id" {
-  description = "ID of the security group attached to the ALB."
-  value       = aws_security_group.alb.id
-}
-
-output "alb_subnet_ids" {
-  description = "Default-VPC subnet IDs used by the ALB."
-  value       = sort(data.aws_subnets.default.ids)
+  value       = aws_key_pair.task16.key_name
 }

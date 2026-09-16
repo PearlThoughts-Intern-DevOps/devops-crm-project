@@ -1,11 +1,11 @@
 variable "aws_region" {
-  description = "AWS region for the infrastructure. Task 15 requires us-east-1."
+  description = "AWS region for the infrastructure. Task 16 requires us-east-1."
   type        = string
   default     = "us-east-1"
 
   validation {
     condition     = var.aws_region == "us-east-1"
-    error_message = "Task 15 requires aws_region to be exactly us-east-1."
+    error_message = "Task 16 requires aws_region to be exactly us-east-1."
   }
 }
 
@@ -40,18 +40,18 @@ variable "environment" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type for Twenty CRM. Task 15 requires t3.small."
+  description = "EC2 instance type for Twenty CRM. Task 16 requires t3.small."
   type        = string
   default     = "t3.small"
 
   validation {
     condition     = var.instance_type == "t3.small"
-    error_message = "Task 15 requires instance_type to be exactly t3.small."
+    error_message = "Task 16 requires instance_type to be exactly t3.small."
   }
 }
 
 variable "ami_id" {
-  description = "Approved x86_64 Linux AMI ID for Task 15 in us-east-1."
+  description = "Approved Amazon Linux 2023 x86_64 AMI ID for Task 16 in us-east-1."
   type        = string
   default     = "ami-081b0a6eac00b4f53"
 
@@ -60,7 +60,7 @@ variable "ami_id" {
       "ami-081b0a6eac00b4f53",
       "ami-0b6d9d3d33ba97d99",
     ], var.ami_id)
-    error_message = "AMI must be one of the two IDs approved for Task 15."
+    error_message = "AMI must be one of the Amazon Linux 2023 IDs approved for Task 16."
   }
 }
 
@@ -81,7 +81,7 @@ variable "root_volume_size" {
 variable "application_port" {
   description = "Host TCP port exposed for Twenty CRM; the container listens on port 3000."
   type        = number
-  default     = 3000
+  default     = 2020
 
   validation {
     condition = (
@@ -117,19 +117,15 @@ variable "ssh_allowed_cidr" {
   }
 }
 
-
-
 variable "key_name" {
   description = "Name of the EC2 key pair created by Terraform in us-east-1."
   type        = string
 
   validation {
     condition     = length(trimspace(var.key_name)) > 0
-    error_message = "Provide an existing EC2 key pair name."
+    error_message = "Provide a non-empty EC2 key pair name."
   }
 }
-
-
 
 variable "twenty_version" {
   description = "Pinned Twenty CRM release tag used by the server and worker containers."

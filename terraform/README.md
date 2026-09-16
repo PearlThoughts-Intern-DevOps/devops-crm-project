@@ -1,366 +1,545 @@
-# Task 15: AWS Application Load Balancer for Twenty CRM
+# Task 16: Twenty CRM Failure & Recovery
 
-This Terraform configuration deploys Twenty CRM on an EC2 instance behind an
-internet-facing AWS Application Load Balancer.
+## Objective
 
-All repository changes were made manually and verified step by step.
+Deploy Twenty CRM on an Amazon Linux 2023 EC2 instance with Terraform and
+Docker, then verify automatic recovery after both a container process failure
+and an EC2 stop/start cycle.
+
+Task 16 was completed on branch:
+
+```text
+chirag-task-16
+```
+
+The deployment intentionally uses only the existing default VPC, an existing
+default subnet, EC2, a security group, an EC2 key pair, and Docker. It does not
+create an ALB, ECR repository, S3 bucket, RDS database, or new VPC.
 
 ## Architecture
 
 ```text
-Internet
-   |
-   | HTTP :80
-   v
-Application Load Balancer
-   |
-   | HTTP :3000
-   v
-ALB Target Group
-   |
-   v
-EC2 Instance
-   |
-   v
-Twenty CRM Docker container :3000
+User
+  |
+  | HTTP :2020
+  v
+EC2 (Amazon Linux 2023)
+  |
+  +-- Docker Service
+       |
+       +-- Twenty CRM Compose Project
+            +-- Twenty Server
+            |    +-- Restart Policy
+            |    `-- Health Check
+            +-- Twenty Worker
+            +-- PostgreSQL
+            `-- Redis
 ```
 
-## AWS Requirements
+AWS configuration:
 
-- Region: `us-east-1`
-- Instance type: `t3.small`
-- AMI: `ami-081b0a6eac00b4f53`
-- Existing default VPC
-- Default-VPC subnets across multiple Availability Zones
-- Internet-facing Application Load Balancer
-- HTTP listener on port `80`
-- HTTP target group on port `3000`
-- Target type: `instance`
-- Health-check path: `/healthz`
+| Setting | Value |
+| --- | --- |
+| Region | `us-east-1` |
+| Network | Existing default VPC and default subnet |
+| Operating system | Amazon Linux 2023 x86_64 |
+| Instance type | `t3.small` |
+| Root disk | Encrypted 20 GiB `gp3` |
+| Instance metadata | IMDSv2 required |
+| Application port | TCP `2020` |
+| SSH port | TCP `22` from the configured administrator `/32` |
+| Twenty version | `v2.38.1` |
 
-## Directory Structure
+## Terraform EC2 Setup
 
-```text
-terraform/
-├── key-pair.tf
-├── locals.tf
-├── main.tf
-├── outputs.tf
-├── provider.tf
-├── security-group.tf
-├── terraform.tfvars.example
-├── user-data.sh.tftpl
-├── docker-compose.yml.tftpl
-├── variables.tf
-├── versions.tf
-├── vpc.tf
-└── modules/
-    ├── alb/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── ec2/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── ecr/
-    └── s3/
-```
+The existing Terraform provider, default-VPC data source, default-subnet data
+source, EC2 module, key-pair resource, security group, variables, and outputs
+were reused. Task 15 ALB resources and references were removed from the active
+root configuration.
 
-The ECR and S3 modules are retained as reusable Task 14 code but are not
-called by the Task 15 root configuration.
+Terraform manages six resources:
 
-## ALB Module
+- One EC2 key pair registration using a local public key.
+- One EC2 security group.
+- One SSH ingress rule.
+- One TCP `2020` application ingress rule.
+- One outbound security-group rule.
+- One EC2 instance.
 
-The reusable ALB module manages:
-
-- `aws_lb`
-- `aws_lb_listener`
-- `aws_lb_target_group`
-- `aws_lb_target_group_attachment`
-
-The ALB dynamically uses the available default subnets returned by
-`data.aws_subnets.default`. Six default subnets across six Availability Zones
-were discovered during deployment.
-
-The target group forwards HTTP traffic to Twenty CRM on EC2 port `3000`.
-Its health check uses:
-
-```text
-Path: /healthz
-Protocol: HTTP
-Port: traffic-port
-Matcher: 200-399
-```
-
-## Security Groups
-
-The security-group flow is:
-
-```text
-Internet :80
-    |
-    v
-ALB security group
-    |
-    | TCP :3000
-    v
-EC2 security group
-```
-
-Rules:
-
-- The ALB accepts public HTTP traffic on port `80`.
-- The ALB can send traffic to the EC2 security group on port `3000`.
-- EC2 port `3000` accepts traffic only from the ALB security group.
-- Port `3000` is not exposed directly to the internet.
-- SSH port `22` is restricted to the administrator’s configured `/32` CIDR.
-- EC2 permits outbound HTTPS for packages and container images.
-
-## Terraform-Managed Key Pair
-
-The RSA private/public key material was generated locally:
-
-```bash
-mkdir -p ~/.ssh
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/chirag-crm-server
-chmod 400 ~/.ssh/chirag-crm-server
-```
-
-Terraform imports only the public key:
+The EC2 module requires IMDSv2:
 
 ```hcl
-resource "aws_key_pair" "task15" {
-  key_name   = var.key_name
-  public_key = file(pathexpand(var.ssh_public_key_path))
+metadata_options {
+  http_endpoint               = "enabled"
+  http_tokens                 = "required"
+  http_put_response_hop_limit = 2
 }
 ```
 
-The private key remains outside the repository and is never stored in
-Terraform state.
+The initial plan was reviewed before applying:
 
-## Twenty CRM Storage
+```text
+Plan: 6 to add, 0 to change, 0 to destroy.
+```
 
-S3 was intentionally removed from the active Task 15 configuration because it
-is not required for the ALB objective.
+The successful apply returned:
 
-Twenty uses its existing `server-local-data` Docker volume for uploaded files.
-This persists across container restarts but is removed when the EC2 instance
-and its root storage are destroyed.
+```text
+Apply complete! Resources: 6 added, 0 changed, 0 destroyed.
+```
 
-The reusable S3 module remains in `modules/s3`, but the root configuration does
-not instantiate it.
+Terraform outputs the instance ID, public IP, private IP, public DNS, security
+group ID, key-pair name, subnet ID, VPC ID, and the Twenty URL.
 
-ECR was also removed from the active configuration because Docker Compose pulls
-the pinned `twentycrm/twenty` image directly from Docker Hub. The reusable ECR
-module remains in `modules/ecr`.
+Local state, variable files, plans, and downloaded providers are excluded by
+`terraform/.gitignore`. Private keys and secrets must never be committed.
 
-## Useful Outputs
+## Docker Installation
 
-Terraform exposes:
-
-- Default VPC ID
-- EC2 subnet ID
-- EC2 instance ID
-- EC2 public and private IP addresses
-- EC2 public DNS name
-- EC2 security-group ID
-- Terraform-managed key-pair name
-- ALB ARN
-- ALB DNS name
-- ALB URL
-- ALB security-group ID
-- ALB subnet IDs
-- Target-group ARN
-
-Display them with:
+EC2 user-data installs Docker and enables it immediately:
 
 ```bash
+dnf install -y docker openssl
+systemctl enable --now docker
+```
+
+`systemctl enable docker` is essential for Task 16. It configures systemd to
+start Docker automatically every time Amazon Linux boots. The `--now` option
+also starts Docker during the current boot.
+
+Docker Compose is installed as a pinned CLI plugin and verified with:
+
+```bash
+docker compose version
+```
+
+Docker service verification:
+
+```bash
+sudo systemctl status docker --no-pager
+sudo systemctl is-enabled docker
+sudo systemctl is-active docker
+```
+
+The verified service state was `enabled` and `active (running)`.
+
+## Twenty CRM Deployment
+
+Docker Compose is used because this Twenty deployment requires four connected
+services:
+
+- `server`: Twenty web application on container port `3000`.
+- `worker`: Twenty background worker.
+- `db`: PostgreSQL 16.
+- `redis`: Redis 7.
+
+The host publishes the server on port `2020`:
+
+```yaml
+ports:
+  - "2020:3000"
+```
+
+PostgreSQL and local application storage use named Docker volumes so data
+survives container restarts and EC2 stop/start operations.
+
+User-data creates a restricted `/opt/twenty/.env` file with generated database
+and encryption secrets. At every EC2 boot, `/usr/local/bin/twenty-start` reads
+the current public IPv4 address through IMDSv2 and refreshes `SERVER_URL` before
+running `docker compose up -d`. This handles the public-IP change that can occur
+after an EC2 stop/start.
+
+The Compose project is started automatically by the enabled
+`twenty.service` systemd unit. The unit does not run `docker compose down`
+during shutdown, so existing containers and volumes are not deleted.
+
+## Docker Restart Policy
+
+Every Compose service uses:
+
+```yaml
+restart: unless-stopped
+```
+
+Restart-policy behavior:
+
+| Policy | Behavior |
+| --- | --- |
+| `no` | Never restart automatically; this is the default. |
+| `always` | Restart after an exit and when Docker starts, except while Docker considers the container manually stopped. |
+| `on-failure` | Restart only after a non-zero exit; it does not provide the same daemon-restart behavior. |
+| `unless-stopped` | Restart after unexpected exits and daemon startup unless an administrator intentionally stopped the container. |
+
+`unless-stopped` was selected because it supports unexpected-failure recovery
+and normal EC2 boot recovery while respecting an intentional administrator
+stop.
+
+Verification command:
+
+```bash
+sudo docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' twenty-server-1
+```
+
+Verified result:
+
+```text
+unless-stopped
+```
+
+## Docker Health Check
+
+The Twenty server health check uses the real `/healthz` endpoint:
+
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+  interval: 10s
+  timeout: 5s
+  retries: 30
+  start_period: 30s
+```
+
+The image was inspected before relying on the command:
+
+```bash
+sudo docker exec twenty-server-1 which curl
+```
+
+Verified result:
+
+```text
+/usr/bin/curl
+```
+
+The endpoint returned HTTP `200` and:
+
+```json
+{"status":"ok","info":{},"error":{},"details":{}}
+```
+
+Container status and health status are different:
+
+- `running` means the container process is running.
+- `starting` means health checks are still in their startup period.
+- `healthy` means the configured health command is succeeding.
+- `unhealthy` means the health command failed for the configured retry count.
+
+## Failure Test
+
+The baseline was recorded before the test:
+
+```bash
+sudo docker inspect -f '{{.HostConfig.RestartPolicy.Name}} {{.RestartCount}} {{.State.Health.Status}}' twenty-server-1
+```
+
+Baseline result:
+
+```text
+unless-stopped 0 healthy
+```
+
+An explicit Docker CLI kill was tested first:
+
+```bash
+sudo docker kill twenty-server-1
+```
+
+On Docker Engine 25.0.16, the daemon recorded this administrator action as a
+manual stop. The Docker journal showed `hasBeenManuallyStopped=true`, so the
+restart policy was intentionally suppressed. This is why `docker stop` is not
+used as proof of an unexpected failure either.
+
+To simulate a genuine unexpected process crash without marking the container
+as manually stopped, the server was started, its host PID was obtained, and
+that process was killed from the EC2 host:
+
+```bash
+sudo docker start twenty-server-1
+sudo docker inspect -f '{{.State.Pid}}' twenty-server-1
+sudo kill -9 <CONTAINER_HOST_PID>
+```
+
+## Automatic Container Recovery
+
+Recovery was checked after the unexpected process exit:
+
+```bash
+sudo docker inspect -f '{{.State.Status}} {{.RestartCount}} {{.State.Health.Status}}' twenty-server-1
+```
+
+Docker first reported:
+
+```text
+running 1 starting
+```
+
+After the startup health period, it reported:
+
+```text
+running 1 healthy
+```
+
+The restart count increasing from `0` to `1` proved that Docker automatically
+restarted the same container. The health endpoint then returned HTTP `200`.
+
+```text
+Container failure
+      |
+      v
+Docker restart policy
+      |
+      v
+Container automatically restarts
+      |
+      v
+Health check verifies application
+      |
+      v
+Twenty CRM available again
+```
+
+## EC2 Stop/Start Test
+
+Before stopping EC2, the following were verified:
+
+- Docker was enabled at boot and active.
+- The server used `unless-stopped`.
+- The server was `running` and `healthy`.
+- The application returned HTTP `200`.
+
+The EC2 instance was stopped and started with AWS CLI:
+
+```bash
+aws ec2 stop-instances --region us-east-1 --instance-ids <INSTANCE_ID>
+aws ec2 wait instance-stopped --region us-east-1 --instance-ids <INSTANCE_ID>
+aws ec2 start-instances --region us-east-1 --instance-ids <INSTANCE_ID>
+aws ec2 wait instance-status-ok --region us-east-1 --instance-ids <INSTANCE_ID>
+```
+
+The operations have different meanings:
+
+- A reboot restarts the guest operating system.
+- A stop/start powers the instance off and starts the same EBS-backed instance
+  again; its automatically assigned public IPv4 address can change.
+- A terminate operation deletes the instance and normally its root volume. It
+  was not used.
+
+The public IPv4 address changed during the verified stop/start test because no
+Elastic IP is attached.
+
+## Recovery After EC2 Start
+
+The new public address was retrieved with:
+
+```bash
+aws ec2 describe-instances \
+  --region us-east-1 \
+  --instance-ids <INSTANCE_ID> \
+  --query 'Reservations[0].Instances[0].PublicIpAddress' \
+  --output text
+```
+
+Post-boot verification returned:
+
+```text
+Docker service: active
+Restart policy: unless-stopped
+Container state: running
+Health state: healthy
+Health endpoint: HTTP 200
+```
+
+Because `SERVER_URL` changed with the public IPv4 address, the enabled
+`twenty.service` ran `docker compose up -d` and automatically recreated the
+server and worker with the new URL. PostgreSQL and Redis resumed using their
+existing containers and persistent volumes.
+
+```text
+EC2 stop/start
+      |
+      v
+Amazon Linux boots
+      |
+      v
+systemd starts Docker
+      |
+      v
+Docker loads existing containers
+      |
+      v
+twenty.service refreshes SERVER_URL
+      |
+      v
+Docker Compose starts/reconciles Twenty CRM
+      |
+      v
+Health check becomes healthy
+```
+
+## Log Verification
+
+Recent application logs were collected without dumping the full log:
+
+```bash
+sudo docker logs --since 5m --tail 50 twenty-server-1
+sudo docker logs --since 15m --tail 30 twenty-server-1
+```
+
+The recovered server logged:
+
+```text
+[NestApplication] Nest application successfully started
+```
+
+Current-boot Docker logs were checked with:
+
+```bash
+sudo journalctl -u docker -b --no-pager -n 30
+```
+
+They showed Docker starting, loading containers, completing initialization,
+and exposing its API socket. Timestamps were retained in the evidence.
+
+## Commands Used
+
+Terraform commands were run from `terraform/`:
+
+```bash
+terraform fmt -recursive
+terraform init
+terraform validate
+terraform plan -out=task16.tfplan
+terraform apply task16.tfplan
 terraform output
 ```
 
-Open Twenty CRM on macOS with:
+Key EC2 and Docker verification commands:
 
 ```bash
-open "$(terraform output -raw twenty_url)"
+sudo systemctl status docker --no-pager
+sudo systemctl is-enabled docker
+sudo systemctl is-active docker
+sudo docker ps
+sudo docker inspect twenty-server-1
+sudo docker logs --since 5m --tail 50 twenty-server-1
+curl -i --max-time 15 http://<EC2_PUBLIC_IP>:2020/healthz
 ```
 
-## Terraform Workflow
-
-The following commands were run from `terraform/`:
+SSH uses the private key matching the public key imported by Terraform:
 
 ```bash
-terraform init
-terraform fmt -recursive
+ssh -i ~/.ssh/chirag-crm-server ec2-user@<EC2_PUBLIC_IP>
+```
+
+## Verification Results
+
+| Test | Result |
+| --- | --- |
+| Terraform validation | Passed |
+| Terraform apply | `6 added, 0 changed, 0 destroyed` |
+| Amazon Linux 2023 AMI | Verified available, x86_64 |
+| Docker enabled at boot | Passed |
+| Docker active after EC2 start | Passed |
+| Compose services running | Passed |
+| Restart policy | `unless-stopped` |
+| Health-check command exists | `/usr/bin/curl` |
+| Health endpoint | HTTP `200` |
+| Unexpected process recovery | Restart count `0` to `1` |
+| Post-restart health | `healthy` |
+| EC2 stop/start recovery | Passed |
+| Browser access after recovery | Passed on TCP `2020` |
+| Application startup logs | Passed |
+
+## Evidence to Capture
+
+Capture these screenshots for the pull request:
+
+- `terraform plan` showing only the six Task 16 resources.
+- `terraform apply` completion and outputs.
+- EC2 console showing `chirag-crm-dev-task16-ec2` in the running state.
+- `systemctl status docker` showing `enabled` and `active (running)`.
+- `docker ps` before the failure test with healthy services.
+- Baseline restart count `0` and health `healthy`.
+- The failure command and the automatic recovery result `running 1 healthy`.
+- The EC2 transition from running to stopped and then pending/running.
+- Docker active after the EC2 start.
+- Healthy containers after the EC2 start.
+- Browser showing Twenty CRM on port `2020`.
+- `/healthz` returning HTTP `200`.
+- Short Docker journal and Twenty application log excerpts.
+
+Do not capture private keys, `.env` contents, Terraform state, passwords,
+encryption keys, or AWS credentials.
+
+## Troubleshooting
+
+### Terraform validated the wrong directory
+
+Running `terraform validate` from the repository root validated an empty root
+configuration. The correct options are:
+
+```bash
+cd terraform
 terraform validate
-terraform plan -out=task15-alb-only.tfplan
-terraform apply "task15-alb-only.tfplan"
 ```
 
-After recovering from the key-pair permission issue, the successful recovery
-plan was:
+or:
 
 ```bash
-terraform plan -out=task15-key-no-tags.tfplan
-terraform apply "task15-key-no-tags.tfplan"
+terraform -chdir=terraform validate
 ```
 
-Final validation returned:
+### Leftover ALB references
 
-```text
-Success! The configuration is valid.
-```
+Removing only the root ALB module left references in user-data, outputs, and
+security-group rules. Those references and the active ALB security-group
+resources were removed before planning.
 
-The completed infrastructure contained 13 Terraform-managed resources.
+### SSH source address changed
 
-## Verification
-
-### EC2 and ALB
-
-Verification confirmed:
-
-- EC2 state: `running`
-- ALB state: `active`
-- ALB scheme: `internet-facing`
-- ALB listener: HTTP port `80`
-- Target port: `3000`
-- Target type: `instance`
-
-### Target Health
-
-Target health was checked with:
+The administrator's public IPv4 address changed, so the `/32` SSH rule no
+longer matched. The current address was found with:
 
 ```bash
-aws elbv2 describe-target-health \
-  --region us-east-1 \
-  --target-group-arn "$(terraform output -raw alb_target_group_arn)" \
-  --query 'TargetHealthDescriptions[].{Instance:Target.Id,Port:Target.Port,State:TargetHealth.State,Reason:TargetHealth.Reason}' \
-  --output table
+curl https://checkip.amazonaws.com
 ```
 
-Final result:
+`ssh_allowed_cidr` was updated and applied without replacing EC2.
 
-```text
-Port: 3000
-State: healthy
-Reason: None
-```
+### SSH used a non-matching private key
 
-Twenty CRM was successfully opened through the ALB DNS name in a browser.
-
-## Problems Encountered and Resolutions
-
-### 1. Duplicate User Data block
-
-`terraform fmt main.tf` initially returned `Missing key/value separator`.
-
-An incomplete duplicate `user_data` block had been pasted outside the EC2
-module. The duplicate block was removed, and `server_url` was added to the
-existing User Data argument map.
-
-### 2. S3 and ECR were unnecessary
-
-The inherited Task 14 root configuration initially planned S3 and ECR
-resources.
-
-S3 environment variables and the root S3 module call were removed. The root
-ECR module call was also removed because the deployment uses Docker Hub. Both
-reusable module directories were retained.
-
-### 3. Missing EC2 key pair
-
-The first EC2 creation failed with:
-
-```text
-InvalidKeyPair.NotFound
-```
-
-The configured `chirag-crm-server` key pair did not exist in `us-east-1`.
-A local RSA key was generated, and an `aws_key_pair` resource was added so
-Terraform could import its public key.
-
-### 4. Key-pair tagging permission denied
-
-The first Terraform-managed key-pair attempt failed because the IAM user did
-not have `ec2:CreateTags` permission for key-pair resources.
-
-Tags were removed from `aws_key_pair.task15`. Terraform then imported the
-public key successfully without requiring additional IAM permissions.
-
-### 5. Missing newline in `variables.tf`
-
-Terraform reported:
-
-```text
-Missing newline after block definition
-```
-
-The new `ssh_public_key_path` variable had been placed directly after another
-closing brace. A newline was inserted between the two blocks.
-
-### 6. Unclosed key-pair resource
-
-After removing the unsupported tags, Terraform reported:
-
-```text
-Unclosed configuration block
-```
-
-The closing brace for `aws_key_pair.task15` was restored, after which
-`terraform validate` succeeded.
-
-### 7. Target initially unhealthy
-
-The target initially reported `Target.FailedHealthChecks` while Docker images,
-PostgreSQL, Redis, and Twenty CRM were starting.
-
-No infrastructure change was required. After startup completed, the target
-reported `healthy`, and Twenty CRM loaded successfully through the ALB.
-
-## Destruction and Cleanup
-
-After verification, the infrastructure was removed with:
+The downloaded `.pem` file did not match the public key imported by Terraform.
+The successful connection used the matching local private key:
 
 ```bash
-terraform destroy
+ssh -i ~/.ssh/chirag-crm-server ec2-user@<EC2_PUBLIC_IP>
 ```
 
-Terraform reported:
+### EC2 console output permission denied
 
-```text
-Plan: 0 to add, 0 to change, 13 to destroy.
-Destroy complete! Resources: 13 destroyed.
-```
+The IAM user did not have `ec2:GetConsoleOutput`. Diagnostics were collected
+over SSH from `/var/log/twenty-user-data.log`, Docker, systemd, and the
+application instead.
 
-Cleanup was confirmed with:
+### Explicit Docker kill was recorded as manual
 
-```bash
-terraform state list
-```
+On the tested Docker Engine version, `docker kill` set the daemon's manual-stop
+state and suppressed immediate restart. The Docker journal confirmed
+`hasBeenManuallyStopped=true`. A host-level SIGKILL of the container's main
+process was used to simulate an actual unexpected process failure, after which
+the restart count increased and the container returned to `healthy`.
 
-The command returned no resources. The EC2 instance state was independently
-verified as:
+### Public IP changed after EC2 stop/start
 
-```text
-terminated
-```
+No Elastic IP is attached, so the public IPv4 address changed. The current
+address was queried through AWS CLI, while the boot service used IMDSv2 to
+refresh Twenty's `SERVER_URL` automatically.
 
-The local private and public SSH key files remain under `~/.ssh`; Terraform
-destroyed only the AWS key-pair resource.
+## Conclusion
 
-## Git Hygiene
-
-The following local artifacts must not be committed:
-
-- `.terraform/`
-- `terraform.tfvars`
-- `*.tfstate`
-- `*.tfstate.*`
-- `*.tfplan`
-- Private SSH keys
-
-Task 15 was completed on branch:
-
-```text
-chirag-task-15
-```
+Task 16 successfully deployed Twenty CRM on a Terraform-managed Amazon Linux
+2023 EC2 instance using the existing default network. Docker was enabled at
+boot, all services used `unless-stopped`, the application had a verified health
+check, and automatic recovery was demonstrated after an unexpected container
+process failure and an EC2 stop/start cycle. The application returned HTTP
+`200` and remained accessible on port `2020` after both recovery tests.
