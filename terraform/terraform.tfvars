@@ -1,0 +1,10 @@
+aws_region           = "us-east-1"
+environment          = "dev"
+project_name         = "twenty-crm-mohit"
+instance_type        = "t3.small"
+ami_id               = "ami-0b6d9d3d33ba97d99"
+key_name             = "mohit-task15-key"
+iam_instance_profile = null
+allowed_cidr_blocks  = ["0.0.0.0/0"]
+app_port             = 8080
+health_check_path    = "/"
