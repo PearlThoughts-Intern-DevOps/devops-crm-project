@@ -1,5 +1,4 @@
 
-# Twenty CRM — Failure & Recovery
 
 ## Task 16: Twenty CRM Failure & Recovery – Implementation Documentation
 
@@ -29,11 +28,7 @@ The recovery process should work without manually running `docker compose up` af
 
 ---
 
-## 2. Architecture
-
-The application runs on an AWS EC2 instance using Docker Compose.
-
-### Components
+### 2. Components
 
 - **AWS EC2:** Ubuntu Server 22.04 LTS.
 - **Instance type:** t3.medium.
@@ -81,7 +76,7 @@ devops-crm-project/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── README.md
-├── fiza-task16.docx
+├── fiza-task16.pdf
 │
 └── screenshots/
     ├── dockerps.png
