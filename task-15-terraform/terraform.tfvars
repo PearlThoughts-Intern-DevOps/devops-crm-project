@@ -1,0 +1,8 @@
+aws_region           = "us-east-1"
+instance_name        = "twenty-crm-task15"
+instance_type        = "t3.small"
+ami_id               = "ami-0b6d9d3d33ba97d99"
+key_name             = "task15-purva-key"
+ssh_allowed_cidr     = "0.0.0.0/0"
+alb_allowed_cidr     = "0.0.0.0/0"
+iam_instance_profile = "EC2S3AccessRole"
