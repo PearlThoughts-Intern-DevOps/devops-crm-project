@@ -41,3 +41,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 *.d.ts
+task12-terraform*.zip
+task12-terraform*.zip
