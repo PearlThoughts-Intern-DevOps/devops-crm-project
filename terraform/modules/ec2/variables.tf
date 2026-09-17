@@ -33,7 +33,3 @@ variable "aws_region" {
   type        = string
 }
 
-variable "server_url" {
-  description = "Public URL used by Twenty CRM"
-  type        = string
-}
