@@ -1,0 +1,65 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+.terraform.lock.hcl
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.ppk
+credentials
+credentials.*
+secrets.*
+secret.*
+*.secret
+
+# SSH
+.ssh/
+id_rsa
+id_rsa.pub
+
+# Ansible
+*.retry
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Node / application generated files
+node_modules/
+dist/
+build/
+.next/
+
+# Python generated files
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Large archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
