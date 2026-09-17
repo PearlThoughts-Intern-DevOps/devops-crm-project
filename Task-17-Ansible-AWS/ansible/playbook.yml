@@ -1,0 +1,299 @@
+---
+- name: Task 17 - Configure EC2 and Deploy Twenty CRM
+  hosts: twenty_crm
+  become: true
+  gather_facts: true
+
+  vars:
+    app_name: "twenty-crm"
+    app_user: "ubuntu"
+    app_dir: "/opt/twenty"
+    app_data_dir: "/opt/twenty/data"
+    app_port: 2020
+    app_image: "twentycrm/twenty-app-dev:v2.35"
+    app_restart_policy: "unless-stopped"
+    app_secret: "twenty_crm_task17_demo_secret_2026"
+
+  tasks:
+
+    # ------------------------------------------------------------
+    # 1. WAIT FOR EC2
+    # ------------------------------------------------------------
+
+    - name: Wait for EC2 SSH connection
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        timeout: 300
+
+    # ------------------------------------------------------------
+    # 2. CONFIGURE 2GB SWAP
+    # ------------------------------------------------------------
+
+    - name: Check if swapfile exists
+      ansible.builtin.stat:
+        path: /swapfile
+      register: swapfile_stat
+
+    - name: Create 2GB swapfile
+      ansible.builtin.command:
+        cmd: fallocate -l 2G /swapfile
+      when: not swapfile_stat.stat.exists
+
+    - name: Set swapfile permissions
+      ansible.builtin.file:
+        path: /swapfile
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Format swapfile
+      ansible.builtin.command:
+        cmd: mkswap /swapfile
+      when: not swapfile_stat.stat.exists
+
+    - name: Enable swapfile
+      ansible.builtin.command:
+        cmd: swapon /swapfile
+      when: not swapfile_stat.stat.exists
+      failed_when: false
+
+    - name: Persist swapfile in fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+    # ------------------------------------------------------------
+    # 3. UPDATE SYSTEM
+    # ------------------------------------------------------------
+
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    # ------------------------------------------------------------
+    # 4. INSTALL DOCKER DEPENDENCIES
+    # ------------------------------------------------------------
+
+    - name: Install required Docker dependencies
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+          - python3
+          - python3-pip
+          - python3-docker
+        state: present
+
+    # ------------------------------------------------------------
+    # 5. INSTALL DOCKER
+    # ------------------------------------------------------------
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        groups:
+          - docker
+        append: true
+
+    # ------------------------------------------------------------
+    # 6. CREATE APPLICATION DIRECTORIES
+    # ------------------------------------------------------------
+
+    - name: Create Twenty CRM application directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_data_dir }}"
+
+    # ------------------------------------------------------------
+    # 7. CONFIGURE ENVIRONMENT
+    # ------------------------------------------------------------
+
+    - name: Configure Twenty CRM environment variables
+      ansible.builtin.template:
+        src: ".env.j2"
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+
+    # ------------------------------------------------------------
+    # 8. PULL DOCKER IMAGE
+    # ------------------------------------------------------------
+
+    - name: Pull Twenty CRM Docker image
+      ansible.builtin.command:
+        cmd: "docker pull {{ app_image }}"
+      register: docker_pull
+      changed_when: >
+        'Downloaded newer image' in docker_pull.stdout
+        or 'Pull complete' in docker_pull.stdout
+
+    # ------------------------------------------------------------
+    # 9. CHECK EXISTING CONTAINER
+    # ------------------------------------------------------------
+
+    - name: Check whether Twenty CRM container exists
+      ansible.builtin.command:
+        cmd: "docker ps -aq -f name=^{{ app_name }}$"
+      register: existing_container
+      changed_when: false
+
+    - name: Remove existing Twenty CRM container
+      ansible.builtin.command:
+        cmd: "docker rm -f {{ app_name }}"
+      when: existing_container.stdout | trim != ""
+      changed_when: true
+
+    # ------------------------------------------------------------
+    # 10. DEPLOY TWENTY CRM
+    # ------------------------------------------------------------
+
+    - name: Deploy Twenty CRM container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name {{ app_name }}
+          --restart {{ app_restart_policy }}
+          --health-cmd "curl -f http://127.0.0.1:{{ app_port }}/healthz || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-start-period 180s
+          --health-retries 5
+          --env-file {{ app_dir }}/.env
+          -p {{ app_port }}:{{ app_port }}
+          -v {{ app_data_dir }}:/app/.local-storage
+          -v twenty-postgres-data:/data/postgres
+          {{ app_image }}
+      register: container_start
+      changed_when: true
+
+    # ------------------------------------------------------------
+    # 11. WAIT FOR DOCKER HEALTH
+    # ------------------------------------------------------------
+
+    - name: Wait for Twenty CRM Docker health check
+      ansible.builtin.shell:
+        cmd: |
+          for i in $(seq 1 36); do
+            status=$(docker inspect --format '{% raw %}{{.State.Health.Status}}{% endraw %}' {{ app_name }} 2>/dev/null || true)
+
+            echo "Health status: $status"
+
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Twenty CRM did not become healthy"
+
+          echo "----- Docker container status -----"
+          docker ps -a
+
+          echo "----- Twenty CRM logs -----"
+          docker logs --tail 100 {{ app_name }}
+
+          exit 1
+      register: health_check
+      changed_when: false
+
+    # ------------------------------------------------------------
+    # 12. VERIFY HEALTH ENDPOINT
+    # ------------------------------------------------------------
+
+    - name: Verify Twenty CRM health endpoint
+      ansible.builtin.shell:
+        cmd: "curl -fsS http://127.0.0.1:{{ app_port }}/healthz"
+      register: health_endpoint
+      changed_when: false
+
+    - name: Verify Twenty CRM root endpoint
+      ansible.builtin.shell:
+        cmd: "curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:{{ app_port }}/"
+      register: root_endpoint
+      changed_when: false
+
+    # ------------------------------------------------------------
+    # 13. DISPLAY DOCKER STATUS
+    # ------------------------------------------------------------
+
+    - name: Get Docker container status
+      ansible.builtin.command:
+        cmd: "docker ps -a --filter name={{ app_name }}"
+      register: container_status
+      changed_when: false
+
+    - name: Get Docker health status
+      ansible.builtin.command:
+        cmd: "docker inspect --format '{% raw %}{{.State.Health.Status}}{% endraw %}' {{ app_name }}"
+      register: container_health
+      changed_when: false
+
+    - name: Display Docker container status
+      ansible.builtin.debug:
+        msg:
+          - "==============================================================="
+          - "                 DOCKER CONTAINER STATUS"
+          - "==============================================================="
+          - "{{ container_status.stdout }}"
+          - "Container Health: {{ container_health.stdout }}"
+          - "==============================================================="
+
+    # ------------------------------------------------------------
+    # 14. DISPLAY APPLICATION LOGS
+    # ------------------------------------------------------------
+
+    - name: Get Twenty CRM application logs
+      ansible.builtin.command:
+        cmd: "docker logs --tail 35 {{ app_name }}"
+      register: app_logs
+      changed_when: false
+
+    - name: Display Twenty CRM application logs
+      ansible.builtin.debug:
+        var: app_logs.stdout_lines
+
+    # ------------------------------------------------------------
+    # 15. FINAL DEPLOYMENT SUMMARY
+    # ------------------------------------------------------------
+
+    - name: Display deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "==============================================================="
+          - "          TASK 17 TWENTY CRM DEPLOYMENT COMPLETE"
+          - "==============================================================="
+          - "EC2 Host:          {{ ansible_host }}"
+          - "Application URL:   http://{{ ansible_host }}:{{ app_port }}"
+          - "Health URL:        http://{{ ansible_host }}:{{ app_port }}/healthz"
+          - "Docker Image:      {{ app_image }}"
+          - "Restart Policy:    {{ app_restart_policy }}"
+          - "Container Health:  {{ container_health.stdout }}"
+          - "Health Response:   {{ health_endpoint.stdout }}"
+          - "Root HTTP Code:    {{ root_endpoint.stdout }}"
+          - "==============================================================="

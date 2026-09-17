@@ -1,0 +1,5 @@
+---
+twenty_image: "twentycrm/twenty-app-dev:v2.35"
+app_dir: "/opt/twenty"
+container_name: "twenty-crm"
+app_port: "2020"
