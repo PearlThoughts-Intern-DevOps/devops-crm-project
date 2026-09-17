@@ -1,0 +1,138 @@
+---
+- name: Deploy Twenty CRM using Ansible
+  hosts: twenty
+  become: true
+
+  vars:
+    app_dir: /opt/twenty
+    twenty_image: twentycrm/twenty:latest
+
+  tasks:
+
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Upgrade installed packages
+      ansible.builtin.apt:
+        upgrade: dist
+
+    - name: Install required Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+          - curl
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create Twenty CRM application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create Twenty CRM environment file
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/.env"
+        mode: "0644"
+        content: |
+          PG_DATABASE_URL=postgres://postgres:postgres@postgres:5432/default
+            REDIS_URL=redis://redis:6379
+            SERVER_URL=http://98.80.184.179:2020
+            ENCRYPTION_KEY=8cc4722d808d11cf804c3b0b1bcbc74828d2d2e8fb0486b9543f1d9ff998dad5
+
+    - name: Create Docker Compose file
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: "0644"
+        content: |
+          services:
+
+            postgres:
+              image: postgres:16
+              restart: unless-stopped
+              environment:
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: postgres
+                POSTGRES_DB: default
+              volumes:
+                - postgres_data:/var/lib/postgresql/data
+
+            redis:
+              image: redis:7
+              restart: unless-stopped
+
+            twenty-server:
+              image: {{ twenty_image }}
+              restart: unless-stopped
+              depends_on:
+                - postgres
+                - redis
+              env_file:
+                - .env
+              ports:
+                - "2020:3000"
+              healthcheck:
+                test:
+                  - CMD-SHELL
+                  - node -e "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+                interval: 30s
+                timeout: 10s
+                retries: 5
+                start_period: 60s
+
+          volumes:
+            postgres_data:
+
+    - name: Deploy Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      register: compose_result
+      changed_when: true
+
+    - name: Wait for Twenty CRM port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 2020
+        delay: 10
+        timeout: 180
+
+    - name: Verify Twenty CRM application
+      ansible.builtin.uri:
+        url: http://127.0.0.1:2020
+        method: GET
+        status_code:
+          - 200
+          - 301
+          - 302
+        return_content: false
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      register: container_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: container_status.stdout_lines
+
+    - name: Display Twenty CRM application logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail=50 twenty-server
+        chdir: "{{ app_dir }}"
+      register: application_logs
+      changed_when: false
+
+    - name: Show application logs
+      ansible.builtin.debug:
+        var: application_logs.stdout_lines

@@ -1,0 +1,4 @@
+twenty_secrets.yml
+*.pem
+.env
+*.retry
