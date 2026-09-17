@@ -1,0 +1,17 @@
+services:
+  twenty-crm:
+    image: {{ app_image }}
+    container_name: {{ app_name }}
+    restart: {{ app_restart_policy }}
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    env_file:
+      - .env
+    volumes:
+      - {{ app_data_dir }}:/app/.local-storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_port }}/healthz"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
