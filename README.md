@@ -31,7 +31,7 @@ The recovery process should work without manually running `docker compose up` af
 ### 2. Components
 
 - **AWS EC2:** Ubuntu Server 22.04 LTS.
-- **Instance type:** t3.medium.
+- **Instance type:** t3.small.
 - **Docker Engine:** Container runtime.
 - **Docker Compose:** Application orchestration.
 - **Twenty CRM:** Main CRM application.
@@ -50,10 +50,10 @@ The EC2 instance was provisioned through the AWS Console.
 |---|---|
 | Instance Name | myserver-fiza |
 | AMI | Ubuntu Server 22.04 LTS |
-| Instance Type | t3.medium |
+| Instance Type | t3.small|
 | vCPU | 2 |
 | RAM | 4 GB |
-| Storage | 30 GB gp3 |
+| Storage | 20 GB gp3 |
 | Application Port | 2020 |
 | SSH Port | 22 |
 
