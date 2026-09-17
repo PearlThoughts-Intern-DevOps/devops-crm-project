@@ -1,0 +1,28 @@
+---
+# Where the application lives on the target host
+app_dir: /opt/twenty-crm
+
+# Twenty CRM configuration
+app_port: 3000
+twenty_image: twentycrm/twenty:latest
+postgres_image: postgres:16
+redis_image: redis:7
+
+postgres_db: twenty
+postgres_user: postgres
+postgres_password: postgres
+
+# Docker restart policy applied to every container
+restart_policy: unless-stopped
+
+# Health check tuning for the server container
+health_check_interval: 30s
+health_check_timeout: 10s
+health_check_retries: 3
+health_check_start_period: 90s
+
+# Swap size. A t3.small has only 2GB RAM, and this stack runs four
+# containers (server, worker, postgres, redis) whose startup is
+# memory-heavy -- without swap the instance becomes unresponsive
+# during migrations.
+swap_size_mb: 2048

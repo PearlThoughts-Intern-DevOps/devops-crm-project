@@ -1,0 +1,236 @@
+---
+# playbook.yml
+#
+# Configures the EC2 instance created by Terraform and deploys Twenty
+# CRM on it. Terraform provisions bare infrastructure only; every step
+# below runs over SSH against that instance.
+#
+# Run with:  ansible-playbook -i inventory/hosts.ini playbook.yml
+# (inventory/hosts.ini is generated automatically by `terraform apply`.)
+#
+# Variables live in group_vars/all.yml, which Ansible auto-loads.
+
+- name: Deploy Twenty CRM to EC2
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+    # ------------------------------------------------------------------
+    # Update server packages
+    # ------------------------------------------------------------------
+    # ansible-lint's package-latest rule discourages `state: latest`
+    # because it makes runs non-deterministic. That is the correct
+    # default, but this task explicitly requires updating the server's
+    # packages, so the rule is skipped deliberately here rather than
+    # dropping the required behaviour.
+    - name: Update all system packages # noqa: package-latest
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      register: pkg_update
+      changed_when: pkg_update.changed
+
+    # ------------------------------------------------------------------
+    # Install Docker and required dependencies
+    # ------------------------------------------------------------------
+    - name: Install Docker and supporting packages
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - python3-pip
+          - openssl
+        state: present
+
+    - name: Ensure the Docker CLI plugin directory exists
+      ansible.builtin.file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: "0755"
+
+    # Amazon Linux 2023's docker package does not bundle the Compose
+    # plugin, so it is installed explicitly as a CLI plugin.
+    - name: Install the Docker Compose v2 plugin
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+
+    - name: Ensure Docker is running and enabled at boot
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ec2-user to the docker group
+      ansible.builtin.user:
+        name: ec2-user
+        groups: docker
+        append: true
+
+    # ------------------------------------------------------------------
+    # Swap -- a t3.small has 2GB RAM and this stack runs four
+    # containers whose startup is memory-heavy.
+    # ------------------------------------------------------------------
+    - name: Check whether the swap file already exists
+      ansible.builtin.stat:
+        path: /swapfile
+      register: swapfile_stat
+
+    - name: Create the swap file
+      ansible.builtin.command:
+        cmd: "fallocate -l {{ swap_size_mb }}M /swapfile"
+      when: not swapfile_stat.stat.exists
+      changed_when: true
+
+    - name: Secure the swap file permissions
+      ansible.builtin.file:
+        path: /swapfile
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Format the swap file
+      ansible.builtin.command:
+        cmd: mkswap /swapfile
+      when: not swapfile_stat.stat.exists
+      changed_when: true
+
+    - name: Enable swap and persist it across reboots
+      ansible.posix.mount:
+        name: none
+        src: /swapfile
+        fstype: swap
+        opts: sw
+        state: present
+
+    - name: Activate swap now
+      ansible.builtin.command:
+        cmd: swapon /swapfile
+      when: not swapfile_stat.stat.exists
+      changed_when: true
+      failed_when: false
+
+    # ------------------------------------------------------------------
+    # Application directories
+    # ------------------------------------------------------------------
+    - name: Create the application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: "0755"
+
+    # ------------------------------------------------------------------
+    # Twenty CRM environment variables
+    # ------------------------------------------------------------------
+    # Generated once and then reused on subsequent runs, so re-running
+    # the playbook doesn't rotate the key and invalidate existing data.
+    - name: Check whether an encryption key has already been generated
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/.encryption_key"
+      register: key_stat
+
+    - name: Generate the Twenty encryption key
+      ansible.builtin.shell:
+        cmd: "openssl rand -hex 32 > {{ app_dir }}/.encryption_key"
+        creates: "{{ app_dir }}/.encryption_key"
+
+    - name: Read the encryption key
+      ansible.builtin.slurp:
+        src: "{{ app_dir }}/.encryption_key"
+      register: encryption_key_raw
+
+    - name: Set the encryption key fact
+      ansible.builtin.set_fact:
+        twenty_encryption_key: "{{ encryption_key_raw.content | b64decode | trim }}"
+
+    - name: Restrict permissions on the encryption key file
+      ansible.builtin.file:
+        path: "{{ app_dir }}/.encryption_key"
+        owner: ec2-user
+        group: ec2-user
+        mode: "0600"
+
+    - name: Write the environment file
+      ansible.builtin.template:
+        src: templates/twenty.env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: ec2-user
+        group: ec2-user
+        mode: "0600"
+      notify: Restart Twenty CRM
+
+    # ------------------------------------------------------------------
+    # Deploy with Docker Compose (restart policy + health check are
+    # both declared in the template)
+    # ------------------------------------------------------------------
+    - name: Write the Docker Compose configuration
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: ec2-user
+        group: ec2-user
+        mode: "0644"
+      notify: Restart Twenty CRM
+
+    - name: Validate the Docker Compose configuration
+      ansible.builtin.command:
+        cmd: docker compose config --quiet
+        chdir: "{{ app_dir }}"
+      changed_when: false
+
+    - name: Start Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      register: compose_up
+      changed_when: "'Started' in compose_up.stderr or 'Created' in compose_up.stderr"
+
+    # ------------------------------------------------------------------
+    # Verification
+    # ------------------------------------------------------------------
+    - name: Wait for Twenty CRM to respond
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}"
+        status_code: [200, 301, 302]
+        timeout: 10
+      register: twenty_health
+      retries: 30
+      delay: 20
+      until: twenty_health.status is defined and twenty_health.status in [200, 301, 302]
+
+    - name: Get the container status
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      register: container_status
+      changed_when: false
+
+    - name: Display the container status
+      ansible.builtin.debug:
+        var: container_status.stdout_lines
+
+    - name: Get the application logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail 40 server
+        chdir: "{{ app_dir }}"
+      register: app_logs
+      changed_when: false
+
+    - name: Display the application logs
+      ansible.builtin.debug:
+        var: app_logs.stdout_lines
+
+    - name: Report the verification result
+      ansible.builtin.debug:
+        msg: >-
+          Twenty CRM responded with HTTP {{ twenty_health.status }}.
+          Reachable at http://{{ ansible_host }}:{{ app_port }}
+
+  handlers:
+    - name: Restart Twenty CRM
+      ansible.builtin.command:
+        cmd: docker compose up -d --force-recreate
+        chdir: "{{ app_dir }}"
+      changed_when: true
