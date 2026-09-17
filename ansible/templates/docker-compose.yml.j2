@@ -1,0 +1,27 @@
+services:
+  twenty:
+    image: {{ twenty_image }}
+    container_name: {{ twenty_container_name }}
+    ports:
+      - "{{ twenty_port }}:2020"
+    volumes:
+      - twenty-app-data:/data/postgres
+      - twenty-app-storage:/app/packages/twenty-server/.local-storage
+    restart: unless-stopped
+
+  app-deployer:
+    build:
+      context: {{ app_dir }}
+      dockerfile: Dockerfile
+    container_name: {{ deployer_container_name }}
+    depends_on:
+      - twenty
+    environment:
+      TWENTY_SERVER_URL: http://twenty:2020
+      TWENTY_API_KEY: ${TWENTY_API_KEY}
+    restart: "no"
+
+volumes:
+  twenty-app-data:
+  twenty-app-storage:
+
