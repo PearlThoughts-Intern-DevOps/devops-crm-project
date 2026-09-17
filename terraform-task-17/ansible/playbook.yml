@@ -1,0 +1,122 @@
+---
+- name: Configure Twenty CRM server
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create Twenty CRM directory
+      file:
+        path: /opt/twenty-crm
+        state: directory
+        mode: '0755'
+
+    - name: Create Twenty CRM Docker Compose file
+      copy:
+        dest: /opt/twenty-crm/docker-compose.yml
+        mode: '0644'
+        content: |
+          services:
+
+            postgres:
+              image: postgres:16
+              container_name: twenty-postgres
+              environment:
+                POSTGRES_DB: twenty
+                POSTGRES_USER: twenty
+                POSTGRES_PASSWORD: twenty_password
+              volumes:
+                - postgres-data:/var/lib/postgresql/data
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U twenty -d twenty"]
+                interval: 5s
+                timeout: 5s
+                retries: 10
+
+            redis:
+              image: redis:7
+              container_name: twenty-redis
+              restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "redis-cli", "ping"]
+                interval: 5s
+                timeout: 5s
+                retries: 10
+
+            twenty:
+              image: twentycrm/twenty:latest
+              container_name: twenty-crm-task-17
+              depends_on:
+                postgres:
+                  condition: service_healthy
+                redis:
+                  condition: service_healthy
+              ports:
+                - "3000:3000"
+              environment:
+                NODE_PORT: 3000
+                PG_DATABASE_URL: postgresql://twenty:twenty_password@postgres:5432/twenty
+                REDIS_URL: redis://redis:6379
+                SERVER_URL: http://18.215.185.249:3000
+                ENCRYPTION_KEY: 71cc6571444673fb27307aba9c52fced0a912a9578138fd7355ecc3b6f437cba
+              restart: unless-stopped
+
+          volumes:
+            postgres-data:
+
+    - name: Stop existing Twenty CRM stack
+      command:
+        cmd: docker compose down
+        chdir: /opt/twenty-crm
+      ignore_errors: yes
+
+    - name: Start Twenty CRM stack
+      command:
+        cmd: docker compose up -d
+        chdir: /opt/twenty-crm
+
+    - name: Wait for Twenty CRM
+      wait_for:
+        host: 127.0.0.1
+        port: 3000
+        delay: 20
+        timeout: 180
+        state: started
+
+    - name: Check Twenty CRM HTTP response
+      uri:
+        url: http://127.0.0.1:3000
+        method: HEAD
+        status_code: 200
+      register: twenty_health
+      retries: 12
+      delay: 10
+      until: twenty_health.status == 200
+
+    - name: Check running containers
+      command:
+        cmd: docker ps
+      register: docker_ps
+      changed_when: false
+
+    - name: Display running containers
+      debug:
+        var: docker_ps.stdout_lines
