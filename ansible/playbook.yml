@@ -1,0 +1,115 @@
+---
+- name: Deploy Twenty CRM on AWS EC2
+  hosts: twenty_crm
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+
+  tasks:
+
+    - name: Update apt package cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy Twenty CRM Docker Compose file
+      copy:
+        src: ../task5-compose.yml
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Pull Twenty CRM Docker images
+      command:
+        cmd: docker compose -f docker-compose.yml pull
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+
+    - name: Start Twenty CRM application
+      command:
+        cmd: docker compose -f docker-compose.yml up -d
+        chdir: "{{ app_dir }}"
+      become_user: ubuntu
+
+    - name: Wait for Twenty CRM containers to initialize
+      pause:
+        seconds: 60
+
+    - name: Display Docker container status
+      command:
+        cmd: docker ps --all
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      debug:
+        var: docker_status.stdout_lines
+
+    - name: Inspect Twenty CRM container
+      command:
+        cmd: docker inspect twenty_crm_app
+      register: app_inspect
+      changed_when: false
+      failed_when: false
+
+    - name: Display Twenty CRM health status
+      debug:
+        msg: >-
+          Twenty CRM health status:
+          {{ (app_inspect.stdout | from_json)[0].State.Health.Status
+          | default('unknown') }}
+
+    - name: Verify Twenty CRM application is responding
+      command:
+        cmd: curl -I http://localhost:3000
+      register: app_response
+      changed_when: false
+      failed_when: false
+
+    - name: Display application response
+      debug:
+        var: app_response.stdout_lines
+
+    - name: Display Twenty CRM application logs
+      command:
+        cmd: docker logs --tail 50 twenty_crm_app
+      register: app_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Show Twenty CRM application logs
+      debug:
+        var: app_logs.stdout_lines
+
