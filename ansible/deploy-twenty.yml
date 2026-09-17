@@ -1,0 +1,101 @@
+---
+- name: Prepare EC2 server for Twenty CRM
+  hosts: twenty
+  become: true
+
+  tasks:
+
+    - name: Update all server packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+
+    - name: Install required packages
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - wget
+          - git
+        state: present
+
+    - name: Start Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+
+    - name: Enable Docker on boot
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+
+    - name: Add ec2-user to docker group
+      ansible.builtin.user:
+        name: ec2-user
+        groups: docker
+        append: true
+
+    - name: Check Docker version
+      ansible.builtin.command:
+        cmd: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Display Docker version
+      ansible.builtin.debug:
+        msg: "{{ docker_version.stdout }}"
+    
+    - name: Create Docker CLI plugins directory
+      ansible.builtin.file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: "0755"
+
+    - name: Install Docker Compose
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+
+    - name: Check Docker Compose version
+      ansible.builtin.command:
+        cmd: docker compose version
+      register: compose_version
+      changed_when: false
+
+    - name: Display Docker Compose version
+      ansible.builtin.debug:
+        msg: "{{ compose_version.stdout }}"
+
+    - name: Create Twenty CRM directory
+      ansible.builtin.file:
+        path: /opt/twenty
+        state: directory
+        mode: "0755"
+
+    - name: Create Twenty CRM data directory
+      ansible.builtin.file:
+        path: /opt/twenty/data
+        state: directory
+        mode: "0755"
+
+    - name: Verify Twenty CRM directory
+      ansible.builtin.command:
+        cmd: ls -ld /opt/twenty /opt/twenty/data
+      register: twenty_directories
+      changed_when: false
+
+    - name: Display Twenty CRM directories
+      ansible.builtin.debug:
+        msg: "{{ twenty_directories.stdout_lines }}"
+
+    - name: Copy Docker Compose file
+      ansible.builtin.copy:
+        src: docker-compose.yml
+        dest: /opt/twenty/docker-compose.yml
+        mode: "0644"
+
+    - name: Copy environment file
+      ansible.builtin.copy:
+        src: .env
+        dest: /opt/twenty/.env
+        mode: "0600"

@@ -1,0 +1,83 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: twenty
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twenty -d twenty"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - twenty-network
+
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - twenty-network
+
+
+  server:
+    image: twentycrm/twenty:v2.35.0
+    restart: unless-stopped
+
+    ports:
+      - "2020:3000"
+
+    environment:
+      NODE_ENV: production
+      SERVER_URL: ${SERVER_URL}
+
+      PG_DATABASE_URL: postgresql://twenty:${POSTGRES_PASSWORD}@postgres:5432/twenty
+
+      REDIS_URL: redis://redis:6379
+
+      APP_SECRET: ${APP_SECRET}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    networks:
+      - twenty-network
+
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  twenty-network:
+    driver: bridge
