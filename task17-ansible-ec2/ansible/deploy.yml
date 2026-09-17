@@ -1,0 +1,61 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create Twenty network
+      community.docker.docker_network:
+        name: twenty-network
+
+    - name: Start PostgreSQL
+      community.docker.docker_container:
+        name: twenty-postgres
+        image: postgres:16
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: twenty
+
+    - name: Start Redis
+      community.docker.docker_container:
+        name: twenty-redis
+        image: redis:7
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+
+    - name: Start Twenty CRM
+      community.docker.docker_container:
+        name: twenty-crm
+        image: twentycrm/twenty
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+        published_ports:
+          - "3000:3000"
+        env:
+          PG_DATABASE_URL: "postgres://postgres:postgres@twenty-postgres:5432/twenty"
+          REDIS_URL: "redis://twenty-redis:6379"
+          ENCRYPTION_KEY: "b15a85d87ae30e22e0603f9ef2c9b0c5c3e6895be69cc3cbb48c3c102f31f2af"
