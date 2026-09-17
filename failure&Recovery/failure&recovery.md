@@ -1,4 +1,22 @@
 # Commands, Process and Testing
+docker run -d \
+  --name twenty-app-dev \
+  --restart unless-stopped \
+  -p 2020:2020 \
+  -v twenty-app-dev-data:/data/postgres \
+  -v twenty-app-dev-storage:/app/packages/twenty-server/.local-storage \
+  -e NODE_PORT=2020 \
+  -e SERVER_URL=http://localhost:2020 \
+  -e PG_DATABASE_URL='postgres://twenty:twenty@localhost:5432/default' \
+  -e REDIS_URL='redis://localhost:6379' \
+  -e STORAGE_TYPE=local \
+  -e APP_SECRET='twenty-app-dev-secret-not-for-production' \
+  --health-cmd='node -e "fetch(\"http://localhost:2020/healthz\").then(r=>r.ok?r.json():Promise.reject()).then(d=>d.status===\"ok\"?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"' \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  --health-start-period=120s \
+  twentycrm/twenty-app-dev:latest
 
 ## 1. Verify Twenty CRM
 
