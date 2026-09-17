@@ -22,6 +22,14 @@ resource "aws_security_group" "twenty_crm" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Twenty CRM"
+    from_port   = var.host_port
+    to_port     = var.host_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -49,17 +57,10 @@ resource "aws_instance" "twenty_crm" {
     volume_type = "gp3"
   }
 
-  user_data = templatefile("${path.module}/user_data.sh", {
-    host_port             = var.host_port
-    twenty_container_port = var.twenty_container_port
-  })
-
-  user_data_replace_on_change = true
-
   tags = {
     Name    = "${var.project_name}-EC2"
     Project = "Twenty CRM"
-    Task    = "Task-15"
+    Task    = "Task-17"
     Managed = "Terraform"
   }
 }

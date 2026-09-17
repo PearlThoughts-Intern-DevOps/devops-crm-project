@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -18,13 +13,8 @@ variable "key_name" {
   type        = string
 }
 
-variable "twenty_container_port" {
-  description = "Twenty CRM container port"
-  type        = number
-}
-
 variable "host_port" {
-  description = "EC2 host port"
+  description = "Twenty CRM host port"
   type        = number
 }
 

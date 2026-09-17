@@ -18,11 +18,6 @@ variable "key_name" {
   type        = string
 }
 
-variable "twenty_container_port" {
-  description = "Twenty CRM container port"
-  type        = number
-}
-
 variable "host_port" {
   description = "EC2 host port"
   type        = number
@@ -30,15 +25,5 @@ variable "host_port" {
 
 variable "project_name" {
   description = "Project name"
-  type        = string
-}
-
-variable "alb_name" {
-  description = "Application Load Balancer name"
-  type        = string
-}
-
-variable "target_group_name" {
-  description = "Target group name"
   type        = string
 }

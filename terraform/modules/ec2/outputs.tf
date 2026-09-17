@@ -13,11 +13,6 @@ output "vpc_id" {
   value       = data.aws_vpc.default.id
 }
 
-output "security_group_id" {
-  description = "EC2 security group ID"
-  value       = aws_security_group.twenty_crm.id
-}
-
 output "application_url" {
   description = "Twenty CRM application URL"
   value       = "http://${aws_instance.twenty_crm.public_ip}:${var.host_port}"

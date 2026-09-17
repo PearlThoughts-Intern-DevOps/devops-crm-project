@@ -1,19 +1,23 @@
 ---
-- name: Automate Twenty CRM setup
+- name: Deploy Twenty CRM with Ansible
   hosts: twenty_crm
   become: true
 
   tasks:
 
-    - name: Install required packages
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install Docker and required dependencies
       ansible.builtin.apt:
         name:
-          - git
+          - ca-certificates
           - curl
           - docker.io
           - docker-compose-v2
         state: present
-        update_cache: true
 
     - name: Start and enable Docker
       ansible.builtin.service:
@@ -21,96 +25,31 @@
         state: started
         enabled: true
 
-    - name: Create application group
-      ansible.builtin.group:
-        name: "{{ app_group }}"
-        state: present
-
-    - name: Create dedicated application user
-      ansible.builtin.user:
-        name: "{{ app_user }}"
-        group: "{{ app_group }}"
-        groups: docker
-        append: true
-        shell: /bin/bash
-        create_home: true
-        state: present
-
     - name: Create application directory
       ansible.builtin.file:
         path: "{{ app_dir }}"
         state: directory
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
         mode: "0755"
 
-    - name: Mark repository as safe for Git
-      ansible.builtin.command:
-        cmd: git config --global --add safe.directory "{{ app_dir }}/source"
-      changed_when: false
-
-    - name: Clone Twenty CRM repository
-      ansible.builtin.git:
-        repo: "{{ repo_url }}"
-        dest: "{{ app_dir }}/source"
-        version: "{{ repo_branch }}"
-        force: true
-
-    - name: Set application directory ownership
-      ansible.builtin.file:
-        path: "{{ app_dir }}"
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        recurse: true
-
-    - name: Copy existing Dockerfile
-      ansible.builtin.copy:
-        src: "{{ app_dir }}/source/Dockerfile"
-        dest: "{{ app_dir }}/Dockerfile"
-        remote_src: true
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
-        mode: "0644"
-      notify: Restart Twenty CRM
-
-    - name: Remove missing Yarn directory from Dockerfile
-      ansible.builtin.replace:
-        path: "{{ app_dir }}/source/Dockerfile"
-        regexp: '^COPY \.yarn \./\.yarn$'
-        replace: ''
-      notify: Restart Twenty CRM
-
-    - name: Remove missing Yarn directory from final image
-      ansible.builtin.replace:
-        path: "{{ app_dir }}/source/Dockerfile"
-        regexp: '^COPY --from=builder /app/\.yarn \./\.yarn$'
-        replace: ''
-      notify: Restart Twenty CRM
-
-    - name: Set Docker build context
-      ansible.builtin.replace:
-        path: "{{ app_dir }}/docker-compose.yml"
-        regexp: 'context: ./source/source'
-        replace: 'context: ./source'
-      notify: Restart Twenty CRM
-
-    - name: Set Twenty CRM server URL
-      ansible.builtin.replace:
-        path: "{{ app_dir }}/docker-compose.yml"
-        regexp: 'SERVER_URL: http://localhost:2020'
-        replace: 'SERVER_URL: {{ server_url }}'
-      notify: Restart Twenty CRM  
-
-    - name: Create environment configuration from Jinja2 template
+    - name: Create Twenty CRM environment file
       ansible.builtin.template:
         src: twenty.env.j2
         dest: "{{ app_dir }}/.env"
-        owner: "{{ app_user }}"
-        group: "{{ app_group }}"
         mode: "0600"
-      notify: Restart Twenty CRM
 
-    - name: Start Twenty CRM with Docker Compose
+    - name: Create Docker Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull Twenty CRM images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ app_dir }}"
+      changed_when: false
+
+    - name: Start Twenty CRM stack
       ansible.builtin.command:
         cmd: docker compose up -d
         chdir: "{{ app_dir }}"
@@ -124,20 +63,26 @@
       ansible.builtin.wait_for:
         host: 127.0.0.1
         port: "{{ app_port }}"
-        delay: 5
-        timeout: 120
+        delay: 10
+        timeout: 180
 
-    - name: Verify Twenty CRM is running
+    - name: Display Docker container status
       ansible.builtin.command:
-        cmd: docker compose ps
-        chdir: "{{ app_dir }}"
-      register: twenty_status
+        cmd: docker ps
+      register: docker_status
       changed_when: false
 
-    - name: Display Twenty CRM status
+    - name: Show Docker container status
       ansible.builtin.debug:
-        var: twenty_status.stdout
+        var: docker_status.stdout
 
-  handlers:
+    - name: Display Twenty CRM logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 100 twenty-crm
+      register: twenty_logs
+      changed_when: false
+      failed_when: false
 
-    - import_tasks: handlers/main.yml
+    - name: Show Twenty CRM logs
+      ansible.builtin.debug:
+        var: twenty_logs.stdout
