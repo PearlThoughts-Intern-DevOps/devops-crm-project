@@ -41,3 +41,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 *.d.ts
+task-17-ansible/terraform/*.tfstate*
+task-17-ansible/terraform/.terraform/
