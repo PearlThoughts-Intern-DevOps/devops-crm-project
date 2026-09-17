@@ -1,0 +1,8 @@
+aws_region          = "us-east-1"
+instance_type       = "t3.small"
+ami_id              = "ami-0b6d9d3d33ba97d99"
+key_name            = "ekta-task-10"
+bucket_name         = "twenty-crm-ekta-task-13"
+project_name        = "twenty-crm"
+subnet_id           = "subnet-01c70bb1575c44cb0"
+ecr_repository_name = "twenty-crm"
