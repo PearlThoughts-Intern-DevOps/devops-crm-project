@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region to deploy resources"
+  description = "AWS region"
   type        = string
   default     = "us-east-1"
 }
@@ -10,14 +10,14 @@ variable "instance_type" {
   default     = "t3.small"
 }
 
-variable "ecr_repo_name" {
-  description = "Name of the ECR repository"
+variable "ami_id" {
+  description = "Approved AMI ID"
   type        = string
-  default     = "twenty-crm"
+  default     = "ami-081b0a6eac00b4f53"
 }
 
-variable "key_name" {
-  description = "EC2 Key Pair name"
+variable "s3_bucket_name" {
+  description = "S3 Bucket Name (Must be globally unique)"
   type        = string
-  default     = "twenty-key"
+  default     = "waleed-twenty-crm-s3-13"
 }
