@@ -1,7 +1,7 @@
-# Task 17: Terraform, Ansible and AWS EC2 Deployment
+# Task 17: AWS EC2 Deployment using Terraform and Ansible  
 **Name:** P. Harish
 **Date:** 17 September 2026
-**PR link:** []
+**PR link:** [https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/409]
 **Loom link:** [https://drive.google.com/file/d/1DCjpVtYtD6vKZ89j6ZEx9NmH-TN9AUi3/view?usp=drive_link]
 ## Objective
 
@@ -116,6 +116,15 @@ Output:
 unless-stopped
 ```
 
+```bash
+docker inspect -f '{{.State.Status}} RestartCount={{.RestartCount}}' twenty-twenty-server-1
+```
+The restart count increased after the failure test.
+
+Example:
+
+>>running RestartCount=1
+
 The restart behavior was tested by sending SIGTERM to the main process:
 
 ```bash
@@ -156,21 +165,20 @@ HTTP/1.1 200 OK
 
 This confirmed that Twenty CRM was responding successfully.
 
-## Logs
+
+##Logs verification
 
 Application logs were displayed using:
 
 ```bash
+sudo docker compose logs --tail=50
+
+or
+
 sudo docker compose logs --tail=50 twenty-server
 ```
 
 The logs showed that the Twenty CRM server started successfully.
-
-## Important Note
-
-The working EC2 deployment used the `twentycrm/twenty:latest` Docker image.
-
-A custom Dockerfile was also created and tested locally, but the custom image was not used as the working Twenty CRM server deployment because the repository does not provide a `start:prod` script required by the initial custom deployment approach.
 
 
 ## Conclusion
