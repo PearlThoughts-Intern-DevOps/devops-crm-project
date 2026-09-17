@@ -1,0 +1,220 @@
+---
+- name: Configure EC2 and deploy Twenty CRM
+  hosts: twenty
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: Load Twenty CRM handlers
+      ansible.builtin.import_tasks: handlers/main.yml
+
+  pre_tasks:
+    - name: Verify Amazon Linux 2023
+      ansible.builtin.assert:
+        that:
+          - ansible_facts["distribution"] == "Amazon"
+          - ansible_facts["distribution_major_version"] == "2023"
+        fail_msg: "This playbook requires Amazon Linux 2023."
+        success_msg: "Amazon Linux 2023 detected."
+
+    - name: Create local secrets directory
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/.secrets"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Load or generate deployment secrets
+      ansible.builtin.set_fact:
+        postgres_password: "{{ lookup('ansible.builtin.password', playbook_dir + '/.secrets/postgres_password', length=48, chars=['ascii_letters', 'digits']) }}"
+        encryption_key: "{{ lookup('ansible.builtin.password', playbook_dir + '/.secrets/encryption_key', length=64, chars=['ascii_letters', 'digits']) }}"
+      no_log: true
+
+  tasks:
+    - name: Update all server packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Install Docker and required dependencies
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - curl-minimal
+          - openssl
+          - python3
+          - python3-pip
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add EC2 user to Docker group
+      ansible.builtin.user:
+        name: "{{ twenty_app_user }}"
+        groups:
+          - docker
+        append: true
+
+    - name: Create Docker CLI plugin directory
+      ansible.builtin.file:
+        path: "{{ docker_compose_path | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install pinned Docker Compose plugin
+      ansible.builtin.get_url:
+        url: "{{ docker_compose_url }}"
+        dest: "{{ docker_compose_path }}"
+        checksum: "{{ docker_compose_checksum }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Verify Docker Compose installation
+      ansible.builtin.command:
+        cmd: docker compose version
+      register: docker_compose_version_output
+      changed_when: false
+
+    - name: Create swap file
+      ansible.builtin.command:
+        cmd: fallocate -l 4G /swapfile
+        creates: /swapfile
+      register: swap_file_created
+
+    - name: Secure swap file permissions
+      ansible.builtin.file:
+        path: /swapfile
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Format new swap file
+      ansible.builtin.command:
+        cmd: mkswap /swapfile
+      when: swap_file_created.changed
+
+    - name: Persist swap configuration
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^/swapfile\s'
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+    - name: Check active swap
+      ansible.builtin.command:
+        cmd: swapon --show=NAME --noheadings
+      register: active_swap
+      changed_when: false
+
+    - name: Enable swap
+      ansible.builtin.command:
+        cmd: swapon /swapfile
+      when: "'/swapfile' not in active_swap.stdout_lines"
+
+    - name: Create Twenty CRM application directory
+      ansible.builtin.file:
+        path: "{{ twenty_app_dir }}"
+        state: directory
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_group }}"
+        mode: "0750"
+
+    - name: Deploy Twenty CRM environment file
+      ansible.builtin.template:
+        src: templates/twenty.env.j2
+        dest: "{{ twenty_app_dir }}/.env"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_group }}"
+        mode: "0600"
+      notify: Restart Twenty CRM
+      no_log: true
+
+    - name: Deploy Docker Compose configuration
+      ansible.builtin.template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ twenty_app_dir }}/docker-compose.yml"
+        owner: "{{ twenty_app_user }}"
+        group: "{{ twenty_app_group }}"
+        mode: "0640"
+      notify: Restart Twenty CRM
+
+    - name: Validate Docker Compose configuration
+      ansible.builtin.command:
+        cmd: docker compose config --quiet
+        chdir: "{{ twenty_app_dir }}"
+      changed_when: false
+
+    - name: Start Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ twenty_app_dir }}"
+        state: present
+        pull: missing
+        remove_orphans: true
+        wait: true
+        wait_timeout: 600
+
+    - name: Apply configuration-change handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for Twenty CRM port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ twenty_port }}"
+        delay: 5
+        timeout: 600
+
+    - name: Verify Twenty CRM health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_port }}/healthz"
+        method: GET
+        status_code: 200
+      register: twenty_health
+      retries: 60
+      delay: 10
+      until: twenty_health.status == 200
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Verify Docker service is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['docker.service'].state == 'running'
+        fail_msg: "Docker service is not running."
+        success_msg: "Docker service is running."
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ twenty_app_dir }}"
+      register: compose_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: compose_status.stdout_lines
+
+    - name: Read recent Twenty server logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail=50 server
+        chdir: "{{ twenty_app_dir }}"
+      register: twenty_logs
+      changed_when: false
+
+    - name: Show recent Twenty server logs
+      ansible.builtin.debug:
+        var: twenty_logs.stdout_lines
+
+    - name: Display deployment result
+      ansible.builtin.debug:
+        msg: "Twenty CRM is healthy and available at {{ twenty_server_url }}"
