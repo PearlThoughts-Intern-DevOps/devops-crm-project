@@ -1,0 +1,114 @@
+
+PLAY [Deploy Twenty CRM with Docker] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [localhost]
+
+TASK [Create swap file] ********************************************************
+ok: [localhost]
+
+TASK [Set swap permissions] ****************************************************
+ok: [localhost]
+
+TASK [Make swap] ***************************************************************
+skipping: [localhost]
+
+TASK [Enable swap] *************************************************************
+skipping: [localhost]
+
+TASK [Add swap to fstab] *******************************************************
+ok: [localhost]
+
+TASK [Update apt cache] ********************************************************
+changed: [localhost]
+
+TASK [Install required packages] ***********************************************
+ok: [localhost]
+
+TASK [Install Docker] **********************************************************
+ok: [localhost]
+
+TASK [Ensure Docker is running and enabled] ************************************
+ok: [localhost]
+
+TASK [Create application directory] ********************************************
+ok: [localhost]
+
+TASK [Create data subdirectories] **********************************************
+ok: [localhost] => (item=/opt/twenty-crm/postgres-data)
+ok: [localhost] => (item=/opt/twenty-crm/redis-data)
+
+TASK [Write .env file with environment variables] ******************************
+ok: [localhost]
+
+TASK [Create Docker network] ***************************************************
+ok: [localhost]
+
+TASK [Run Postgres container] **************************************************
+ok: [localhost]
+
+TASK [Run Redis container] *****************************************************
+ok: [localhost]
+
+TASK [Wait for Postgres to be ready] *******************************************
+changed: [localhost]
+
+TASK [Run Twenty CRM container with health check] ******************************
+ok: [localhost]
+
+TASK [Wait for Twenty CRM to respond] ******************************************
+ok: [localhost]
+
+TASK [Show Docker container status] ********************************************
+changed: [localhost]
+
+TASK [Print container status] **************************************************
+ok: [localhost] => {
+    "msg": [
+        "CONTAINER ID   IMAGE                     COMMAND                  CREATED             STATUS                       PORTS                    NAMES",
+        "4bd637ed36dd   twentycrm/twenty:latest   \"/app/entrypoint.sh …\"   About an hour ago   Up About an hour (healthy)   0.0.0.0:2020->3000/tcp   twenty-crm",
+        "c1b407d8cb67   redis:7                   \"docker-entrypoint.s…\"   About an hour ago   Up 10 minutes                6379/tcp                 twenty-redis",
+        "01147b919c53   postgres:16               \"docker-entrypoint.s…\"   About an hour ago   Up About an hour             5432/tcp                 twenty-db"
+    ]
+}
+
+TASK [Show Twenty CRM logs (last 20 lines)] ************************************
+changed: [localhost]
+
+TASK [Print application logs] **************************************************
+ok: [localhost] => {
+    "msg": [
+        "  port: 6379",
+        "}",
+        "\u001b[31m[Nest] 1  - \u001b[39m09/17/2026, 7:55:37 AM \u001b[31m  ERROR\u001b[39m \u001b[38;5;3m[CacheStorage] \u001b[39m\u001b[31mRedis cache-storage client error\u001b[39m",
+        "\u001b[31m[Nest] 1  - \u001b[39m09/17/2026, 7:55:37 AM \u001b[31m  ERROR\u001b[39m \u001b[38;5;3m[CacheStorage] \u001b[39mError: connect ECONNREFUSED 172.18.0.3:6379",
+        "\u001b[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1864:16)\u001b[39m {",
+        "  errno: \u001b[33m-111\u001b[39m,",
+        "  code: \u001b[32m'ECONNREFUSED'\u001b[39m,",
+        "  syscall: \u001b[32m'connect'\u001b[39m,",
+        "  address: \u001b[32m'172.18.0.3'\u001b[39m,",
+        "  port: \u001b[33m6379\u001b[39m",
+        "}",
+        "\u001b[31m[Nest] 1  - \u001b[39m09/17/2026, 7:55:37 AM \u001b[31m  ERROR\u001b[39m \u001b[38;5;3m[SessionStorage] \u001b[39m\u001b[31mRedis session-store client error\u001b[39m",
+        "\u001b[31m[Nest] 1  - \u001b[39m09/17/2026, 7:55:37 AM \u001b[31m  ERROR\u001b[39m \u001b[38;5;3m[SessionStorage] \u001b[39mError: connect ECONNREFUSED 172.18.0.3:6379",
+        "\u001b[90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1864:16)\u001b[39m {",
+        "  errno: \u001b[33m-111\u001b[39m,",
+        "  code: \u001b[32m'ECONNREFUSED'\u001b[39m,",
+        "  syscall: \u001b[32m'connect'\u001b[39m,",
+        "  address: \u001b[32m'172.18.0.3'\u001b[39m,",
+        "  port: \u001b[33m6379\u001b[39m",
+        "}"
+    ]
+}
+
+TASK [Verify Twenty CRM health status] *****************************************
+changed: [localhost]
+
+TASK [Print health status] *****************************************************
+ok: [localhost] => {
+    "msg": "Twenty CRM health status: healthy"
+}
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=23   changed=5    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+

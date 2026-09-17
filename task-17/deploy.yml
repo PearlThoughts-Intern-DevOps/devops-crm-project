@@ -1,0 +1,185 @@
+---
+- name: Deploy Twenty CRM with Docker
+  hosts: twenty_crm
+  become: true
+  vars:
+    app_port: 2020
+    container_port: 3000
+    app_dir: /opt/twenty-crm
+    app_secret: "twenty-crm-task17-secret-change-me"
+
+  tasks:
+    - name: Create swap file
+      command: fallocate -l 2G /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Set swap permissions
+      file:
+        path: /swapfile
+        mode: '0600'
+
+    - name: Make swap
+      command: mkswap /swapfile
+      when: ansible_facts.swapfree_mb | default(0) == 0
+
+    - name: Enable swap
+      command: swapon /swapfile
+      when: ansible_facts.swapfree_mb | default(0) == 0
+
+    - name: Add swap to fstab
+      lineinfile:
+        path: /etc/fstab
+        line: '/swapfile none swap sw 0 0'
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - python3-docker
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Ensure Docker is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Create data subdirectories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      loop:
+        - "{{ app_dir }}/postgres-data"
+        - "{{ app_dir }}/redis-data"
+
+    - name: Write .env file with environment variables
+      copy:
+        dest: "{{ app_dir }}/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0600'
+        content: |
+          NODE_PORT={{ container_port }}
+          PG_DATABASE_URL=postgres://postgres:postgres@twenty-db:5432/default
+          REDIS_URL=redis://twenty-redis:6379
+          APP_SECRET={{ app_secret }}
+          IS_BILLING_ENABLED=false
+          SIGN_IN_PREFILLED=true
+          SERVER_URL=http://{{ ansible_default_ipv4.address }}:{{ app_port }}
+
+    - name: Create Docker network
+      community.docker.docker_network:
+        name: twenty-net
+        state: present
+
+    - name: Run Postgres container
+      community.docker.docker_container:
+        name: twenty-db
+        image: postgres:16
+        state: started
+        restart_policy: always
+        networks:
+          - name: twenty-net
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: default
+        volumes:
+          - "{{ app_dir }}/postgres-data:/var/lib/postgresql/data"
+
+    - name: Run Redis container
+      community.docker.docker_container:
+        name: twenty-redis
+        image: redis:7
+        state: started
+        restart_policy: always
+        networks:
+          - name: twenty-net
+        volumes:
+          - "{{ app_dir }}/redis-data:/data"
+
+    - name: Wait for Postgres to be ready
+      shell: docker exec twenty-db pg_isready -U postgres -d default
+      register: pg_ready
+      until: pg_ready.rc == 0
+      retries: 30
+      delay: 5
+
+    - name: Run Twenty CRM container with health check
+      community.docker.docker_container:
+        name: twenty-crm
+        image: twentycrm/twenty:latest
+        state: started
+        restart_policy: always
+        networks:
+          - name: twenty-net
+        published_ports:
+          - "{{ app_port }}:{{ container_port }}"
+        env_file: "{{ app_dir }}/.env"
+        healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:{{ container_port }}/"]
+          interval: 30s
+          timeout: 10s
+          retries: 5
+          start_period: 120s
+
+    - name: Wait for Twenty CRM to respond
+      uri:
+        url: "http://localhost:{{ app_port }}"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 60
+      delay: 10
+      ignore_errors: yes
+
+    - name: Show Docker container status
+      shell: docker ps
+      register: docker_ps
+
+    - name: Print container status
+      debug:
+        msg: "{{ docker_ps.stdout_lines }}"
+
+    - name: Show Twenty CRM logs (last 20 lines)
+      shell: docker logs twenty-crm 2>&1 | tail -20
+      register: docker_logs
+
+    - name: Print application logs
+      debug:
+        msg: "{{ docker_logs.stdout_lines }}"
+
+    - name: Verify Twenty CRM health status
+      shell: docker inspect twenty-crm --format '{{ '{{' }}.State.Health.Status{{ '}}' }}'
+      register: health_status
+
+    - name: Print health status
+      debug:
+        msg: "Twenty CRM health status: {{ health_status.stdout }}"
