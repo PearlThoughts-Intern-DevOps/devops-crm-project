@@ -1,0 +1,115 @@
+---
+- name: Configure EC2 and Deploy Twenty CRM
+  hosts: twenty
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+
+  tasks:
+
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+          - python3
+          - python3-pip
+          - python3-docker
+          - curl
+          - wget
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add ubuntu user to Docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create Twenty CRM Docker Compose file
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: "0644"
+        content: |
+          services:
+            twenty-server:
+              image: twentycrm/twenty-app-dev:latest
+              container_name: task17-twenty-server
+              ports:
+                - "2020:2020"
+              environment:
+                PORT: "2020"
+                SERVER_URL: "http://{{ ansible_host }}:2020"
+                NODE_ENV: "development"
+                STORAGE_TYPE: "local"
+                APPLICATION_LOG_DRIVER: "CONSOLE"
+              volumes:
+                - twenty-data:/data/postgres
+                - twenty-storage:/app/packages/twenty-server/.local-storage
+              healthcheck:
+                test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:2020/healthz || exit 1"]
+                interval: 10s
+                timeout: 5s
+                retries: 30
+                start_period: 180s
+              restart: always
+
+          volumes:
+            twenty-data:
+            twenty-storage:
+
+    - name: Deploy Twenty CRM
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        state: present
+        pull: always
+        recreate: auto
+
+    - name: Wait for Twenty CRM health endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1:2020/healthz
+        status_code: 200
+      register: health_result
+      retries: 30
+      delay: 10
+      until: health_result.status == 200
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker ps --filter name=task17-twenty-server
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: docker_status.stdout_lines
+
+    - name: Display application logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 50 task17-twenty-server
+      register: application_logs
+      changed_when: false
+
+    - name: Show application logs
+      ansible.builtin.debug:
+        var: application_logs.stdout_lines
