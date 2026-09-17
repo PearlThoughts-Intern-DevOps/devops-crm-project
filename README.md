@@ -1,34 +1,56 @@
-# My Twenty App
+# Task 17 — Ansible and AWS EC2 Deployment (Twenty CRM)
 
-Describe your app in one or two sentences.
+Terraform provisions a single EC2 instance; Ansible configures it and deploys
+Twenty CRM via Docker Compose. Full write-up is in `Documentation/Document 6.pdf`.
 
-## Features
+## Folder structure
 
-List the top things your app does, for example:
+```
+.
+├── README.md
+├── .gitignore
+├── terraform files/
+│   ├── main.tf              - default VPC/subnet lookup, security group, EC2 instance
+│   ├── variables.tf         - region, instance type, AMI, key pair, name_prefix, etc.
+│   └── outputs.tf           - public IP / DNS / instance ID after apply
+├── ansible files/
+│   ├── ansible.cfg          - points at inventory.ini and the SSH key
+│   ├── inventory.ini        - target host (EC2 public IP)
+│   ├── playbook.yml         - full deployment playbook
+│   └── templates/
+│       └── env.j2           - template for the app's .env file
+├── Documentation/
+│   └── Document 6.pdf       - architecture, step-by-step, issues hit and fixes
+└── screenshots/
+    ├── terraform apply.png
+    ├── playbook.png
+    └── ui.png
+```
 
-- Feature one
-- Feature two
-- Feature three
+## Quick start
 
-## Getting started
+```bash
+# 1. Provision infrastructure
+cd "terraform files"
+terraform init
+terraform apply -var="key_name=<your-key-pair>" -var="name_prefix=<your-name>"
 
-Setup instructions live in [SETUP.md](SETUP.md).
+# 2. Point Ansible at the new instance
+#    edit "../ansible files/inventory.ini" -> replace REPLACE_WITH_EC2_PUBLIC_IP
+#    with the ec2_public_ip Terraform just printed
 
-## Publishing
+# 3. Deploy
+cd "../ansible files"
+ansible twenty_crm -m ping
+ansible-playbook playbook.yml
 
-The `Publish` workflow (`.github/workflows/publish.yml`) publishes the app to npm with provenance using [npm trusted publishing](https://docs.npmjs.com/trusted-publishers). To publish:
+# 4. Open the app
+#    http://<EC2_PUBLIC_IP>:2020
 
-1. On npmjs.com register this repository as a trusted publisher of your package, pointing at the `publish.yml` workflow.
-2. Bump the version in `package.json`, then push a version tag (e.g. `git tag v1.0.0 && git push --tags`) or run the workflow manually from the Actions tab.
+# 5. Tear down once done
+cd "../terraform files"
+terraform destroy -var="key_name=<your-key-pair>" -var="name_prefix=<your-name>"
+```
 
-Publishing with provenance is also how you prove ownership when claiming your app in a Twenty marketplace.
-
-## Changelog
-
-Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
-
-## Learn more
-
-- [Twenty Apps documentation](https://docs.twenty.com/developers/extend/apps/getting-started/quick-start)
-- [twenty-sdk CLI reference](https://www.npmjs.com/package/twenty-sdk)
-- [Discord](https://discord.gg/cx5n4Jzs57)
+See `Documentation/Document 6.pdf` for the detailed step-by-step, the issues
+encountered during this run, and how each was resolved.
