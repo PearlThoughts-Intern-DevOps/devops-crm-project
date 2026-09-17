@@ -1,0 +1,15 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# Keep safe shared configuration files
+!terraform.tfvars.example
+!.terraform.lock.hcl

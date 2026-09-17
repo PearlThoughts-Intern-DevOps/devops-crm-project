@@ -1,0 +1,5 @@
+.secrets/
+*.retry
+.env
+*.env
+group_vars/secrets.yml

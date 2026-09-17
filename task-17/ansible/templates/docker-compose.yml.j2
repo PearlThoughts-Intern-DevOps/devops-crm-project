@@ -1,0 +1,97 @@
+---
+name: twenty
+
+services:
+  server:
+    image: "{{ twenty_image }}"
+    ports:
+      - "{{ twenty_port }}:3000"
+    environment:
+      NODE_PORT: "3000"
+      PG_DATABASE_URL: "postgres://${PG_DATABASE_USER}:${PG_DATABASE_PASSWORD}@db:5432/${PG_DATABASE_NAME}"
+      SERVER_URL: "${SERVER_URL}"
+      REDIS_URL: "${REDIS_URL}"
+      STORAGE_TYPE: "${STORAGE_TYPE}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - http://localhost:3000/healthz
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: "{{ twenty_image }}"
+    command:
+      - yarn
+      - worker:prod
+    environment:
+      PG_DATABASE_URL: "postgres://${PG_DATABASE_USER}:${PG_DATABASE_PASSWORD}@db:5432/${PG_DATABASE_NAME}"
+      SERVER_URL: "${SERVER_URL}"
+      REDIS_URL: "${REDIS_URL}"
+      STORAGE_TYPE: "${STORAGE_TYPE}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: "{{ postgres_image }}"
+    environment:
+      POSTGRES_DB: "${PG_DATABASE_NAME}"
+      POSTGRES_USER: "${PG_DATABASE_USER}"
+      POSTGRES_PASSWORD: "${PG_DATABASE_PASSWORD}"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${PG_DATABASE_USER} -d ${PG_DATABASE_NAME}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: "{{ redis_image }}"
+    command:
+      - redis-server
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  redis-data:
+  server-local-data:
