@@ -1,0 +1,73 @@
+- name: Configure EC2 and deploy Twenty CRM
+  hosts: twenty
+  become: true
+
+  tasks:
+
+    - name: Update packages
+      ansible.builtin.command: sudo apt update
+
+    - name: Upgrade packages
+      ansible.builtin.command: sudo apt upgrade -y
+
+    - name: Install Docker
+      ansible.builtin.command: sudo apt install docker.io -y
+
+    - name: Start Docker
+      ansible.builtin.command: sudo systemctl start docker
+
+    - name: Enable Docker
+      ansible.builtin.command: sudo systemctl enable docker
+
+    - name: Install Docker dependencies
+      ansible.builtin.command: sudo apt install curl ca-certificates -y
+
+    - name: Create Twenty CRM application directory
+      ansible.builtin.command: sudo mkdir -p /opt/twenty-crm
+
+    - name: Configure Twenty CRM environment
+      ansible.builtin.command: >
+        sudo bash -c 'echo "NODE_PORT=2020
+        SERVER_URL=http://localhost:2020
+        PG_DATABASE_URL=postgres://twenty:twenty@localhost:5432/default
+        REDIS_URL=redis://localhost:6379
+        APP_SECRET=twenty-task17-secret-not-for-production" > /opt/twenty-crm/.env'
+
+    - name: Pull Twenty CRM image
+      ansible.builtin.command: sudo docker pull twentycrm/twenty-app-dev:latest
+
+    - name: Remove existing Twenty CRM container
+      ansible.builtin.command: sudo docker rm -f twenty-crm
+      ignore_errors: true
+
+    - name: Deploy Twenty CRM container
+      ansible.builtin.command: >
+        sudo docker run -d
+        --name twenty-crm
+        --restart unless-stopped
+        -p 2020:2020
+        --env-file /opt/twenty-crm/.env
+        --health-cmd="curl -f http://localhost:2020/ || exit 1"
+        --health-interval=30s
+        --health-timeout=10s
+        --health-start-period=120s
+        --health-retries=3
+        twentycrm/twenty-app-dev:latest
+
+    - name: Display Docker container status
+      ansible.builtin.command: sudo docker ps -a
+
+    - name: Check Twenty CRM health
+      ansible.builtin.command: sudo docker ps --filter name=twenty-crm
+
+    - name: Verify Twenty CRM application
+      ansible.builtin.command: sudo curl -I http://localhost:2020
+      register: app_check
+      retries: 20
+      delay: 15
+      until: app_check.rc == 0
+
+    - name: Display Twenty CRM logs
+      ansible.builtin.command: sudo docker logs --tail 30 twenty-crm
+      
+
