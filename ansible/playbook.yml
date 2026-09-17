@@ -1,0 +1,197 @@
+---
+- name: Deploy Twenty CRM with Ansible
+  hosts: twenty_crm
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+    twenty_image: twentycrm/twenty:latest
+    postgres_image: postgres:16
+    redis_image: redis:latest
+    twenty_port: 3000
+
+    postgres_user: postgres
+    postgres_password: postgres
+    postgres_database: default
+
+  tasks:
+
+    - name: Update server packages
+      apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - curl
+          - ca-certificates
+        state: present
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to Docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Pull PostgreSQL image
+      community.docker.docker_image:
+        name: "{{ postgres_image }}"
+        source: pull
+
+    - name: Pull Redis image
+      community.docker.docker_image:
+        name: "{{ redis_image }}"
+        source: pull
+
+    - name: Pull Twenty CRM image
+      community.docker.docker_image:
+        name: "{{ twenty_image }}"
+        source: pull
+
+    - name: Create Twenty CRM network
+      community.docker.docker_network:
+        name: twenty-network
+        state: present
+
+    - name: Remove old Twenty CRM container
+      community.docker.docker_container:
+        name: twenty-crm
+        state: absent
+
+    - name: Remove old PostgreSQL container
+      community.docker.docker_container:
+        name: twenty-postgres
+        state: absent
+
+    - name: Remove old Redis container
+      community.docker.docker_container:
+        name: twenty-redis
+        state: absent
+
+    - name: Start PostgreSQL
+      community.docker.docker_container:
+        name: twenty-postgres
+        image: "{{ postgres_image }}"
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+        env:
+          POSTGRES_USER: "{{ postgres_user }}"
+          POSTGRES_PASSWORD: "{{ postgres_password }}"
+          POSTGRES_DB: "{{ postgres_database }}"
+        volumes:
+          - twenty-postgres-data:/var/lib/postgresql/data
+
+    - name: Wait for PostgreSQL
+      community.docker.docker_container_info:
+        name: twenty-postgres
+      register: postgres_info
+      until: postgres_info.container.State.Running
+      retries: 12
+      delay: 5
+
+    - name: Start Redis
+      community.docker.docker_container:
+        name: twenty-redis
+        image: "{{ redis_image }}"
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+        command:
+          - "--maxmemory-policy"
+          - "noeviction"
+        volumes:
+          - twenty-redis-data:/data
+
+    - name: Wait for Redis
+      community.docker.docker_container_info:
+        name: twenty-redis
+      register: redis_info
+      until: redis_info.container.State.Running
+      retries: 12
+      delay: 5
+
+    - name: Create Twenty CRM environment file
+      copy:
+        dest: "{{ app_dir }}/.env"
+        mode: "0644"
+        content: |
+          NODE_PORT=3000
+          SERVER_URL=http://{{ ansible_host }}:3000
+          PG_DATABASE_URL=postgres://postgres:postgres@twenty-postgres:5432/default
+          REDIS_URL=redis://twenty-redis:6379
+          STORAGE_TYPE=local
+          ENCRYPTION_KEY="task17-twenty-crm-encryption-key-2026"
+
+    - name: Start Twenty CRM
+      community.docker.docker_container:
+        name: twenty-crm
+        image: "{{ twenty_image }}"
+        state: started
+        restart_policy: unless-stopped
+        networks:
+          - name: twenty-network
+        published_ports:
+          - "3000:3000"
+        env:
+          NODE_PORT: "3000"
+          SERVER_URL: "http://{{ ansible_host }}:3000"
+          PG_DATABASE_URL: "postgres://postgres:postgres@twenty-postgres:5432/default"
+          REDIS_URL: "redis://twenty-redis:6379"
+          STORAGE_TYPE: "local"
+          ENCRYPTION_KEY: "task17-twenty-crm-encryption-key-2026"
+
+    - name: Wait for Twenty CRM health endpoint
+      uri:
+        url: "http://127.0.0.1:3000/healthz"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: health_check
+      retries: 24
+      delay: 5
+      until: health_check.status == 200
+
+    - name: Display Docker container status
+      command: docker ps -a
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      debug:
+        var: docker_status.stdout_lines
+
+    - name: Display Twenty CRM application logs
+      command: docker logs --tail 50 twenty-crm
+      register: app_logs
+      changed_when: false
+
+    - name: Show Twenty CRM logs
+      debug:
+        var: app_logs.stdout_lines
+
+    - name: Verify Twenty CRM container is running
+      command: docker inspect -f '{{ "{{.State.Running}}" }}' twenty-crm
+      register: container_running
+      changed_when: false
+      failed_when: container_running.stdout != "true"
+
+    - name: Confirm Twenty CRM deployment
+      debug:
+        msg: "Twenty CRM is running successfully on http://{{ ansible_host }}:3000"
