@@ -77,11 +77,22 @@ export async function setup() {
 }
 
 export async function teardown() {
-  const uninstallResult = await appUninstall({ appPath: APP_PATH });
+  try {
+    const uninstallResult = await appUninstall({ appPath: APP_PATH });
 
-  if (!uninstallResult.success) {
+    if (!uninstallResult.success) {
+      console.warn(
+        `App uninstall failed: ${
+          uninstallResult.error?.message ?? 'Unknown error'
+        }`,
+      );
+    }
+  } catch (error) {
     console.warn(
-      `App uninstall failed: ${uninstallResult.error?.message ?? 'Unknown error'}`,
+      `App cleanup failed: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
     );
   }
 }
+
