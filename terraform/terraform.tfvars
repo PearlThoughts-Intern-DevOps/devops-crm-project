@@ -1,0 +1,6 @@
+aws_region       = "us-east-1"
+instance_type    = "t3.small"
+ami_id           = "ami-081b0a6eac00b4f53"
+instance_name    = "twenty-crm-task17"
+allowed_ssh_cidr = "0.0.0.0/0"
+key_name         = "kaushal-task17-kkl-key"

@@ -1,0 +1,106 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+
+    - name: Update server packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+
+    - name: Install Docker and required dependencies
+      ansible.builtin.dnf:
+        name:
+          - docker
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create Twenty CRM application directory
+      ansible.builtin.file:
+        path: /opt/twenty
+        state: directory
+        mode: "0755"
+
+    - name: Create Twenty CRM environment file
+      ansible.builtin.copy:
+        dest: /opt/twenty/.env
+        mode: "0644"
+        content: |
+          NODE_PORT=2020
+          NODE_ENV=production
+          STORAGE_TYPE=local
+
+    - name: Pull Twenty CRM Docker image
+      ansible.builtin.command:
+        cmd: docker pull twentycrm/twenty-app-dev:v2.35
+      register: docker_pull
+      changed_when: "'Downloaded newer image' in docker_pull.stdout or 'Pull complete' in docker_pull.stdout"
+
+    - name: Remove existing Twenty CRM container
+      ansible.builtin.command:
+        cmd: docker rm -f twenty-crm
+      failed_when: false
+      changed_when: false
+
+    - name: Run Twenty CRM container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name twenty-crm
+          --restart unless-stopped
+          -p 2020:2020
+          --env-file /opt/twenty/.env
+          --health-cmd="node -e \"const net=require('net'); const s=net.createConnection({host:'127.0.0.1',port:2020}); s.on('connect',()=>{s.end();process.exit(0)}); s.on('error',()=>process.exit(1));\""
+          --health-interval=30s
+          --health-timeout=10s
+          --health-retries=5
+          twentycrm/twenty-app-dev:v2.35
+
+    - name: Wait for Twenty CRM container to start
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker ps -a
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: docker_status.stdout_lines
+
+    - name: Display Twenty CRM application logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 50 twenty-crm
+      register: app_logs
+      changed_when: false
+
+    - name: Show Twenty CRM application logs
+      ansible.builtin.debug:
+        var: app_logs.stdout_lines
+
+    - name: Verify Twenty CRM container is running
+      ansible.builtin.command:
+        cmd: docker inspect -f "{{ '{{' }}.State.Running{{ '}}' }}" twenty-crm
+      register: container_running
+      changed_when: false
+      failed_when: container_running.stdout.strip() != "true"
+
+    - name: Verify Twenty CRM health status
+      ansible.builtin.command:
+        cmd: docker inspect -f "{{ '{{' }}.State.Health.Status{{ '}}' }}" twenty-crm
+      register: health_status
+      changed_when: false
+      failed_when: false
+
+    - name: Show Twenty CRM health status
+      ansible.builtin.debug:
+        msg: "Twenty CRM health status: {{ health_status.stdout }}"
