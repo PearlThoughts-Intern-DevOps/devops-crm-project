@@ -1,0 +1,254 @@
+---
+- name: Deploy Twenty CRM using Ansible
+  hosts: twenty
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+    twenty_port: 2020
+    server_url: "http://3.236.90.50:2020"
+    twenty_tag: latest
+    pg_user: postgres
+    pg_password: postgres
+    pg_database: default
+
+  tasks:
+
+    - name: Update server packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install Docker prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Add Docker GPG key
+      ansible.builtin.shell:
+        cmd: |
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+            -o /etc/apt/keyrings/docker.asc
+          chmod a+r /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.asc
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+
+    - name: Install Docker and Compose
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Create Twenty CRM environment file
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+        content: |
+          TAG={{ twenty_tag }}
+          SERVER_URL={{ server_url }}
+          PG_DATABASE_USER={{ pg_user }}
+          PG_DATABASE_PASSWORD={{ pg_password }}
+          PG_DATABASE_NAME={{ pg_database }}
+          PG_DATABASE_HOST=db
+          PG_DATABASE_PORT=5432
+          REDIS_URL=redis://redis:6379
+          STORAGE_TYPE=local
+          ENCRYPTION_KEY=twenty-task17-encryption-key-2026
+          FALLBACK_ENCRYPTION_KEY=twenty-task17-fallback-key-2026
+          APP_SECRET=twenty-task17-app-secret-2026
+
+    - name: Create Docker Compose configuration
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+        content: |
+          services:
+
+            server:
+              image: twentycrm/twenty:${TAG:-latest}
+              ports:
+                - "{{ twenty_port }}:3000"
+              volumes:
+                - server-local-data:/app/packages/twenty-server/.local-storage
+              environment:
+                NODE_PORT: 3000
+                PG_DATABASE_URL: postgres://${PG_DATABASE_USER}:${PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST}:${PG_DATABASE_PORT}/${PG_DATABASE_NAME}
+                SERVER_URL: ${SERVER_URL}
+                REDIS_URL: ${REDIS_URL}
+                STORAGE_TYPE: ${STORAGE_TYPE}
+                ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+                FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY}
+                APP_SECRET: ${APP_SECRET}
+                DISABLE_DB_MIGRATIONS: "false"
+                DISABLE_CRON_JOBS_REGISTRATION: "true"
+              depends_on:
+                db:
+                  condition: service_healthy
+                redis:
+                  condition: service_healthy
+              healthcheck:
+                test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+                interval: 5s
+                timeout: 5s
+                retries: 30
+              restart: unless-stopped
+
+            worker:
+              image: twentycrm/twenty:${TAG:-latest}
+              volumes:
+                - server-local-data:/app/packages/twenty-server/.local-storage
+              command: ["yarn", "worker:prod"]
+              environment:
+                PG_DATABASE_URL: postgres://${PG_DATABASE_USER}:${PG_DATABASE_PASSWORD}@${PG_DATABASE_HOST}:${PG_DATABASE_PORT}/${PG_DATABASE_NAME}
+                SERVER_URL: ${SERVER_URL}
+                REDIS_URL: ${REDIS_URL}
+                STORAGE_TYPE: ${STORAGE_TYPE}
+                ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+                FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY}
+                APP_SECRET: ${APP_SECRET}
+                DISABLE_DB_MIGRATIONS: "true"
+                DISABLE_CRON_JOBS_REGISTRATION: "true"
+              depends_on:
+                db:
+                  condition: service_healthy
+                redis:
+                  condition: service_healthy
+              restart: unless-stopped
+
+            db:
+              image: postgres:16
+              environment:
+                POSTGRES_USER: ${PG_DATABASE_USER}
+                POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD}
+                POSTGRES_DB: ${PG_DATABASE_NAME}
+              volumes:
+                - postgres-data:/var/lib/postgresql/data
+              healthcheck:
+                test:
+                  [
+                    "CMD-SHELL",
+                    "pg_isready -U ${PG_DATABASE_USER} -d ${PG_DATABASE_NAME}"
+                  ]
+                interval: 5s
+                timeout: 5s
+                retries: 20
+              restart: unless-stopped
+
+            redis:
+              image: redis:7-alpine
+              volumes:
+                - redis-data:/data
+              healthcheck:
+                test: ["CMD", "redis-cli", "ping"]
+                interval: 5s
+                timeout: 5s
+                retries: 20
+              restart: unless-stopped
+
+          volumes:
+            server-local-data:
+            postgres-data:
+            redis-data:
+
+    - name: Validate Docker Compose configuration
+      ansible.builtin.command:
+        cmd: docker compose config
+        chdir: "{{ app_dir }}"
+      changed_when: false
+
+    - name: Pull Twenty CRM images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ app_dir }}"
+
+    - name: Start Twenty CRM stack
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for Twenty CRM HTTP endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ twenty_port }}"
+        method: GET
+        status_code: [200, 301, 302, 401, 404]
+        timeout: 10
+      register: twenty_http
+      retries: 30
+      delay: 5
+      until: twenty_http.status in [200, 301, 302, 401, 404]
+
+    - name: Verify Twenty CRM application port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ twenty_port }}"
+        timeout: 30
+        state: started
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker compose ps
+        chdir: "{{ app_dir }}"
+      register: container_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: container_status.stdout_lines
+
+    - name: Display Twenty CRM application logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail 50 server
+        chdir: "{{ app_dir }}"
+      register: twenty_logs
+      changed_when: false
+
+    - name: Show application logs
+      ansible.builtin.debug:
+        var: twenty_logs.stdout_lines
+
+    - name: Verify all required containers are running
+      ansible.builtin.command:
+        cmd: docker compose ps --status running --format "{{ '{{' }}.Service{{ '}}' }}"
+        chdir: "{{ app_dir }}"
+      register: running_services
+      changed_when: false
+
+    - name: Deployment verification
+      ansible.builtin.debug:
+        msg:
+          - "Twenty CRM deployment completed successfully."
+          - "Application URL: {{ server_url }}"
+          - "Running services: {{ running_services.stdout_lines }}"
