@@ -1,5 +1,6 @@
 # ============================================================
-# variables.tf — Task 16
+# variables.tf — Task 17
+# Secrets removed — handled by Ansible group_vars
 # ============================================================
 
 variable "aws_region" {
@@ -31,7 +32,7 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "Specific AMI ID as per task requirement"
+  description = "AMI ID"
   type        = string
   default     = "ami-0b6d9d3d33ba97d99"
 }
@@ -42,7 +43,7 @@ variable "key_pair_name" {
 }
 
 variable "app_port" {
-  description = "Port Twenty CRM listens on inside container"
+  description = "Port Twenty CRM listens on"
   type        = number
   default     = 2020
 }
@@ -57,30 +58,6 @@ variable "allowed_ssh_cidrs" {
   description = "CIDRs allowed SSH access"
   type        = list(string)
   default     = ["0.0.0.0/0"]
-}
-
-variable "twenty_image" {
-  description = "Twenty CRM Docker image"
-  type        = string
-  default     = "twentycrm/twenty:v2.35.0"
-}
-
-variable "encryption_key" {
-  description = "Twenty CRM encryption key"
-  type        = string
-  sensitive   = true
-}
-
-variable "app_secret" {
-  description = "Twenty CRM app secret"
-  type        = string
-  sensitive   = true
-}
-
-variable "pg_password" {
-  description = "PostgreSQL password"
-  type        = string
-  sensitive   = true
 }
 
 variable "iam_instance_profile_name" {

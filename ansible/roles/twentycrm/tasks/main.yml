@@ -1,0 +1,109 @@
+---
+- name: Create application base directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0755"
+
+- name: Create Twenty CRM data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0755"
+  loop: "{{ twentycrm_data_dirs }}"
+
+- name: Template .env file
+  ansible.builtin.template:
+    src: twenty.env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: ubuntu
+    group: ubuntu
+    mode: "0600"
+  no_log: true
+  notify: Restart Twenty CRM
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    owner: ubuntu
+    group: ubuntu
+    mode: "0644"
+  notify: Restart Twenty CRM
+
+- name: Pull Twenty CRM Docker image
+  ansible.builtin.command:
+    cmd: docker pull {{ twenty_image }}
+  changed_when: true
+
+- name: Deploy Twenty CRM stack
+  ansible.builtin.command:
+    cmd: docker compose --env-file .env up -d --remove-orphans
+    chdir: "{{ app_dir }}"
+  become_user: ubuntu
+  register: compose_up
+  changed_when: true
+
+- name: Show docker compose up output
+  ansible.builtin.debug:
+    var: compose_up.stdout_lines
+
+- name: Wait for Twenty CRM health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}/healthz"
+    method: GET
+    status_code: [200, 302]
+    validate_certs: false
+  register: health_result
+  until: health_result.status is defined and health_result.status in [200, 302]
+  retries: "{{ healthcheck_retries }}"
+  delay: "{{ healthcheck_delay }}"
+  ignore_errors: true
+
+- name: Health check result
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'HEALTHY (HTTP ' ~ health_result.status ~ ')'
+         if health_result.status is defined and health_result.status in [200, 302]
+         else 'Health check inconclusive — check logs' }}
+
+- name: Display Docker container status
+  ansible.builtin.command:
+    cmd: docker compose ps
+    chdir: "{{ app_dir }}"
+  become_user: ubuntu
+  register: docker_ps
+  changed_when: false
+
+- name: Show container status
+  ansible.builtin.debug:
+    msg: "{{ docker_ps.stdout_lines }}"
+
+- name: Retrieve last 50 lines of application logs
+  ansible.builtin.command:
+    cmd: docker compose logs --tail=50
+    chdir: "{{ app_dir }}"
+  become_user: ubuntu
+  register: app_logs
+  changed_when: false
+
+- name: Display application logs
+  ansible.builtin.debug:
+    msg: "{{ app_logs.stdout_lines }}"
+
+- name: Verify Twenty CRM container is running
+  ansible.builtin.command:
+    cmd: docker compose ps --services --filter status=running
+    chdir: "{{ app_dir }}"
+  become_user: ubuntu
+  register: running_services
+  changed_when: false
+  failed_when: running_services.stdout | length == 0
+
+- name: Confirm running services
+  ansible.builtin.debug:
+    msg: "Running services: {{ running_services.stdout_lines }}"

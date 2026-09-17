@@ -1,0 +1,16 @@
+---
+app_name:              "twenty-crm"
+app_port:              2020
+app_dir:               "/opt/twenty"
+docker_compose_version: "2"
+
+twenty_image: "twentycrm/twenty:v2.35.0"
+
+encryption_key: "91956ccb76b50229d5201e91738b5df91bc262e672ededdaaab60bb0490becc6"
+app_secret:     "2876c41e935c49917ec7827ce0f6907de4415a6ff6aeddd185576398489f9e3d"
+pg_password:    "0a4c52e1ce7043499ebf49f96a6d568e"
+
+healthcheck_retries: 15
+healthcheck_delay:   20
+
+docker_restart_policy: "unless-stopped"

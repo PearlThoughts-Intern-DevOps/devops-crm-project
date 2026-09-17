@@ -1,6 +1,7 @@
 # ============================================================
-# main.tf — Task 16
-# Default VPC + EC2 only — no ALB needed
+# main.tf — Task 17
+# Terraform scope: bare EC2 in default VPC
+# All app configuration is handled by Ansible
 # ============================================================
 
 locals {
@@ -8,10 +9,12 @@ locals {
     Project     = var.project_name
     Environment = var.environment
     Owner       = var.owner
-    Task        = "task-16"
+    Task        = "task-17"
     ManagedBy   = "terraform"
   }
 }
+
+# ── Networking ─────────────────────────────────────────────
 
 data "aws_vpc" "default" {
   default = true
@@ -28,13 +31,15 @@ data "aws_subnets" "default" {
   }
 }
 
+# ── Security Group ─────────────────────────────────────────
+
 resource "aws_security_group" "ec2" {
   name        = "${var.project_name}-ec2-sg"
-  description = "Allow app port from internet + SSH"
+  description = "Allow app port + SSH for ${var.project_name}"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "App port from internet"
+    description = "Application port from internet"
     from_port   = var.app_port
     to_port     = var.app_port
     protocol    = "tcp"
@@ -62,6 +67,8 @@ resource "aws_security_group" "ec2" {
   })
 }
 
+# ── EC2 Module ─────────────────────────────────────────────
+
 module "ec2" {
   source = "./modules/ec2"
 
@@ -76,17 +83,6 @@ module "ec2" {
   volume_type          = "gp3"
   extra_sg_ids         = [aws_security_group.ec2.id]
   ingress_rules        = []
-
-  user_data = templatefile("${path.module}/user_data.sh.tpl", {
-    aws_region     = var.aws_region
-    app_port       = var.app_port
-    app_name       = var.project_name
-    twenty_image   = var.twenty_image
-    encryption_key = var.encryption_key
-    app_secret     = var.app_secret
-    pg_password    = var.pg_password
-    server_url     = "http://localhost:${var.app_port}"
-  })
-
-  tags = local.common_tags
+  user_data            = ""
+  tags                 = local.common_tags
 }
