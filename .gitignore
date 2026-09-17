@@ -48,3 +48,7 @@ yarn-error.log*
 *.tfstate.*
 terraform.tfvars
 *.tfvars
+
+#ansible
+.ansible/
+inventory.ini
