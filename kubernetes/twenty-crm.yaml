@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: twenty-crm-db
+type: Opaque
+stringData:
+  POSTGRES_DB: twenty
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-postgres
+  template:
+    metadata:
+      labels:
+        app: twenty-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: twenty-crm-db
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-postgres
+spec:
+  selector:
+    app: twenty-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-redis
+  template:
+    metadata:
+      labels:
+        app: twenty-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7
+          ports:
+            - containerPort: 6379
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-redis
+spec:
+  selector:
+    app: twenty-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+  labels:
+    app: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twentycrm/twenty:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PG_DATABASE_URL
+              value: "postgresql://postgres:postgres@twenty-postgres:5432/twenty"
+            - name: REDIS_URL
+              value: "redis://twenty-redis:6379"
+            - name: SERVER_URL
+              value: "http://localhost:3000"
+            - name: NODE_PORT
+              value: "3000"
+            - name: ENCRYPTION_KEY
+              value: "task18-local-development-encryption-key-123456789012345678901234567890"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-crm
+spec:
+  selector:
+    app: twenty-crm
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: NodePort
