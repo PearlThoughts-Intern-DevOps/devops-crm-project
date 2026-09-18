@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm-deployment
+  labels:
+    app: twenty-crm
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twenty-crm:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 2020
+              name: http
+          env:
+            - name: NODE_PORT
+              value: "2020"
+            - name: SERVER_URL
+              value: "http://localhost:2020"
+            - name: APP_SECRET
+              value: "twenty-k8s-secret-task18-mohit"
+            - name: SIGN_IN_PREFILLED
+              value: "true"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            failureThreshold: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
