@@ -1,0 +1,15 @@
+aws_region                = "us-east-1"
+project_name              = "shubham-singh-task15"
+environment               = "dev"
+owner                     = "shubham-singh"
+instance_type             = "t3.small"
+ami_id                    = "ami-0b6d9d3d33ba97d99"
+key_pair_name             = "your-key-pair-name"
+allowed_ssh_cidrs         = ["0.0.0.0/0"]
+app_port                  = 2020
+volume_size               = 20
+twenty_image              = "twentycrm/twenty:v2.35.0"
+iam_instance_profile_name = ""
+encryption_key            = "your-32-char-encryption-key-here"
+app_secret                = "your-app-secret-here"
+pg_password               = "your-pg-password-here"

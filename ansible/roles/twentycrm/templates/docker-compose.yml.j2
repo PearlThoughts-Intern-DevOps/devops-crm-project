@@ -1,0 +1,72 @@
+version: "{{ docker_compose_version }}"
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: twenty-db
+    restart: {{ docker_restart_policy }}
+    environment:
+      POSTGRES_USER: "{{ pg_user }}"
+      POSTGRES_PASSWORD: "{{ pg_password }}"
+      POSTGRES_DB: "{{ pg_db }}"
+    volumes:
+      - "{{ app_dir }}/data/db:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ pg_user }} -d {{ pg_db }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - twenty-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: twenty-redis
+    restart: {{ docker_restart_policy }}
+    volumes:
+      - twenty-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - twenty-net
+
+  twenty:
+    image: "{{ twenty_image }}"
+    container_name: twenty-app
+    restart: {{ docker_restart_policy }}
+    ports:
+      - "{{ app_port }}:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_PORT: "3000"
+    volumes:
+      - "{{ app_dir }}/data/storage:/app/files"
+      - "{{ app_dir }}/logs:/app/logs"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider",
+             "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - twenty-net
+
+volumes:
+  twenty-redis-data:
+    driver: local
+
+networks:
+  twenty-net:
+    driver: bridge

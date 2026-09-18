@@ -1,0 +1,16 @@
+---
+twentycrm_data_dirs:
+  - "{{ app_dir }}/data"
+  - "{{ app_dir }}/data/storage"
+  - "{{ app_dir }}/data/db"
+  - "{{ app_dir }}/logs"
+
+pg_user:    "twenty"
+pg_db:      "twenty"
+redis_port: 6379
+
+server_url: "http://{{ ansible_host }}:{{ app_port }}"
+
+# Health check configuration
+healthcheck_retries: 20
+healthcheck_delay:   15

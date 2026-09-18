@@ -1,0 +1,16 @@
+---
+common_packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - apt-transport-https
+  - software-properties-common
+  - python3-pip
+  - python3-setuptools
+  - jq
+  - net-tools
+  - htop

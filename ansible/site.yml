@@ -1,0 +1,35 @@
+---
+- name: "Task 17 — Deploy Twenty CRM on EC2"
+  hosts: crm_servers
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 300
+
+    - name: Gather facts after SSH is ready
+      ansible.builtin.setup:
+
+  roles:
+    - role: common
+      tags: [common, packages]
+    - role: docker
+      tags: [docker]
+    - role: twentycrm
+      tags: [twentycrm, app]
+
+  post_tasks:
+    - name: Deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "======================================"
+          - " Twenty CRM Deployment Complete"
+          - "======================================"
+          - "Host      : {{ inventory_hostname }}"
+          - "Public IP : {{ ansible_host }}"
+          - "App URL   : http://{{ ansible_host }}:{{ app_port }}"
+          - "App dir   : {{ app_dir }}"
+          - "======================================"
