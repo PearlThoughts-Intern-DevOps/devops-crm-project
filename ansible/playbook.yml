@@ -1,0 +1,92 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty
+  become: true
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade installed packages
+      apt:
+        upgrade: dist
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - python3-docker
+          - git
+          - curl
+        state: present
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create Twenty CRM application directory
+      file:
+        path: /opt/twenty
+        state: directory
+        mode: "0755"
+
+    - name: Clone Task 17 repository
+      git:
+        repo: https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project.git
+        dest: /opt/twenty
+        version: harish-task17
+        force: yes
+
+    - name: Configure Twenty CRM environment
+      template:
+        src: templates/env.j2
+        dest: /opt/twenty/.env
+        mode: "0600"
+
+    - name: Deploy Twenty CRM
+      command: docker compose up -d
+      args:
+        chdir: /opt/twenty
+
+    - name: Wait for Twenty CRM
+      uri:
+        url: "http://localhost:3000"
+        status_code: 200
+      register: crm_health
+      retries: 20
+      delay: 10
+      until: crm_health.status == 200
+
+    - name: Display Docker container status
+      command: docker compose ps
+      args:
+        chdir: /opt/twenty
+      register: container_status
+      changed_when: false
+
+    - name: Show Docker container status
+      debug:
+        var: container_status.stdout_lines
+
+    - name: Display Twenty CRM logs
+      command: docker compose logs --tail=50 twenty-server
+      args:
+        chdir: /opt/twenty
+      register: crm_logs
+      changed_when: false
+
+    - name: Show Twenty CRM logs
+      debug:
+        var: crm_logs.stdout_lines
+
+    - name: Verify Twenty CRM is running
+      debug:
+        msg: "Twenty CRM is running successfully on port 3000"

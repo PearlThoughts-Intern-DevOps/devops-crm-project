@@ -1,0 +1,2 @@
+[twenty]
+44.211.96.185 ansible_user=ubuntu ansible_ssh_private_key_file=../terraform/twenty-crm-task17.pem
