@@ -1,0 +1,6 @@
+aws_region     = "us-east-1"
+ami_id         = "ami-081b0a6eac00b4f53"
+instance_type  = "t3.small"
+key_name       = "twenty-key"
+ecr_repo_name  = "twenty-crm-modules"
+s3_bucket_name = "waleed-twenty-crm-s3-14"
