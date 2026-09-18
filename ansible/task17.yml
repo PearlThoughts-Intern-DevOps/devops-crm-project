@@ -1,0 +1,145 @@
+---
+- name: Deploy Twenty CRM - Task 17
+  hosts: twenty_crm
+  become: true
+  gather_facts: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+    compose_file: /opt/twenty-crm/docker-compose.yml
+
+  tasks:
+
+    - name: Update server packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+
+    - name: Install Docker and dependencies
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - containerd
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker Compose
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/download/v2.39.2/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: "0755"
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create Twenty CRM Docker Compose configuration
+      ansible.builtin.copy:
+        dest: "{{ compose_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          services:
+            twenty-app:
+              image: twentycrm/twenty-app-dev:v2.35.0
+              container_name: twenty-task17
+              restart: unless-stopped
+
+              ports:
+                - "3000:2020"
+
+              environment:
+                NODE_PORT: 2020
+                SERVER_URL: http://localhost:2020
+                PG_DATABASE_URL: postgres://twenty:twenty@localhost:5432/default
+                REDIS_URL: redis://localhost:6379
+                STORAGE_TYPE: local
+                APP_SECRET: twenty-task17-development-secret
+                APP_VERSION: v2.35.0
+                NODE_ENV: development
+                DISABLE_DB_MIGRATIONS: "true"
+                DISABLE_CRON_JOBS_REGISTRATION: "true"
+                IS_BILLING_ENABLED: "false"
+                SIGN_IN_PREFILLED: "true"
+                APPLICATION_LOG_DRIVER: CONSOLE
+
+              healthcheck:
+                test:
+                  [
+                    "CMD",
+                    "node",
+                    "-e",
+                    "require('http').get('http://localhost:2020',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+                  ]
+                interval: 30s
+                timeout: 10s
+                retries: 5
+                start_period: 60s
+
+    - name: Verify Docker Compose
+      ansible.builtin.command:
+        cmd: docker-compose version
+      register: compose_version
+      changed_when: false
+
+    - name: Display Docker Compose version
+      ansible.builtin.debug:
+        var: compose_version.stdout
+
+    - name: Pull Twenty CRM image
+      ansible.builtin.command:
+        cmd: docker-compose -f "{{ compose_file }}" pull
+
+    - name: Start Twenty CRM
+      ansible.builtin.command:
+        cmd: docker-compose -f "{{ compose_file }}" up -d
+
+    - name: Wait for Twenty CRM to become healthy
+      ansible.builtin.command:
+        cmd: docker inspect --format="{% raw %}{{.State.Health.Status}}{% endraw %}" twenty-task17
+      register: container_health
+      changed_when: false
+      retries: 18
+      delay: 10
+      until: container_health.stdout.strip() == "healthy"
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker ps -a
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: docker_status.stdout_lines
+
+    - name: Display Twenty CRM logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 50 twenty-task17
+      register: crm_logs
+      changed_when: false
+
+    - name: Show Twenty CRM logs
+      ansible.builtin.debug:
+        var: crm_logs.stdout_lines
+
+    - name: Verify Twenty CRM is running
+      ansible.builtin.command:
+        cmd: docker inspect -f "{% raw %}{{.State.Status}}{% endraw %}" twenty-task17
+      register: container_state
+      changed_when: false
+      failed_when: container_state.stdout.strip() != "running"
+
+    - name: Display final deployment status
+      ansible.builtin.debug:
+        msg: "Twenty CRM Task 17 deployment completed successfully."
