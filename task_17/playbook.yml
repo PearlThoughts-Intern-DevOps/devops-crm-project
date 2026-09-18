@@ -1,0 +1,182 @@
+---
+- name: Deploy Twenty CRM on AWS EC2
+  hosts: twenty
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+    docker_network: twenty-network
+    postgres_container: twenty-postgres
+    redis_container: twenty-redis
+    app_container: twenty-crm
+    twenty_image: twentycrm/twenty:v2.35.0
+
+  tasks:
+
+    - name: Update server packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Install Docker and required dependencies
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - openssl
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create Twenty CRM environment file
+      ansible.builtin.shell: |
+        cat > {{ app_dir }}/.env <<'EOF'
+        PG_DATABASE_URL=postgres://postgres:postgres@twenty-postgres:5432/default
+        REDIS_URL=redis://twenty-redis:6379
+        ENCRYPTION_KEY=$(openssl rand -hex 32)
+        TWENTY_IMAGE={{ twenty_image }}
+        EOF
+        chmod 600 {{ app_dir }}/.env
+      args:
+        creates: "{{ app_dir }}/.env"
+
+    - name: Create Docker network
+      ansible.builtin.command:
+        cmd: docker network create {{ docker_network }}
+      register: network_result
+      failed_when:
+        - network_result.rc != 0
+        - "'already exists' not in network_result.stderr"
+      changed_when: network_result.rc == 0
+
+    - name: Check PostgreSQL container
+      ansible.builtin.command:
+        cmd: docker inspect {{ postgres_container }}
+      register: postgres_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create PostgreSQL container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name {{ postgres_container }}
+          --restart always
+          --network {{ docker_network }}
+          -e POSTGRES_USER=postgres
+          -e POSTGRES_PASSWORD=postgres
+          -e POSTGRES_DB=default
+          postgres:16
+      when: postgres_check.rc != 0
+
+    - name: Start PostgreSQL container
+      ansible.builtin.command:
+        cmd: docker start {{ postgres_container }}
+      when:
+        - postgres_check.rc == 0
+        - "'running' not in postgres_check.stdout"
+
+    - name: Check Redis container
+      ansible.builtin.command:
+        cmd: docker inspect {{ redis_container }}
+      register: redis_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create Redis container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name {{ redis_container }}
+          --restart always
+          --network {{ docker_network }}
+          redis:7-alpine
+      when: redis_check.rc != 0
+
+    - name: Start Redis container
+      ansible.builtin.command:
+        cmd: docker start {{ redis_container }}
+      when:
+        - redis_check.rc == 0
+        - "'running' not in redis_check.stdout"
+
+    - name: Wait for PostgreSQL to become ready
+      ansible.builtin.command:
+        cmd: docker exec {{ postgres_container }} pg_isready -U postgres
+      register: postgres_ready
+      retries: 15
+      delay: 3
+      until: postgres_ready.rc == 0
+      changed_when: false
+
+    - name: Check Twenty CRM container
+      ansible.builtin.command:
+        cmd: docker inspect {{ app_container }}
+      register: app_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create Twenty CRM container
+      ansible.builtin.shell: |
+        source {{ app_dir }}/.env
+        docker run -d \
+          --name {{ app_container }} \
+          --restart always \
+          --network {{ docker_network }} \
+          -p 3000:3000 \
+          -e PG_DATABASE_URL="$PG_DATABASE_URL" \
+          -e REDIS_URL="$REDIS_URL" \
+          -e ENCRYPTION_KEY="$ENCRYPTION_KEY" \
+          --health-cmd='curl -f http://localhost:3000 || exit 1' \
+          --health-interval=30s \
+          --health-timeout=10s \
+          --health-retries=3 \
+          --health-start-period=90s \
+          "$TWENTY_IMAGE"
+      when: app_check.rc != 0
+
+    - name: Start Twenty CRM container
+      ansible.builtin.command:
+        cmd: docker start {{ app_container }}
+      when:
+        - app_check.rc == 0
+        - "'running' not in app_check.stdout"
+
+    - name: Wait for Twenty CRM application
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000
+        status_code: 200
+      register: twenty_health
+      retries: 20
+      delay: 10
+      until: twenty_health.status == 200
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker ps -a
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: docker_status.stdout_lines
+
+    - name: Display Twenty CRM logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 50 {{ app_container }}
+      register: twenty_logs
+      changed_when: false
+
+    - name: Show Twenty CRM logs
+      ansible.builtin.debug:
+        var: twenty_logs.stdout_lines
