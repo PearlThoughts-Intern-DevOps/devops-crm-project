@@ -1,38 +1,67 @@
-## Docker Setup (Task 5)
+# Task 18: Twenty CRM on Kubernetes (Local)
 
-This project can be built and run with Docker Compose — no local
-Node/Yarn installation required.
+Deploys Twenty CRM locally on Docker Desktop Kubernetes using the existing
+`twentycrm/twenty-app-dev` image.
 
-| File | What it is |
-|---|---|
-| [`Dockerfile`](./Dockerfile) | Multi-stage build for the app container: installs dependencies, runs as a non-root user, no exposed ports (the app syncs into the Twenty server rather than serving its own UI). |
-| [`docker-compose.yml`](./docker-compose.yml) | Defines two services: `server` (the Twenty platform itself, `twentycrm/twenty-app-dev` image, port 2020) and `app` (this project's own code, built from the Dockerfile above, syncing into `server`). |
-| [`.dockerignore`](./.dockerignore) | Excludes `node_modules`, `.git`, build artifacts, and `.env` files from the Docker build context. |
-| [`DOCKER_TASK_DOCS.md`](./dockerpdf.pdf) | Full documentation: architecture explanation, design decisions, testing steps, and issues faced. |
+## Prerequisites
 
-### Quick start
+- Docker Desktop with Kubernetes enabled (Settings → Kubernetes → Enable Kubernetes)
+- `twentycrm/twenty-app-dev:latest` image already available locally
+- `kubectl` configured with context `docker-desktop`
 
-```bash
-docker compose build
-docker compose up
+## Project Structure
+
+```
+kubernetes/
+├── deployment.yaml     # Deployment for the Twenty CRM app
+└── service.yaml        # NodePort Service to access the app
+
+screenshots/
+├── pods_running.jpeg
+├── scaled_2_replicas.jpeg
+├── scaled_back_to_1_replica.jpeg
+└── deleted_all_pods_svcs.jpeg
+
+README.md
+task18.pdf               # Full task documentation
 ```
 
-Once both containers are running, open [http://localhost:2020](http://localhost:2020) — you should see the Twenty login page.
+## Setup
 
-### Stopping
+1. Create the namespace:
+   ```
+   kubectl create ns devops-crm
+   ```
 
-```bash
-docker compose down
+2. Apply the manifests:
+   ```
+   kubectl apply -f kubernetes/deployment.yaml
+   kubectl apply -f kubernetes/service.yaml
+   ```
+
+3. Check the pod:
+   ```
+   kubectl get pods -n devops-crm
+   kubectl logs -n devops-crm <pod-name> -f
+   ```
+
+4. Access the app:
+   ```
+   http://localhost:30020
+   ```
+
+## Scaling
+
+```
+kubectl scale deployment twenty-crm -n devops-crm --replicas=2
+kubectl get pods -n devops-crm
+
+kubectl scale deployment twenty-crm -n devops-crm --replicas=1
 ```
 
-To also wipe stored workspace data:
-```bash
-docker compose down -v
+## Cleanup
+
 ```
-
-### More detail
-
-See [`DOCKER_TASK_DOCS.md`](./DOCKER_TASK_DOCS.md) for the full
-explanation of each file, how everything was tested, and issues
-encountered (including a pre-existing app bug found and fixed while
-testing the Docker sync).
+kubectl delete -f kubernetes/service.yaml
+kubectl delete -f kubernetes/deployment.yaml
+```
