@@ -228,8 +228,3 @@ Twenty CRM was scaled back to one replica and successfully verified.
 
 ### Cleanup
 Kubernetes resources were deleted after completing the required verification.
-
-## Submission
-**PR Link:** [Add Task 18 PR link]
-
-**Loom Link:** [Add Task 18 Loom link]
