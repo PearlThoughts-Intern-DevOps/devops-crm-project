@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-postgres
+  labels:
+    app: twenty-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-postgres
+  template:
+    metadata:
+      labels:
+        app: twenty-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "default"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-postgres
+spec:
+  selector:
+    app: twenty-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
