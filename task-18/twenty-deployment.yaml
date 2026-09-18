@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+  namespace: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twentycrm/twenty:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_PORT
+              value: "3000"
+            - name: SERVER_URL
+              value: "http://localhost:2020"
+            - name: PG_DATABASE_URL
+              value: "postgres://postgres:postgres@postgres:5432/default"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: APP_SECRET
+              value: "twenty-crm-k8s-secret-change-me-abc123"
+            - name: IS_BILLING_ENABLED
+              value: "false"
+            - name: SIGN_IN_PREFILLED
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 600
+            periodSeconds: 30
+            failureThreshold: 5
