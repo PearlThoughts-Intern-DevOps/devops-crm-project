@@ -1,0 +1,94 @@
+name: CI Improvements
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-improvements-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: CI Quality, Test and Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Verify environment
+        run: |
+          echo "Node.js version:"
+          node --version
+          echo "Yarn version:"
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Security audit
+        run: yarn npm audit --all
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Spawn Twenty test instance
+        id: twenty
+        uses: twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main
+        with:
+          twenty-version: latest
+
+      - name: Wait for Twenty server health
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+        run: |
+          echo "Waiting for Twenty server to become healthy..."
+
+          for i in {1..6}; do
+            if curl --fail --silent --show-error "$TWENTY_API_URL/healthz"; then
+              echo "Twenty server is healthy."
+              exit 0
+            fi
+
+            echo "Attempt $i/6 failed. Retrying in 5 seconds..."
+            sleep 5
+          done
+
+          echo "Twenty server did not become healthy."
+          exit 1
+
+      - name: Run integration tests
+        run: yarn test
+        env:
+          TWENTY_API_URL: ${{ steps.twenty.outputs.server-url }}
+          TWENTY_API_KEY: ${{ steps.twenty.outputs.api-key }}
+
+      - name: Build application
+        run: yarn twenty dev:build
+
+      - name: Validate build output
+        run: |
+          test -f .twenty/output/manifest.json
+          test -f .twenty/output/package.json
+          test -d .twenty/output/src
+          echo "Build output validation passed."
