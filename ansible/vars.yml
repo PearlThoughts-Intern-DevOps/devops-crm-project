@@ -1,0 +1,24 @@
+---
+# Database
+pg_database_user: postgres
+pg_database_password: change-me
+pg_database_name: default
+pg_database_host: db
+pg_database_port: 5432
+
+# Application secrets
+app_secret: task17-super-secret-key-123456
+encryption_key: your-encryption-key
+fallback_encryption_key: your-fallback-encryption-key
+
+# Server
+server_url: "http://{{ ansible_host }}:3000"
+
+# Redis
+redis_url: "redis://redis:6379"
+
+# Storage
+storage_type: local
+
+# Twenty CRM version
+twenty_version: latest
