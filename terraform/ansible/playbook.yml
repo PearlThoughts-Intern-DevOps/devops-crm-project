@@ -1,0 +1,117 @@
+---
+- name: Deploy Twenty CRM
+  hosts: twenty_crm
+  become: true
+
+  vars:
+    app_dir: /opt/twenty-crm
+    container_name: twenty-app-dev
+    image_name: twentycrm/twenty-app-dev:latest
+
+  tasks:
+
+    - name: Update server packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required Docker dependencies
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - unzip
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install Docker SDK for Python
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create required application directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/data"
+        - "{{ app_dir }}/data/redis"
+
+    - name: Configure Twenty CRM environment variables
+      copy:
+        dest: "{{ app_dir }}/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+        content: |
+          PORT=2020
+          NODE_PORT=2020
+          SERVER_URL=http://{{ ansible_host }}:2020
+
+    - name: Pull Twenty CRM Docker image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        source: pull
+
+    - name: Deploy Twenty CRM using Docker
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "2020:2020"
+        env:
+          PORT: "2020"
+          NODE_PORT: "2020"
+          SERVER_URL: "http://{{ ansible_host }}:2020"
+        volumes:
+          - "{{ app_dir }}/data:/data"
+        healthcheck:
+          test:
+            - CMD-SHELL
+            - "curl -f http://localhost:2020 || exit 1"
+          interval: 30s
+          timeout: 10s
+          retries: 5
+          start_period: 120s
+
+    - name: Wait for Twenty CRM port to open
+      wait_for:
+        host: 127.0.0.1
+        port: 2020
+        delay: 20
+        timeout: 180
+
+    - name: Display Docker container status
+      command: docker ps --filter "name={{ container_name }}"
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker status
+      debug:
+        var: docker_status.stdout
+
+    - name: Display Twenty CRM application logs
+      command: docker logs --tail 100 {{ container_name }}
+      register: app_logs
+      changed_when: false
+
+    - name: Show Twenty CRM logs
+      debug:
+        var: app_logs.stdout
