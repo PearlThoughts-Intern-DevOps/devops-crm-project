@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-db
+  template:
+    metadata:
+      labels:
+        app: twenty-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: twenty-secret
+                  key: POSTGRES_PASSWORD
+
+            - name: POSTGRES_DB
+              value: twenty
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-redis
+  template:
+    metadata:
+      labels:
+        app: twenty-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7
+          ports:
+            - containerPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty
+          image: twentycrm/twenty:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 3000
+
+          env:
+            - name: PG_DATABASE_URL
+              value: postgresql://postgres:postgres@twenty-db:5432/twenty
+
+            - name: REDIS_URL
+              value: redis://twenty-redis:6379
+
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: twenty-secret
+                  key: APP_SECRET
+
+            - name: SERVER_URL
+              value: http://localhost:3000
