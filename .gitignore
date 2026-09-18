@@ -41,5 +41,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 *.d.ts
-terraform/.terraform/
+
+
+# Terraform
 .terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars.backup
+
+# Ansible
+*.retry
+
+# OS / editor files
+Thumbs.db
+*.swp
+EOF
