@@ -2,7 +2,7 @@
 
 **Name:** P. Harish
 **Date:** 18 September 2026
-**PR link:** []
+**PR link:** [https://github.com/PearlThoughts-Intern-DevOps/devops-crm-project/pull/438]
 **Loom link:** [https://drive.google.com/file/d/1KCBr1trFyr7qT-9GyIG4Tn7r1rvApfVd/view?usp=drive_link]
 
 ## Objective
