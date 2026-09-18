@@ -1,0 +1,19 @@
+# Terraform state — contains sensitive data
+terraform.tfstate
+terraform.tfstate.backup
+
+# Terraform working directory
+.terraform/
+.terraform.lock.hcl
+
+# Plan files
+tfplan
+*.tfplan
+
+# Secrets — never commit
+terraform.tfvars
+*.tfvars
+
+# Crash logs
+crash.log
+crash.*.log
