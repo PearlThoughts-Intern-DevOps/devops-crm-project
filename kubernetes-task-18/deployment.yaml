@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: twenty-crm
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: twenty-crm
+
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+
+    spec:
+      containers:
+        - name: twenty-crm
+          image: devops-crm-project-twenty:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 2020
+
+          env:
+            - name: NODE_PORT
+              value: "2020"
+
+            - name: PG_DATABASE_URL
+              value: "postgres://twenty:twenty@postgres-service:5432/default"
+
+            - name: REDIS_URL
+              value: "redis://redis-service:6379"
+
+            - name: APP_SECRET
+              value: "change-this-secret-in-production"
+
+            - name: SERVER_URL
+              value: "http://localhost:2020"
+
+            - name: STORAGE_TYPE
+              value: "local"
+
+            - name: IS_BILLING_ENABLED
+              value: "false"
