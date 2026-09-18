@@ -48,12 +48,12 @@ kubernetes/
 ├── service.yml
 ├── README.md
 └── screenshots/
-    ├── 01-minikube-node-ready.png
-    ├── 02-image-loaded.png
-    ├── 03-one-replica-and-service.png
-    ├── 04-twenty-crm-browser.png
-    ├── 05-scaled-to-two-replicas.png
-    └── 06-scaled-back-to-one.png
+    ├── 01-minikube-node-ready.jpeg
+    ├── 02-minikube-service-tunnel.jpeg
+    ├── 03-twenty-crm-browser.png
+    ├── 04-scaled-to-two-replicas.jpeg
+    ├── 05-scaled-back-to-one.jpeg
+    └── 06-kubernetes-cleanup.jpeg
 ```
 
 ## Docker Image
@@ -401,3 +401,29 @@ kubectl get services
 ```
 
 Minikube itself does not need to be deleted.
+
+## Screenshots
+
+### Minikube Node Ready
+
+![Minikube node ready](screenshots/01-minikube-node-ready.jpeg)
+
+### Minikube Service Tunnel
+
+![Minikube Service tunnel](screenshots/02-minikube-service-tunnel.jpeg)
+
+### Twenty CRM Access
+
+![Twenty CRM browser](screenshots/03-twenty-crm-browser.png)
+
+### Scaled to Two Replicas
+
+![Two replicas](screenshots/04-scaled-to-two-replicas.jpeg)
+
+### Scaled Back to One Replica
+
+![One replica after scaling down](screenshots/05-scaled-back-to-one.jpeg)
+
+### Kubernetes Cleanup
+
+![Kubernetes cleanup](screenshots/06-kubernetes-cleanup.jpeg)
