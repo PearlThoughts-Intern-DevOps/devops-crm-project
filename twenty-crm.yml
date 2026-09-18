@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+  labels:
+    app: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-app
+          image: twentycrm/twenty-app-dev:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 2020
+          env:
+            - name: NODE_PORT
+              value: "2020"
+            - name: SERVER_URL
+              value: "http://localhost:2020"
+            - name: STORAGE_TYPE
+              value: "local"
+            - name: APP_SECRET
+              value: "twenty-app-dev-secret-not-for-production"
+            - name: NODE_ENV
+              value: "development"
+            - name: DISABLE_DB_MIGRATIONS
+              value: "false"
+            - name: DISABLE_CRON_JOBS_REGISTRATION
+              value: "false"
+            - name: IS_BILLING_ENABLED
+              value: "false"
+            - name: SIGN_IN_PREFILLED
+              value: "true"
+            - name: APPLICATION_LOG_DRIVER
+              value: "CONSOLE"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-crm-service
+spec:
+  type: NodePort
+  selector:
+    app: twenty-crm
+  ports:
+    - protocol: TCP
+      port: 2020
+      targetPort: 2020
