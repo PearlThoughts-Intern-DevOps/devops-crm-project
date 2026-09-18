@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+  namespace: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twentycrm/twenty:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PG_DATABASE_URL
+              value: postgres://postgres:postgres@postgres:5432/twenty
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: SERVER_URL
+              value: http://10.111.240.176:2020
+            - name: ENCRYPTION_KEY
+              value: "726ee354e5cfce323537b5283ea3a3a887929267f321fbead735299d3330aa43"  

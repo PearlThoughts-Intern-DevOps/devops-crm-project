@@ -1,0 +1,13 @@
+app_name: twenty-crm
+app_dir: /opt/twenty-crm
+app_port: 2020
+
+twenty_image: twentycrm/twenty:latest
+postgres_image: postgres:16-alpine
+redis_image: redis:7-alpine
+
+postgres_db: default
+postgres_user: twenty
+postgres_password: twenty
+
+app_secret: twenty-task-17-secret

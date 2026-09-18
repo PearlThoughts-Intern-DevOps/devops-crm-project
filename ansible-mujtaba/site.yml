@@ -1,0 +1,88 @@
+---
+- name: Deploy Twenty CRM with Ansible
+  hosts: twenty_crm
+  become: true
+
+  tasks:
+
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install Docker and required dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create Twenty CRM environment file
+      ansible.builtin.template:
+        src: twenty.env.j2
+        dest: "{{ app_dir }}/.env"
+        mode: "0600"
+
+    - name: Create Docker Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull Twenty CRM images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ app_dir }}"
+      changed_when: false
+
+    - name: Start Twenty CRM stack
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ app_dir }}"
+      register: compose_result
+      changed_when: >-
+        'Created' in compose_result.stdout or
+        'Started' in compose_result.stdout or
+        'Recreated' in compose_result.stdout
+
+    - name: Wait for Twenty CRM port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 10
+        timeout: 180
+
+    - name: Display Docker container status
+      ansible.builtin.command:
+        cmd: docker ps
+      register: docker_status
+      changed_when: false
+
+    - name: Show Docker container status
+      ansible.builtin.debug:
+        var: docker_status.stdout
+
+    - name: Display Twenty CRM logs
+      ansible.builtin.command:
+        cmd: docker logs --tail 100 twenty-crm
+      register: twenty_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Show Twenty CRM logs
+      ansible.builtin.debug:
+        var: twenty_logs.stdout
