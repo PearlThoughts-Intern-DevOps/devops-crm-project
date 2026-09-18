@@ -3,6 +3,9 @@
   hosts: twenty
   become: true
 
+  vars_files:
+    - vars.yml
+
   tasks:
 
     - name: Update apt package cache
@@ -43,17 +46,10 @@
         force: yes
 
     - name: Configure Twenty CRM environment
-      copy:
+      template:
+        src: templates/env.j2
         dest: /opt/twenty/.env
         mode: "0600"
-        content: |
-          PG_DATABASE_USER=postgres
-          PG_DATABASE_PASSWORD=change-me
-          PG_DATABASE_NAME=default
-          TWENTY_VERSION=latest
-          TWENTY_PORT=3000
-          SERVER_URL=http://{{ ansible_host }}:3000
-          APP_SECRET=task17-super-secret-key-123456
 
     - name: Deploy Twenty CRM
       command: docker compose up -d
@@ -62,7 +58,7 @@
 
     - name: Wait for Twenty CRM
       uri:
-        url: http://localhost:3000
+        url: "http://localhost:3000"
         status_code: 200
       register: crm_health
       retries: 20
@@ -74,6 +70,7 @@
       args:
         chdir: /opt/twenty
       register: container_status
+      changed_when: false
 
     - name: Show Docker container status
       debug:
@@ -84,6 +81,7 @@
       args:
         chdir: /opt/twenty
       register: crm_logs
+      changed_when: false
 
     - name: Show Twenty CRM logs
       debug:
