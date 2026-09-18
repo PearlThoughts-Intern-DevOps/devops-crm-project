@@ -10,3 +10,7 @@ pg_db:      "twenty"
 redis_port: 6379
 
 server_url: "http://{{ ansible_host }}:{{ app_port }}"
+
+# Health check configuration
+healthcheck_retries: 20
+healthcheck_delay:   15

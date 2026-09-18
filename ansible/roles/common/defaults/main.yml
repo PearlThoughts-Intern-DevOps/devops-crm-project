@@ -13,3 +13,4 @@ common_packages:
   - python3-setuptools
   - jq
   - net-tools
+  - htop

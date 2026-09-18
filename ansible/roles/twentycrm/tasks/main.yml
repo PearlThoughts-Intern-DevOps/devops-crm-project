@@ -1,4 +1,5 @@
 ---
+# ── Directory Setup ────────────────────────────────────────
 - name: Create application base directory
   ansible.builtin.file:
     path: "{{ app_dir }}"
@@ -16,6 +17,7 @@
     mode: "0755"
   loop: "{{ twentycrm_data_dirs }}"
 
+# ── Configuration Templates ────────────────────────────────
 - name: Template .env file
   ansible.builtin.template:
     src: twenty.env.j2
@@ -35,23 +37,34 @@
     mode: "0644"
   notify: Restart Twenty CRM
 
+# ── Flush handlers immediately so restart happens before health check
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+# ── Image Pull ─────────────────────────────────────────────
 - name: Pull Twenty CRM Docker image
   ansible.builtin.command:
     cmd: docker pull {{ twenty_image }}
-  changed_when: true
+  register: pull_result
+  changed_when: "'Downloaded newer image' in pull_result.stdout"
 
+# ── Deploy ─────────────────────────────────────────────────
 - name: Deploy Twenty CRM stack
   ansible.builtin.command:
     cmd: docker compose --env-file .env up -d --remove-orphans
     chdir: "{{ app_dir }}"
   become_user: ubuntu
   register: compose_up
-  changed_when: true
+  changed_when: >
+    'Started' in compose_up.stdout or
+    'Created' in compose_up.stdout or
+    'Recreated' in compose_up.stdout
 
 - name: Show docker compose up output
   ansible.builtin.debug:
     var: compose_up.stdout_lines
 
+# ── Health Check ───────────────────────────────────────────
 - name: Wait for Twenty CRM health endpoint
   ansible.builtin.uri:
     url: "http://localhost:{{ app_port }}/healthz"
@@ -62,15 +75,12 @@
   until: health_result.status is defined and health_result.status in [200, 302]
   retries: "{{ healthcheck_retries }}"
   delay: "{{ healthcheck_delay }}"
-  ignore_errors: true
 
-- name: Health check result
+- name: Confirm health check passed
   ansible.builtin.debug:
-    msg: >-
-      {{ 'HEALTHY (HTTP ' ~ health_result.status ~ ')'
-         if health_result.status is defined and health_result.status in [200, 302]
-         else 'Health check inconclusive — check logs' }}
+    msg: "HEALTHY — Twenty CRM responded HTTP {{ health_result.status }}"
 
+# ── Verification ───────────────────────────────────────────
 - name: Display Docker container status
   ansible.builtin.command:
     cmd: docker compose ps
