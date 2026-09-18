@@ -20,13 +20,8 @@ spec:
           env:
             - name: POSTGRES_USER
               value: postgres
-
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: twenty-secret
-                  key: POSTGRES_PASSWORD
-
+              value: postgres
             - name: POSTGRES_DB
               value: twenty
 
@@ -70,22 +65,14 @@ spec:
         - name: twenty
           image: twentycrm/twenty:latest
           imagePullPolicy: IfNotPresent
-
           ports:
             - containerPort: 3000
-
           env:
             - name: PG_DATABASE_URL
               value: postgresql://postgres:postgres@twenty-db:5432/twenty
-
             - name: REDIS_URL
               value: redis://twenty-redis:6379
-
             - name: APP_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: twenty-secret
-                  key: APP_SECRET
-
+              value: task18-twenty-app-secret
             - name: SERVER_URL
               value: http://localhost:3000

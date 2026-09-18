@@ -89,23 +89,13 @@ Kubernetes files created:
 ```text
 k8s/
 ├── deployment.yaml
-├── services.yaml
-└── secret.yaml
+└──services.yaml
 ```
 
 ## 3. Kubernetes Secret
 
-The Secret stores the application secret and PostgreSQL password.
+The Secret stores the application secret and PostgreSQL password in deployment.yml
 
-```bash
-kubectl apply -f k8s/secret.yaml
-```
-
-Verify:
-
-```bash
-kubectl get secrets
-```
 
 ## 4. Kubernetes Deployments
 
