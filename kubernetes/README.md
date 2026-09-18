@@ -401,29 +401,3 @@ kubectl get services
 ```
 
 Minikube itself does not need to be deleted.
-
-## Screenshots
-
-### Minikube Node Ready
-
-![Minikube node ready](screenshots/01-minikube-node-ready.png)
-
-### Image Loaded into Minikube
-
-![Image loaded](screenshots/02-image-loaded.png)
-
-### Initial Deployment and Service
-
-![One replica and service](screenshots/03-one-replica-and-service.png)
-
-### Twenty CRM Access
-
-![Twenty CRM browser](screenshots/04-twenty-crm-browser.png)
-
-### Scaled to Two Replicas
-
-![Two replicas](screenshots/05-scaled-to-two-replicas.png)
-
-### Scaled Back to One Replica
-
-![One replica after scaling down](screenshots/06-scaled-back-to-one.png)
