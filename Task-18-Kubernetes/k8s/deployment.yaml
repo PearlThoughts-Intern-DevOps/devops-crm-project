@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: twenty-crm
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: twenty-crm
+
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twentycrm/twenty-app-dev:v2.35
+
+          ports:
+            - containerPort: 2020
+
+          env:
+            - name: NODE_ENV
+              value: "production"
+
+            - name: PORT
+              value: "2020"
+
+            - name: NODE_PORT
+              value: "2020"
+
+            - name: SIGN_IN_PREFILLED
+              value: "true"
+
+            - name: STORAGE_TYPE
+              value: "local"
+
+            - name: STORAGE_LOCAL_PATH
+              value: "/app/.local-storage"
+
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 2020
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
