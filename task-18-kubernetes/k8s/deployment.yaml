@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-crm
+  labels:
+    app: twenty-crm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-crm
+  template:
+    metadata:
+      labels:
+        app: twenty-crm
+    spec:
+      containers:
+        - name: twenty-crm
+          image: twentycrm/twenty-app-dev:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 2020
+          env:
+            - name: APPLICATION_LOG_DRIVER
+              value: "CONSOLE"
+            - name: APP_SECRET
+              value: "twenty-app-dev-secret-not-for-production"
+            - name: APP_VERSION
+              value: "v2.39.1"
+            - name: DISABLE_CRON_JOBS_REGISTRATION
+              value: "true"
+            - name: DISABLE_DB_MIGRATIONS
+              value: "true"
+            - name: IS_BILLING_ENABLED
+              value: "false"
+            - name: NODE_ENV
+              value: "development"
+            - name: NODE_PORT
+              value: "2020"
+            - name: PG_DATABASE_URL
+              value: "postgres://twenty:twenty@localhost:5432/default"
+            - name: REDIS_URL
+              value: "redis://localhost:6379"
+            - name: SIGN_IN_PREFILLED
+              value: "true"
+            - name: STORAGE_TYPE
+              value: "local"
+            - name: SERVER_URL
+              value: "http://localhost:2020"
